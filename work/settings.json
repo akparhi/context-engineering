@@ -86,10 +86,6 @@
           {
             "type": "command",
             "command": "afplay /System/Library/Sounds/Submarine.aiff"
-          },
-          {
-            "type": "command",
-            "command": "sh ~/.work/fetch_usage.sh"
           }
         ]
       }
