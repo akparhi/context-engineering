@@ -1,0 +1,130 @@
+{
+  "cleanupPeriodDays": 14,
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://localhost:20128",
+    "ANTHROPIC_API_KEY": "sk-redacted",
+    "ANTHROPIC_AUTH_TOKEN": "",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": "cx/gpt-5.6-terra",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "cx/gpt-5.6-luna-high",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "openrouter/deepseek/deepseek-v4-flash-0731",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "openrouter/deepseek/deepseek-v4-flash-0731",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "openrouter/deepseek/deepseek-v4-flash-0731",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
+    "ENABLE_LSP_TOOL": "1",
+    "CLAUDE_CODE_EFFORT_LEVEL": "max",
+    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "250000"
+  },
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Edit",
+      "Glob",
+      "Grep",
+      "LS",
+      "MultiEdit",
+      "Read",
+      "Skill",
+      "TodoRead",
+      "TodoWrite",
+      "WebFetch",
+      "WebSearch",
+      "Write"
+    ],
+    "deny": [
+      "PushNotification",
+      "NotebookEdit",
+      "NotebookRead",
+      "EnterPlanMode",
+      "ExitPlanMode",
+      "EnterWorktree",
+      "ExitWorktree",
+      "CronCreate",
+      "CronList",
+      "CronDelete",
+      "ScheduleWakeup"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "hooks": {
+    "Notification": [],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Ping.aiff"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [],
+    "PreToolUse": [
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Ping.aiff"
+          }
+        ]
+      },
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Ping.aiff"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Sosumi.aiff"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": []
+  },
+  "disableRemoteControl": true,
+  "disableWorkflows": true,
+  "disableArtifact": true,
+  "workflowKeywordTriggerEnabled": false,
+  "statusLine": {
+    "type": "command",
+    "command": "/Users/akparhi/.darkforest/claude/statusline/statusline.sh"
+  },
+  "enabledPlugins": {
+    "context7@claude-plugins-official": true,
+    "playwright@claude-plugins-official": false,
+    "typescript-lsp@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true
+  },
+  "spinnerTipsEnabled": false,
+  "alwaysThinkingEnabled": false,
+  "effortLevel": "low",
+  "promptSuggestionEnabled": false,
+  "autoUpdatesChannel": "latest",
+  "plansDirectory": "./.claude/plans",
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "dark",
+  "editorMode": "normal",
+  "verbose": true,
+  "preferredNotifChannel": "auto",
+  "fileCheckpointingEnabled": false,
+  "terminalProgressBarEnabled": true,
+  "tipsEnabled": false,
+  "model": "sonnet"
+}
