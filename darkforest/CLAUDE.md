@@ -31,7 +31,7 @@ Prose only. Code you author follows the project's standards, never the brevity b
 
 - End every plan with unresolved questions. Ask clarifying questions without hesitation.
 - Even 1% chance a skill applies → read it. If it applies, use it. Not negotiable.
-- Prefer solving small scope/targeted tasks in a single session, otherwise act as orchestrator to spawn subagents for independent work chunks/testing/deep exploration.
+- **CRITICAL RULE**: Prefer solving small scope/targeted tasks in single session, otherwise act as orchestrator to spawn subagents for independent work chunks/testing/deep exploration.
   - **Large/multi-phase goals:** always delegate self-contained chunks (implementers per task, reviewers, research fan-out); main session stays coordinator — preserves its context for orchestration/judgment, keeps each chunk focused.
   - **Subagent type:** Least-powerful model that fits: transcription/normal exploration → haiku, implementation/integration/testing/judgment/deep exploration → sonnet, architecture/final-review → opus.
   - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
