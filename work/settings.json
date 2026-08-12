@@ -1,5 +1,7 @@
 {
   "cleanupPeriodDays": 14,
+  "alwaysThinkingEnabled": false,
+  "disableClaudeAiConnectors": true,
   "env": {
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-8",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
@@ -102,7 +104,7 @@
     "context7@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "chrome-devtools-mcp@claude-plugins-official": true
+    "chrome-devtools-mcp@claude-plugins-official": false
   },
   "extraKnownMarketplaces": {},
   "spinnerTipsEnabled": false,
@@ -116,6 +118,5 @@
   "verbose": true,
   "fileCheckpointingEnabled": false,
   "terminalProgressBarEnabled": false,
-  "tipsEnabled": false,
-  "model": "claude-fable-5[1m]"
+  "tipsEnabled": false
 }
