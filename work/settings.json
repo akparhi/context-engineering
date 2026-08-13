@@ -3,12 +3,13 @@
   "alwaysThinkingEnabled": false,
   "disableClaudeAiConnectors": true,
   "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-8",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "250000",
-    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "1",
+    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
     "CLAUDE_CODE_EFFORT_LEVEL": "low",
-    "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
     "ENABLE_LSP_TOOL": "1"
   },
   "permissions": {
@@ -112,7 +113,7 @@
   "skipDangerousModePermissionPrompt": true,
   "theme": "auto",
   "verbose": true,
-  "fileCheckpointingEnabled": false,
+  "fileCheckpointingEnabled": true,
   "terminalProgressBarEnabled": false,
   "tipsEnabled": false
 }
