@@ -46,6 +46,7 @@
     ],
     "defaultMode": "bypassPermissions"
   },
+  "model": "sonnet",
   "hooks": {
     "Notification": [],
     "PermissionRequest": [
@@ -91,7 +92,17 @@
         ]
       }
     ],
-    "UserPromptSubmit": []
+    "UserPromptSubmit": [],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/Users/akparhi/.darkforest/claude/hooks/context-mode-cache-heal.mjs\""
+          }
+        ]
+      }
+    ]
   },
   "disableRemoteControl": true,
   "disableWorkflows": true,
@@ -107,7 +118,16 @@
     "typescript-lsp@claude-plugins-official": true,
     "commit-commands@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true
+    "frontend-design@claude-plugins-official": true,
+    "context-mode@context-mode": true
+  },
+  "extraKnownMarketplaces": {
+    "context-mode": {
+      "source": {
+        "source": "github",
+        "repo": "mksglu/context-mode"
+      }
+    }
   },
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
@@ -123,6 +143,5 @@
   "preferredNotifChannel": "auto",
   "fileCheckpointingEnabled": false,
   "terminalProgressBarEnabled": true,
-  "tipsEnabled": false,
-  "model": "sonnet"
+  "tipsEnabled": false
 }
