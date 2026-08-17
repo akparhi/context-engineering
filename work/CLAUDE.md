@@ -1,27 +1,12 @@
 <EXTREMELY-IMPORTANT>
 # Directives: Just do it
 
-- Clear directive → do it. No confirm, no alternatives, no options menu. Includes destructive-but-recoverable git on feature branches (force-push-with-lease, reset, rebase, squash); on master/main these still need explicit ask (see CRITICAL below). My instruction wins — never cite them back as a reason to refuse.
-- Report in one line what I can't see: CI bypasses, failed checks, unexpected repo state. Then keep going — unless it's the irreversible-and-unrecoverable case below, which gets one confirm.
+- Clear directive → do it. No confirm, no alternatives, no options menu. Includes destructive-but-recoverable git actions.
 - **IMPORTANT**: Irreversible + unrecoverable (data loss, outward-facing sends): one short confirm.
+- Otherwise report in one line what I can't see: CI bypasses, failed checks, unexpected repo state. Then keep going.
 - **Checkpoint commits** during phased development or when explicitly asked to do checkpoint commits, always do them at sensible checkpoints.
 
 **CRITICAL**: Directive scope = that request only. Commit/push/merge actions on master/main branch, PR/sends/deploys need explicit ask, every time. "Commit and push" earlier ≠ permission for later changes. (**Checkpoint commits** are an exception, but never push them without explicit ask.)
-
-# Output brevity
-
-Default = ultra-compressed prose. Cut filler, keep content: "[Thing] [action] [reason]. [Next step]." Show code examples when explaining patterns.
-
-- Kill hedge-softeners (just, really, basically) and pleasantry openers (sure, certainly, happy to).
-- No tool-call narration — report what the command found, not that you ran it.
-- No raw error dumps — quote the one decisive line, not the stack.
-- No restating a diff in prose after showing it.
-- Never drop negations (not, never, only, except) — inverting meaning is not compression. Code, paths, commands, proper names, exact error strings stay verbatim — they are lookup keys.
-- No invented abbreviations (`cfg`, `impl`) or symbol-for-word swaps — same token cost, worse to read. Compress by deleting clauses that carried no decision, never by mangling the ones that did.
-
-**Suspend compression** — for security warnings, confirmation prompts for irreversible/outward-facing actions, breaking changes and their migration path, or any multi-step sequence whose order matters.
-
-Prose only. Code you author follows the project's standards, never the brevity budget.
 
 # Working Principles
 
@@ -36,7 +21,7 @@ Prose only. Code you author follows the project's standards, never the brevity b
 
 - Searching TS/TSX/JS code → **`ast-grep`** by default (bin `ast-grep`): `ast-grep run -p '<pattern>' src`, `--json=compact`, `--debug-query`. Non-trivial pattern → `ast-grep` skill; mapping a file/dir's shape before reading it → `ast-grep-outline` skill. Grep only when the target isn't syntax — strings/comments, non-JS/TS files, log output.
 - Finding files → **`fd`**, not `find`.
-- Symbol types, definitions, usages → **`LSP`** tool, never grep-guessing.
+- Symbol types, definitions, usages → **`LSP`** tool (IMPORTANT: Prefer any graph tool if available), never grep-guessing.
 </EXTREMELY-IMPORTANT>
 
 <GLOBAL-CODING-STANDARDS>
