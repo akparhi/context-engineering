@@ -4,13 +4,13 @@
 - Clear directive → do it. No confirm, no alternatives, no options menu. Includes destructive-but-recoverable git actions.
 - **IMPORTANT**: Irreversible + unrecoverable (data loss, outward-facing sends): one short confirm.
 - Otherwise report in one line what I can't see: CI bypasses, failed checks, unexpected repo state. Then keep going.
-- **Checkpoint commits** during phased development or when explicitly asked to do checkpoint commits, always do them at sensible checkpoints.
+- **Checkpoint commits**: during phased development, commit at sensible checkpoints without asking. Never push them without explicit ask.
 
 **CRITICAL**: Directive scope = that request only. Commit/push/merge actions on master/main branch, PR/sends/deploys need explicit ask, every time. "Commit and push" earlier ≠ permission for later changes. (**Checkpoint commits** are an exception, but never push them without explicit ask.)
 
 # Working Principles
 
-- End every plan with unresolved questions. Ask clarifying questions without hesitation.
+- End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
 - **CRITICAL RULE**: For large/multi-phase goals, act as orchestrator and spawn subagents for independent work chunks/testing/deep exploration.
   - **Large/multi-phase goals:** always delegate self-contained chunks (implementers per task, reviewers, research fan-out); main session stays coordinator — preserves its context for orchestration/judgment, keeps each chunk focused.
   - **Subagent type:** Least-powerful model that fits: transcription/normal exploration → haiku, implementation/integration/testing/judgment/deep exploration → sonnet, architecture/final-review → opus.
@@ -21,7 +21,7 @@
 
 - Searching TS/TSX/JS code → **`ast-grep`** by default (bin `ast-grep`): `ast-grep run -p '<pattern>' src`, `--json=compact`, `--debug-query`. Non-trivial pattern → `ast-grep` skill; mapping a file/dir's shape before reading it → `ast-grep-outline` skill. Grep only when the target isn't syntax — strings/comments, non-JS/TS files, log output.
 - Finding files → **`fd`**, not `find`.
-- Symbol types, definitions, usages → **`LSP`** tool (IMPORTANT: Prefer any graph tool if available), never grep-guessing.
+- Symbol types, definitions, usages → **`LSP`** tool, never grep-guessing.
 </EXTREMELY-IMPORTANT>
 
 <GLOBAL-CODING-STANDARDS>
@@ -67,7 +67,7 @@ After understanding the problem — read what the change touches, trace the real
 
 Mark deliberate shortcuts with ceiling and upgrade path: e.g., `// yagni: global lock, per-account if throughput matters`.
 
-**Verify before claiming done:** decisive review/testing/verification with an independent subagent; a model review is never proof when an executable check exists. Report `not verified` when verification was unavailable. Never claim a check that did not run or pass.
+**Verify before claiming done:** proportional to the change — small diff: run the executable check (test, build, run) directly; non-trivial work: decisive review/testing/verification with an independent subagent. A model review is never proof when an executable check exists. Report `not verified` when verification was unavailable. Never claim a check that did not run or pass.
 
 **CRITICAL**: Never simplify away: input validation, error handling that prevents data loss, security, accessibility, or anything I explicitly asked for. The ladder governs implementation, not my requirements.
 
