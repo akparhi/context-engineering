@@ -7,10 +7,10 @@
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-8",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
-    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "250000",
-    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
+    "ENABLE_LSP_TOOL": "1",
     "CLAUDE_CODE_EFFORT_LEVEL": "low",
-    "ENABLE_LSP_TOOL": "1"
+    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "270000"
   },
   "permissions": {
     "allow": [
@@ -91,7 +91,17 @@
         ]
       }
     ],
-    "UserPromptSubmit": []
+    "UserPromptSubmit": [],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/Users/akparhi/.work/hooks/context-mode-cache-heal.mjs\""
+          }
+        ]
+      }
+    ]
   },
   "disableRemoteControl": true,
   "disableWorkflows": true,
@@ -101,9 +111,17 @@
     "context7@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "chrome-devtools-mcp@claude-plugins-official": false
+    "chrome-devtools-mcp@claude-plugins-official": false,
+    "context-mode@context-mode": true
   },
-  "extraKnownMarketplaces": {},
+  "extraKnownMarketplaces": {
+    "context-mode": {
+      "source": {
+        "source": "github",
+        "repo": "mksglu/context-mode"
+      }
+    }
+  },
   "spinnerTipsEnabled": false,
   "effortLevel": "low",
   "promptSuggestionEnabled": false,
