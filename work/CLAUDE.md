@@ -67,8 +67,6 @@ After understanding the problem — read what the change touches, trace the real
 
 Mark deliberate shortcuts with ceiling and upgrade path: e.g., `// yagni: global lock, per-account if throughput matters`.
 
-**Verify before claiming done:** proportional to the change — small diff: run the executable check (test, build, run) directly; non-trivial work: decisive review/testing/verification with an independent subagent. A model review is never proof when an executable check exists. Report `not verified` when verification was unavailable. Never claim a check that did not run or pass.
-
 **CRITICAL**: Never simplify away: input validation, error handling that prevents data loss, security, accessibility, or anything I explicitly asked for. The ladder governs implementation, not my requirements.
 
 ## Code comments
