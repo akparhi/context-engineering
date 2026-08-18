@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync } from 'node:fs'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { mkdtempSync, mkdirSync, copyFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -37,4 +37,35 @@ test('exits 0 with no output outside a project', () => {
   const bare = mkdtempSync(join(tmpdir(), 'hs-bare-'))
   const out = execFileSync('node', [hook], { cwd: bare, input: '{}', encoding: 'utf8' })
   assert.equal(out.trim(), '')
+})
+
+test('injects the demotion clause', () => {
+  const root = mkdtempSync(join(tmpdir(), 'hs-'))
+  mkdirSync(join(root, '.claude'))
+  const context = runHook(root).hookSpecificOutput.additionalContext
+  assert.match(context, /memory aid/i)
+  assert.match(context, /current message|current instruction/i)
+})
+
+test('routes pending candidates to the distill tool', () => {
+  const root = mkdtempSync(join(tmpdir(), 'hs-'))
+  mkdirSync(join(root, '.claude'))
+  appendCandidate(root, { mistake: 'm', correction: 'c', rule: 'r', trigger: 't' })
+  const context = runHook(root).hookSpecificOutput.additionalContext
+  assert.match(context, /1 candidate/)
+  assert.match(context, /hindsight__distill/)
+})
+
+test('stays silent when its own modules cannot be loaded', () => {
+  const root = mkdtempSync(join(tmpdir(), 'hs-'))
+  mkdirSync(join(root, '.claude'))
+  const broken = mkdtempSync(join(tmpdir(), 'hs-broken-'))
+  copyFileSync(hook, join(broken, 'sessionstart.mjs'))
+  // No src/ alongside it: every dynamic import fails.
+  const result = spawnSync(process.execPath, [join(broken, 'sessionstart.mjs')], {
+    cwd: root,
+    encoding: 'utf8',
+  })
+  assert.equal(result.status, 0, 'hook must never fail the session')
+  assert.equal(result.stdout.trim(), '', 'a broken hook emits nothing rather than partial JSON')
 })

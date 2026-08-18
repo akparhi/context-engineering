@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { readCandidates } from '../src/candidates.mjs'
-import { findProjectRoot } from '../src/paths.mjs'
 
 const CONTRACT = `<lesson_capture>
 Call hindsight__record the moment any of these occur — before continuing the work:
@@ -15,15 +13,26 @@ command, or a task type — as \`trigger\`. Pass your own one-line generalizatio
 
 Do NOT record: one-off typos, transient environment failures, anything already in
 .claude/rules/, style nits with no repeat risk, or facts derivable from the code itself.
+
+Lessons already in .claude/rules/ are a memory aid, not a standing order. The
+user's current message outranks any lesson that contradicts it — when they
+conflict, follow the user and record the correction.
 </lesson_capture>`
 
-function main() {
+// Imports are dynamic and inside the try: a top-level import failure would crash
+// the hook before its own error handling could swallow it.
+async function main() {
+  const { findProjectRoot } = await import('../src/paths.mjs')
+  const { readCandidates } = await import('../src/candidates.mjs')
+
   const root = findProjectRoot(process.cwd())
   if (!root) return
+
   const pending = readCandidates(root).length
   const note = pending
-    ? `\n\n${pending} candidate(s) from an earlier session are still pending distillation.`
+    ? `\n\n${pending} candidate(s) recorded earlier are pending. Call hindsight__distill to fold them into .claude/rules/, or leave them queued.`
     : ''
+
   process.stdout.write(
     JSON.stringify({
       hookSpecificOutput: {
@@ -35,8 +44,8 @@ function main() {
 }
 
 try {
-  main()
+  await main()
 } catch {
-  // Never fail the session.
+  // Never fail the session, and never emit partial output.
 }
 process.exit(0)
