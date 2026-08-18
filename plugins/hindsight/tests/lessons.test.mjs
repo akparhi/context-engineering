@@ -67,6 +67,29 @@ test('render emits frontmatter when paths are present', () => {
   assert.ok(out.startsWith('---\npaths:\n  - "src/**/*.ts"\n---\n'))
 })
 
+test('lesson text containing an HTML comment is preserved', () => {
+  const line = "- Avoid <!-- inline comments --> in templates <!-- @date:2026-08-18 @trigger:tpl @count:2 -->"
+  const parsed = parseLessonFile(`## Lessons\n\n${line}\n`)
+  assert.equal(parsed.lessons.length, 1)
+  assert.equal(parsed.lessons[0].text, 'Avoid <!-- inline comments --> in templates')
+  assert.equal(parsed.lessons[0].date, '2026-08-18')
+  assert.equal(parsed.lessons[0].trigger, 'tpl')
+  assert.equal(parsed.lessons[0].count, 2)
+})
+
+test('indented sub-bullets are not promoted to lessons', () => {
+  const parsed = parseLessonFile('## Lessons\n\n- Top level lesson\n  - indented detail\n')
+  assert.equal(parsed.lessons.length, 1)
+  assert.equal(parsed.lessons[0].text, 'Top level lesson')
+})
+
+test('non-numeric count clamps to 1 instead of NaN', () => {
+  const parsed = parseLessonFile('## Lessons\n\n- A lesson <!-- @date:2026-08-18 @trigger:t @count:abc -->\n')
+  assert.equal(parsed.lessons[0].count, 1)
+  const rendered = renderLessonFile({ paths: [], lessons: parsed.lessons })
+  assert.ok(!rendered.includes('NaN'), 'rendered output must never contain NaN')
+})
+
 test('render omits @trigger when empty and round-trips to empty', () => {
   const out = renderLessonFile({
     paths: [],

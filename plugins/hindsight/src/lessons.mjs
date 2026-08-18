@@ -13,20 +13,24 @@ function parseFrontmatter(content) {
 }
 
 function parseLesson(line) {
-  const meta = line.match(/<!--\s*(.*?)\s*-->\s*$/)
-  const text = line
-    .replace(/^\s*-\s*/, '')
-    .replace(/<!--.*?-->\s*$/, '')
-    .trim()
+  // Find the last <!-- ... --> on the line — that's the metadata comment
+  const lastCommentIdx = line.lastIndexOf('<!--')
+  const trailingComment = lastCommentIdx !== -1 ? line.slice(lastCommentIdx).match(/^<!--\s*(.*?)\s*-->\s*$/) : null
+  const meta = trailingComment ? { index: lastCommentIdx, content: trailingComment[1] } : null
+  const bulletContent = line.replace(/^-\s*/, '')
+  const bulletOffset = line.length - bulletContent.length
+  const text = meta
+    ? bulletContent.slice(0, meta.index - bulletOffset).trim()
+    : bulletContent.trim()
   const field = (name, fallback) => {
-    const hit = meta?.[1].match(new RegExp(`@${name}:(\\S+)`))
+    const hit = meta?.content.match(new RegExp(`@${name}:(\\S+)`))
     return hit ? hit[1] : fallback
   }
   return {
     text,
     date: field('date', TODAY()),
     trigger: field('trigger', ''),
-    count: Number(field('count', '1')),
+    count: Math.max(1, Number(field('count', '1')) || 1),
   }
 }
 
@@ -34,7 +38,7 @@ export function parseLessonFile(content) {
   const { paths, body } = parseFrontmatter(content)
   const lessons = body
     .split('\n')
-    .filter((line) => /^\s*-\s+\S/.test(line))
+    .filter((line) => /^-\s+\S/.test(line))
     .map(parseLesson)
     .filter((lesson) => lesson.text)
   const preamble = body.startsWith(MANAGED_NOTE) ? MANAGED_NOTE : ''
