@@ -75,3 +75,34 @@ test('enforceCaps output always validates', () => {
   const set = enforceCaps({ crossCutting: many(20, 'x'), areas: { api: { paths: ['a/**'], lessons: many(30, 'a') } } })
   assert.equal(validateLessonSet(set).ok, true)
 })
+
+test('validateLessonSet never throws on malformed input', () => {
+  for (const bad of [null, undefined, 42, 'nope', []]) {
+    const result = validateLessonSet(bad)
+    assert.equal(result.ok, false, `input ${JSON.stringify(bad)} should be invalid`)
+    assert.ok(result.errors.length > 0)
+  }
+})
+
+test('a null area value is rejected, not thrown', () => {
+  const result = validateLessonSet({ crossCutting: [], areas: { api: null } })
+  assert.equal(result.ok, false)
+  assert.match(result.errors.join(' '), /api/)
+})
+
+test('a null lesson element is rejected, not thrown', () => {
+  const result = validateLessonSet({ crossCutting: [null], areas: {} })
+  assert.equal(result.ok, false)
+})
+
+test('paths entries must be non-empty strings', () => {
+  const empty = validateLessonSet({ crossCutting: [], areas: { api: { paths: [''], lessons: [] } } })
+  assert.equal(empty.ok, false)
+  const nonString = validateLessonSet({ crossCutting: [], areas: { api: { paths: [42], lessons: [] } } })
+  assert.equal(nonString.ok, false)
+})
+
+test('enforceCaps never throws on malformed areas', () => {
+  assert.doesNotThrow(() => enforceCaps({ crossCutting: [], areas: { api: null } }))
+  assert.doesNotThrow(() => enforceCaps({ crossCutting: [null], areas: {} }))
+})

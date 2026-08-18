@@ -1,6 +1,9 @@
 export const CAPS = { crossCutting: 7, perArea: 12, areaFiles: 5 }
 
 function lessonErrors(lesson, where) {
+  if (lesson === null || lesson === undefined || typeof lesson !== 'object' || Array.isArray(lesson)) {
+    return [`${where}: lesson must be an object`]
+  }
   const errors = []
   if (!lesson.text || !lesson.text.trim()) errors.push(`${where}: empty lesson text`)
   if (lesson.text && lesson.text.includes('\n')) errors.push(`${where}: lesson must be one line`)
@@ -9,6 +12,10 @@ function lessonErrors(lesson, where) {
 }
 
 export function validateLessonSet(set) {
+  if (set === null || set === undefined || typeof set !== 'object' || Array.isArray(set)) {
+    return { ok: false, errors: ['invalid lesson set: expected an object'] }
+  }
+
   const errors = []
   const crossCutting = set.crossCutting ?? []
   const areas = set.areas ?? {}
@@ -24,7 +31,16 @@ export function validateLessonSet(set) {
   }
   for (const name of areaNames) {
     const area = areas[name]
-    if (!area.paths?.length) errors.push(`area '${name}': needs at least one paths glob`)
+    if (area === null || area === undefined || typeof area !== 'object' || Array.isArray(area)) {
+      errors.push(`area '${name}': must be an object`)
+      continue
+    }
+    const paths = area.paths ?? []
+    if (!paths.length) {
+      errors.push(`area '${name}': needs at least one paths glob`)
+    } else if (!paths.every((p) => typeof p === 'string' && p.length > 0)) {
+      errors.push(`area '${name}': paths entries must be non-empty strings`)
+    }
     if ((area.lessons ?? []).length > CAPS.perArea) {
       errors.push(`area '${name}': ${area.lessons.length} lessons > ${CAPS.perArea}`)
     }
@@ -36,15 +52,22 @@ export function validateLessonSet(set) {
 
 // Newest wins: a merged lesson gets its date refreshed, so recurring lessons survive.
 function newestFirst(lessons) {
-  return [...lessons].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+  return [...lessons].sort((a, b) => {
+    const da = (a && a.date) || ''
+    const db = (b && b.date) || ''
+    return da < db ? 1 : da > db ? -1 : 0
+  })
 }
 
 export function enforceCaps(set) {
-  const crossCutting = newestFirst(set.crossCutting ?? []).slice(0, CAPS.crossCutting)
-  const entries = Object.entries(set.areas ?? {}).map(([name, area]) => [
-    name,
-    { ...area, lessons: newestFirst(area.lessons ?? []).slice(0, CAPS.perArea) },
-  ])
+  const rawCC = set.crossCutting ?? []
+  const crossCutting = newestFirst(rawCC.filter((l) => l !== null && l !== undefined)).slice(0, CAPS.crossCutting)
+  const entries = Object.entries(set.areas ?? {})
+    .filter(([, area]) => area !== null && area !== undefined && typeof area === 'object' && !Array.isArray(area))
+    .map(([name, area]) => [
+      name,
+      { ...area, lessons: newestFirst((area.lessons ?? []).filter((l) => l !== null && l !== undefined)).slice(0, CAPS.perArea) },
+    ])
   const areaAge = ([, area]) => newestFirst(area.lessons)[0]?.date ?? '0000-00-00'
   const areas = Object.fromEntries(
     entries.sort((a, b) => (areaAge(a) < areaAge(b) ? 1 : -1)).slice(0, CAPS.areaFiles)
