@@ -4,7 +4,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { z } from 'zod'
 import { appendCandidate, readCandidates } from './candidates.mjs'
+import { applyLessonSet, readCurrentSet } from './distill.mjs'
 import { findProjectRoot, hindsightPaths } from './paths.mjs'
+import { buildDistillPrompt } from './prompt.mjs'
 
 const server = new McpServer({ name: 'hindsight', version: '0.1.0' })
 
@@ -20,7 +22,7 @@ function text(body) {
 
 server.tool(
   'record',
-  'Record a correction as a lesson candidate. Call this the moment the user corrects an approach you chose, rejects a tool call and explains why, an approach fails for a reason that would repeat, or you discover a project constraint that contradicts what you assumed. Candidates are distilled into .claude/rules/ at session end.',
+  'Record a correction as a lesson candidate. Call this the moment the user corrects an approach you chose, rejects a tool call and explains why, an approach fails for a reason that would repeat, or you discover a project constraint that contradicts what you assumed. Candidates are distilled into .claude/rules/ when you call the distill tool.',
   {
     mistake: z.string().min(1).describe('What you actually did that was wrong'),
     correction: z.string().min(1).describe('What was correct instead'),
@@ -41,7 +43,7 @@ server.tool(
     const { added, id } = appendCandidate(root, { mistake, correction, rule, trigger, files_touched })
     return text(
       added
-        ? `Recorded candidate ${id}. It will be distilled into .claude/rules/ at session end.`
+        ? `Recorded candidate ${id}. Call the distill tool to fold pending candidates into .claude/rules/.`
         : `Already recorded this session (${id}); nothing added.`
     )
   }
@@ -86,6 +88,46 @@ server.tool(
     const kept = readCandidates(root).filter((candidate) => candidate.id !== id)
     writeFileSync(paths.candidates, kept.map((candidate) => JSON.stringify(candidate)).join('\n') + (kept.length ? '\n' : ''))
     return text(`Removed candidate ${id}.`)
+  }
+)
+
+const lessonShape = z.object({
+  text: z.string(),
+  date: z.string().optional(),
+  trigger: z.string().optional(),
+  count: z.number().optional(),
+})
+
+server.tool(
+  'distill',
+  'Fold the pending correction candidates into the project lesson set. Call this when candidates are pending — the session-start note tells you the count — or when the user asks to distill. Returns instructions; it writes nothing. Follow them, then call apply with your proposed set.',
+  {},
+  async () => {
+    const root = requireRoot()
+    const candidates = readCandidates(root)
+    if (!candidates.length) return text('No pending candidates; nothing to distill.')
+    return text(buildDistillPrompt({ candidates, current: readCurrentSet(root) }))
+  }
+)
+
+server.tool(
+  'apply',
+  'Persist a distilled lesson set to .claude/rules/. Validates the caps and writes atomically. On rejection nothing is written and the reason is returned — fix what it reports and call again.',
+  {
+    crossCutting: z.array(lessonShape).describe('Lessons that apply regardless of which files are touched. Capped; keep this list short.'),
+    areas: z
+      .record(z.object({ paths: z.array(z.string()), lessons: z.array(lessonShape) }))
+      .describe('Area name to its paths globs and lessons. Prefer these over crossCutting.'),
+    quarantine: z.array(z.string()).optional().describe('Candidate ids to quarantine rather than turn into lessons'),
+  },
+  async ({ crossCutting, areas, quarantine = [] }) => {
+    const root = requireRoot()
+    const result = applyLessonSet(root, { crossCutting, areas, quarantine })
+    return text(
+      result.status === 'ok'
+        ? 'Applied. Lessons written to .claude/rules/ and the candidate queue cleared.'
+        : `Rejected, nothing written: ${result.reason}. Fix this and call apply again.`
+    )
   }
 )
 
