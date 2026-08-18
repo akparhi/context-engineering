@@ -43,10 +43,19 @@ export function writeLessonSet(root, set) {
     writes.push([file, renderLessonFile({ paths: body.paths, lessons: body.lessons })])
   }
 
-  for (const [file, content] of writes) {
-    const tmp = `${file}.tmp`
-    writeFileSync(tmp, content)
-    renameSync(tmp, file)
+  // Stage every file before moving any into place: a failure mid-staging leaves
+  // the live rule files untouched rather than half-updated.
+  const staged = []
+  try {
+    for (const [file, content] of writes) {
+      const tmp = `${file}.tmp`
+      writeFileSync(tmp, content)
+      staged.push([tmp, file])
+    }
+    for (const [tmp, file] of staged) renameSync(tmp, file)
+  } catch (error) {
+    for (const [tmp] of staged) rmSync(tmp, { force: true })
+    throw error
   }
 
   for (const file of readdirSync(paths.rulesDir)) {
@@ -104,8 +113,13 @@ export function applyLessonSet(root, proposed) {
     return { status: 'failed', reason }
   }
 
-  writeLessonSet(root, capped)
-  quarantineCandidates(root, candidates, Array.isArray(proposed.quarantine) ? proposed.quarantine : [])
-  clearCandidates(root)
+  try {
+    writeLessonSet(root, capped)
+    quarantineCandidates(root, candidates, Array.isArray(proposed.quarantine) ? proposed.quarantine : [])
+    clearCandidates(root)
+  } catch (error) {
+    logFailure(root, `failed to persist lesson set: ${error.message}`)
+    return { status: 'failed', reason: error.message }
+  }
   return { status: 'ok' }
 }

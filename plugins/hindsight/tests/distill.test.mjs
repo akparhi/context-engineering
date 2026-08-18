@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { appendCandidate, readCandidates } from '../src/candidates.mjs'
@@ -116,6 +116,30 @@ test('readCurrentSet reads cross-cutting and area files back', () => {
   assert.equal(set.crossCutting[0].text, 'A')
   assert.equal(set.areas.api.lessons[0].text, 'B')
   assert.deepEqual(set.areas.api.paths, ['src/api/**'])
+})
+
+test('returns failed instead of throwing when the rules dir cannot be written', () => {
+  const root = newProject()
+  appendCandidate(root, candidate)
+  const paths = hindsightPaths(root)
+  mkdirSync(paths.rulesDir, { recursive: true })
+  // A directory where the cross-cutting file belongs: writeFileSync must fail.
+  mkdirSync(join(paths.rulesDir, 'hindsight.md'), { recursive: true })
+  const result = applyLessonSet(root, goodSet())
+  assert.equal(result.status, 'failed')
+  assert.ok(result.reason)
+  assert.equal(readCandidates(root).length, 1)
+})
+
+test('leaves no temp files behind after a failed write', () => {
+  const root = newProject()
+  appendCandidate(root, candidate)
+  const paths = hindsightPaths(root)
+  mkdirSync(paths.rulesDir, { recursive: true })
+  mkdirSync(join(paths.rulesDir, 'hindsight.md'), { recursive: true })
+  applyLessonSet(root, goodSet())
+  const leftover = readdirSync(paths.rulesDir).filter((f) => f.endsWith('.tmp'))
+  assert.deepEqual(leftover, [])
 })
 
 test('writeLessonSet deletes area files that are no longer in the set', () => {
