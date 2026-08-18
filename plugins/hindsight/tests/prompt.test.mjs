@@ -49,3 +49,15 @@ test('instructs reader to call hindsight__apply tool', () => {
   const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
   assert.match(prompt, /hindsight__apply/)
 })
+
+test('directs doubt toward areas rather than cross-cutting', () => {
+  const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
+  assert.match(prompt, /Doubt defaults to "areas"/)
+  assert.match(prompt, /scarcest space/)
+})
+
+test('instructs on contradicting candidates and merge-when-in-doubt', () => {
+  const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
+  assert.match(prompt, /When in doubt, merge/)
+  assert.match(prompt, /Never keep both sides of a contradiction/)
+})
