@@ -70,6 +70,13 @@ test('apply persists a valid lesson set', async () => {
   assert.match(readFileSync(hindsightPaths(root).crossCutting, 'utf8'), /date-fns/)
 })
 
+test('a tool returns a text error instead of throwing when there is no project root', async () => {
+  const bare = mkdtempSync(join(tmpdir(), 'hs-bare-'))
+  const reply = await callTool(bare, 'list', {})
+  assert.ok(reply.result, 'expected a tool result, not an MCP protocol error')
+  assert.match(reply.result.content[0].text, /hindsight error/i)
+})
+
 test('apply reports the rejection reason so the model can retry', async () => {
   const root = newProject()
   appendCandidate(root, { mistake: 'm', correction: 'c', rule: 'r', trigger: 't' })
