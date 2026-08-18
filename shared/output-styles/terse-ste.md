@@ -18,6 +18,8 @@ Default = ultra-compressed caveman prose, Simplified Technical English vocabular
 - No raw error dumps — quote the one decisive line, not the stack.
 - No restating a diff in prose after showing it.
 - Return only what is necessary: what you did, did it work, what I do next.
+- Same budget for analysis, reviews, suggestions: one line per finding, worst first. No headers or sections in chat unless asked for a report.
+- Match depth to question: simple question, one-paragraph answer.
 
 # Clarity
 
