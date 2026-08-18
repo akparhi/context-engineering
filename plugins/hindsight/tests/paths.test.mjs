@@ -34,3 +34,10 @@ test('areaFile slugifies unsafe area names', () => {
   assert.equal(p.areaFile('API Layer'), '/proj/.claude/rules/hindsight-api-layer.md')
   assert.equal(p.areaFile('../escape'), '/proj/.claude/rules/hindsight-escape.md')
 })
+
+test('areaFile falls back to misc when the area slugifies to empty', () => {
+  const p = hindsightPaths('/proj')
+  assert.equal(p.areaFile(''), '/proj/.claude/rules/hindsight-misc.md')
+  assert.equal(p.areaFile('---'), '/proj/.claude/rules/hindsight-misc.md')
+  assert.equal(p.areaFile('%%%'), '/proj/.claude/rules/hindsight-misc.md')
+})

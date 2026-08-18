@@ -13,10 +13,11 @@ export function findProjectRoot(startDir) {
 
 // Area names reach us from LLM output, so they are untrusted path input.
 function slugifyArea(area) {
-  return area
+  const slug = area
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
+  return slug || 'misc'
 }
 
 export function hindsightPaths(root) {
