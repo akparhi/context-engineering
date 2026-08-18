@@ -1,0 +1,16 @@
+{
+  "description": "hindsight — SessionStart capture contract, SessionEnd distillation",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/run\" \"${CLAUDE_PLUGIN_ROOT}/hooks/sessionstart.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}
