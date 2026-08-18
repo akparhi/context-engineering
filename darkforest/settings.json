@@ -42,7 +42,10 @@
       "CronCreate",
       "CronList",
       "CronDelete",
-      "ScheduleWakeup"
+      "ScheduleWakeup",
+      "Skill(context-mode:ctx-search)",
+      "Skill(context-mode:ctx-upgrade)",
+      "Skill(context-mode:ctx-insight)"
     ],
     "defaultMode": "bypassPermissions"
   },
