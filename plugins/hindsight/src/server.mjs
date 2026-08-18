@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { z } from 'zod'
 import { appendCandidate, readCandidates } from './candidates.mjs'
 import { findProjectRoot, hindsightPaths } from './paths.mjs'
@@ -49,12 +49,23 @@ server.tool(
 
 server.tool(
   'list',
-  'List current hindsight lessons and the count of pending candidates.',
+  'List current hindsight lessons and the count of pending candidates. With no area argument, lists all lessons — the cross-cutting file and every area file. With an area argument (e.g. "api"), lists only that area\'s file.',
   { area: z.string().optional().describe('Filter to one area file, e.g. "api"') },
   async ({ area }) => {
     const root = requireRoot()
     const paths = hindsightPaths(root)
-    const files = area ? [paths.areaFile(area)] : [paths.crossCutting]
+    let files
+    if (area) {
+      files = [paths.areaFile(area)]
+    } else {
+      files = [paths.crossCutting]
+      if (existsSync(paths.rulesDir)) {
+        const areaFiles = readdirSync(paths.rulesDir)
+          .filter((name) => name.startsWith('hindsight-') && name.endsWith('.md'))
+          .map((name) => paths.areaFile(name.slice('hindsight-'.length, -'.md'.length)))
+        files.push(...areaFiles)
+      }
+    }
     const bodies = files
       .filter((file) => existsSync(file))
       .map((file) => `# ${file}\n${readFileSync(file, 'utf8')}`)
