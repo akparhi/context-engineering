@@ -1,0 +1,7 @@
+#!/bin/sh
+# Prefer bun for startup speed (~10-25ms vs node's ~40-80ms — hooks pay this on
+# every session start and end). Fall back to node, which ships with Claude Code.
+if command -v bun >/dev/null 2>&1; then
+  exec bun "$@"
+fi
+exec node "$@"
