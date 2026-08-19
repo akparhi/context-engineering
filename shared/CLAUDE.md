@@ -1,4 +1,5 @@
 <EXTREMELY-IMPORTANT>
+
 # Directives: Just do it
 
 - Clear directive → do it. No confirm, no alternatives, no options menu. Includes destructive-but-recoverable git actions.
