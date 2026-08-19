@@ -38,7 +38,6 @@ conflict, follow the user and record the correction.
 // the hook before its own error handling could swallow it.
 async function main() {
   const { findProjectRoot } = await import('../src/paths.mjs')
-  const { readCandidates } = await import('../src/candidates.mjs')
   const { expireCandidates } = await import('../src/expiry.mjs')
 
   const root = findProjectRoot(process.cwd())
