@@ -26,6 +26,7 @@
 </EXTREMELY-IMPORTANT>
 
 <GLOBAL-CODING-STANDARDS>
+
 # Global Coding Standards
 
 **Write for the next reader.** They have none of your context — not this session, not why the old code was wrong. Where any rule below conflicts with readability, readability wins.
