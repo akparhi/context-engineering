@@ -129,7 +129,7 @@
       }
     }
   },
-  "outputStyle": "unslop",
+  "outputStyle": "crisp",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
   "effortLevel": "low",
@@ -142,5 +142,6 @@
   "verbose": true,
   "fileCheckpointingEnabled": true,
   "terminalProgressBarEnabled": false,
-  "tipsEnabled": false
+  "tipsEnabled": false,
+  "model": "claude-fable-5[1m]"
 }
