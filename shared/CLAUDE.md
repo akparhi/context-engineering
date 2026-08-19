@@ -61,12 +61,10 @@ After understanding the problem — read what the change touches, trace the real
 6. Trivial + stable? → one line inline.
 7. Non-trivial (parsing, dates, crypto, retries, validation)? → prefer a mature library over hand-rolling; pick best, note choice + runner-up, proceed. Ask only if consequential (lock-in, security, heavy/unmaintained dep).
 8. Only then: minimum implementation.
-
-- "Laziest" = reuse over new code, NOT avoid new code/dependencies. Decide and move; don't stop on every choice.
-- Fix root cause (the shared function), not every caller.
-- Once the problem is understood: fewest files, shortest diff.
-
-Mark deliberate shortcuts with ceiling and upgrade path: e.g., `// yagni: global lock, per-account if throughput matters`.
+    - "Laziest" = reuse over new code, NOT avoid new code/dependencies. Decide and move; don't stop on every choice.
+    - Fix root cause (the shared function), not every caller.
+    - Once the problem is understood: fewest files, shortest diff.
+    - Mark deliberate shortcuts with ceiling and upgrade path: e.g., `// yagni: global lock, per-account if throughput matters`.
 
 **CRITICAL**: Never simplify away: input validation, error handling that prevents data loss, security, accessibility, or anything I explicitly asked for. The ladder governs implementation, not my requirements.
 
