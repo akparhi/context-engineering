@@ -1,6 +1,6 @@
 {
   "cleanupPeriodDays": 14,
-  "outputStyle": "terse",
+  "outputStyle": "crisp",
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
