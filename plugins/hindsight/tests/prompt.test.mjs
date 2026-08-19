@@ -61,3 +61,17 @@ test('instructs on contradicting candidates and merge-when-in-doubt', () => {
   assert.match(prompt, /When in doubt, merge/)
   assert.match(prompt, /Never keep both sides of a contradiction/)
 })
+
+test('separates apply-directly cases from confirm-first cases', () => {
+  const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
+  assert.match(prompt, /Apply directly, without asking/)
+  assert.match(prompt, /Ask the user first/)
+})
+
+test('names contradiction, cross-cutting, and shaky triggers as confirm-first', () => {
+  const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
+  const confirm = prompt.slice(prompt.indexOf('Ask the user first'))
+  assert.match(confirm, /contradicts an existing lesson/)
+  assert.match(confirm, /new "crossCutting" lesson/)
+  assert.match(confirm, /not confident/)
+})

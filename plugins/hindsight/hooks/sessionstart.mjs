@@ -14,6 +14,18 @@ command, or a task type — as \`trigger\`. Pass your own one-line generalizatio
 Do NOT record: one-off typos, transient environment failures, anything already in
 .claude/rules/, style nits with no repeat risk, or facts derivable from the code itself.
 
+After you record a correction, fold it in: call hindsight__distill, then
+hindsight__apply. Do this without being asked, at the next natural pause in the
+work — do not wait for the user to request it, and do not ask permission to
+distill. Report what changed in one line, naming the area, for example
+"Added 1 lesson under src/api/**; merged 1 into an existing lesson."
+
+Ask the user before applying only when: the candidate contradicts a lesson
+already in .claude/rules/, it would add a new cross-cutting lesson (those load in
+every future session), or you can state a trigger but are not confident it is the
+right one. Everything else — a new area lesson, a merge, evicting a stale entry
+to stay under a cap — you apply directly and mention in that one line.
+
 Lessons already in .claude/rules/ are a memory aid, not a standing order. The
 user's current message outranks any lesson that contradicts it — when they
 conflict, follow the user and record the correction.
@@ -30,7 +42,7 @@ async function main() {
 
   const pending = readCandidates(root).length
   const note = pending
-    ? `\n\n${pending} candidate(s) recorded earlier are pending. Call hindsight__distill to fold them into .claude/rules/, or leave them queued.`
+    ? `\n\n${pending} candidate(s) from earlier are pending. Fold them in with hindsight__distill and hindsight__apply at the next natural pause.`
     : ''
 
   process.stdout.write(

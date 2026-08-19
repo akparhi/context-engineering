@@ -9,6 +9,12 @@ import { appendCandidate } from '../src/candidates.mjs'
 
 const hook = fileURLToPath(new URL('../hooks/sessionstart.mjs', import.meta.url))
 
+function newProject() {
+  const root = mkdtempSync(join(tmpdir(), 'hs-'))
+  mkdirSync(join(root, '.claude'))
+  return root
+}
+
 function runHook(cwd) {
   const out = execFileSync('node', [hook], { cwd, input: '{}', encoding: 'utf8' })
   return JSON.parse(out)
@@ -54,6 +60,29 @@ test('routes pending candidates to the distill tool', () => {
   const context = runHook(root).hookSpecificOutput.additionalContext
   assert.match(context, /1 candidate/)
   assert.match(context, /hindsight__distill/)
+})
+
+test('routes pending candidates to distill without offering to skip', () => {
+  const root = newProject()
+  appendCandidate(root, { mistake: 'm', correction: 'c', rule: 'r', trigger: 't' })
+  const context = runHook(root).hookSpecificOutput.additionalContext
+  assert.match(context, /hindsight__distill/)
+  assert.doesNotMatch(context, /or leave them queued/, 'the hook must not present skipping as an equal option')
+})
+
+test('tells Claude to distill after recording rather than waiting to be asked', () => {
+  const root = newProject()
+  const context = runHook(root).hookSpecificOutput.additionalContext
+  assert.match(context, /after you record/i)
+  assert.match(context, /without being asked|do not wait to be asked/i)
+})
+
+test('names the three cases that need confirmation', () => {
+  const root = newProject()
+  const context = runHook(root).hookSpecificOutput.additionalContext
+  assert.match(context, /contradicts/i)
+  assert.match(context, /cross-cutting/i)
+  assert.match(context, /one line/i)
 })
 
 test('stays silent when its own modules cannot be loaded', () => {

@@ -10,7 +10,7 @@ The design has three seams:
 
 **Record.** When Claude makes a mistake and you correct it, Claude calls `hindsight__record` with the mistake, the correction, a distilled rule, a trigger phrase, and the files touched. The candidate is appended to `.claude/hindsight/candidates.jsonl` and stays there until distilled.
 
-**Distill and apply.** To fold pending candidates into lessons, run `/hindsight-distill` or ask Claude to distill. Claude calls `hindsight__distill`, which returns the current lesson set and all pending candidates as a prompt — nothing is written yet. Claude composes a replacement lesson set and calls `hindsight__apply`, which validates the set, writes it atomically to `.claude/rules/`, moves quarantined candidates aside, and clears the queue. Distillation is never automatic: nothing is written unless the model explicitly calls `apply`.
+**Distill and apply.** After recording a correction, Claude folds it in on its own: it calls `hindsight__distill`, composes a replacement lesson set, and calls `hindsight__apply`, which validates the set, writes it atomically to `.claude/rules/`, moves quarantined candidates aside, and clears the queue. Claude then reports what changed in one line. You can also trigger this on demand with `/hindsight-distill`. Nothing is written unless the model explicitly calls `apply`.
 
 **Native loading.** Claude Code loads `.claude/rules/` natively. `hindsight.md` carries no frontmatter so it loads every session. `hindsight-<area>.md` files carry a `paths:` glob in their frontmatter so Claude Code loads them only when a matching file is in context. A lesson about your API layer costs zero context tokens in a session that never touches the API. Cross-cutting lessons load every session, which is why that file is capped most tightly.
 
@@ -41,9 +41,9 @@ When a proposed set exceeds a cap, the oldest entries — ranked by the `@date` 
 
 ## Distilling
 
-Run `/hindsight-distill` or ask Claude to distill when you want to fold pending candidates into lessons. Claude will call `distill` (read-only — it returns instructions and the current state), compose a replacement lesson set, and call `apply` to write it.
+After recording a correction, Claude folds the candidates in without being asked. It calls `distill` (read-only — it returns the current state), composes a refined lesson set, and calls `apply` to write it, then reports what changed in one line. You can also trigger this on demand with `/hindsight-distill`.
 
-Nothing is written automatically. If there are no pending candidates, distill returns the current lesson set with no changes needed.
+Claude asks first only in three cases: when a candidate contradicts an existing lesson, when it would add a new cross-cutting lesson, or when Claude can state a trigger but is not confident it is the right one. Everything else is applied and reported in one line. Nothing is written unless the model explicitly calls `apply`.
 
 ## Hand-editing lessons
 
