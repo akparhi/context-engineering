@@ -1,0 +1,15 @@
+{
+  "name": "context-engineering",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Claude Code configuration, shared skills, and a private plugin marketplace",
+  "engines": {
+    "bun": ">=1.2",
+    "node": ">=22"
+  },
+  "scripts": {
+    "setup": "node bin/setup.mjs",
+    "test": "cd plugins/hindsight && bun run test"
+  }
+}

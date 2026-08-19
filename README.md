@@ -16,28 +16,24 @@ claude-shared/      config every profile links to
   output-styles/    terse-ste
 plugins/            this repo is also a plugin marketplace
   hindsight/        turns corrections into contextual project rules
-bin/link-profile    symlinks a config directory at the above
+bin/setup.mjs       interactive installer
 ```
 
 ## Setup on a new machine
 
 ```bash
-bin/link-profile                    # default profile -> ~/.claude
-bin/link-profile darkforest         # named profile -> ~/.claude
-bin/link-profile default ~/.work    # explicit profile and destination
+bun run setup
 ```
 
-Links `settings.json` to the chosen profile, and `skills/`, `output-styles/`, `CLAUDE.md` to `claude-shared/`. Re-running is safe: an existing symlink is repointed, and a real file is moved to `<name>.bak.<timestamp>` rather than overwritten — on a machine that already has config, that file is the only copy.
-
-Then register the marketplace and install the plugin:
+It asks which profile (`default` unless you say otherwise), where to put the config (`~/.claude` unless you say otherwise), and which plugins to install. Both answers can be passed as arguments to skip the questions:
 
 ```bash
-claude plugin marketplace add /path/to/context-engineering
-(cd /path/to/context-engineering/plugins/hindsight && bun install --frozen-lockfile || npm ci)
-claude plugin install hindsight@akparhi
+bun run setup darkforest ~/.darkforest/claude
 ```
 
-The dependency install is required — the MCP server will not start without it, so `record`, `distill`, and `apply` will not exist even though the plugin is registered.
+Setup links `settings.json` to the chosen profile and `skills/`, `output-styles/`, `CLAUDE.md` to `claude-shared/`, then registers this repo as a plugin marketplace and installs whichever plugins you pick — including their dependencies, without which a plugin's MCP server will not start and its tools will not exist.
+
+Re-running is safe: an existing symlink is repointed, and a real file is moved to `<name>.bak.<timestamp>` rather than overwritten — on a machine that already has config, that file is the only copy.
 
 ## What's here
 
@@ -60,11 +56,15 @@ The dependency install is required — the MCP server will not start without it,
 
 ### claude-shared/CLAUDE.md — the agent
 
-Five sections: **just do it** (clear directive → execute; the confirm line is drawn at irreversible *and* unrecoverable, so git operations are free); **output brevity** (compress by deleting clauses that carried no decision — never negations, never invented abbreviations; suspended for security warnings and irreversible-action confirms); **orchestration** (main session coordinates, subagents do independent chunks — the reason is context hygiene, not parallelism; artifacts pass as file paths, never pasted); **exploration defaults** (`ast-grep` for TS/JS, `fd` over `find`, LSP for symbols); **coding standards** (a YAGNI ladder that stops at the first rung that holds, with a hard floor at validation, security, and anything explicitly asked for).
+- **just do it** (clear directive → execute; the confirm line is drawn at irreversible *and* unrecoverable, so git operations are free);
+- **output brevity** (compress by deleting clauses that carried no decision — never negations, never invented abbreviations; suspended for security warnings and irreversible-action confirms);
+- **orchestration** (main session coordinates, subagents do independent chunks — the reason is context hygiene, not parallelism; artifacts pass as file paths, never pasted);
+- **exploration defaults** (`ast-grep` for TS/JS, `fd` over `find`, LSP for symbols);
+- **coding standards** (a YAGNI ladder that stops at the first rung that holds, with a hard floor at validation, security, and anything explicitly asked for).
 
 ### claude-shared/skills/
 
-`ast-grep` and `ast-grep-outline` for syntax-aware search — a structural pattern can't match a string that merely looks like code. `frontend-design` for UI work.
+`ast-grep` and `ast-grep-outline` for syntax-aware search — a structural pattern can't match a string that merely looks like code.
 
 ### plugins/hindsight/
 
