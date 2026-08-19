@@ -71,6 +71,12 @@ test('routes pending candidates to distill without offering to skip', () => {
   assert.doesNotMatch(context, /or leave them queued/, 'the hook must not present skipping as an equal option')
 })
 
+test('treats a repeated request as a recordable trigger', () => {
+  const root = newProject()
+  const context = runHook(root).hookSpecificOutput.additionalContext
+  assert.match(context, /same thing a second or third time/i)
+})
+
 test('tells Claude to distill after recording rather than waiting to be asked', () => {
   const root = newProject()
   const context = runHook(root).hookSpecificOutput.additionalContext
@@ -78,12 +84,21 @@ test('tells Claude to distill after recording rather than waiting to be asked', 
   assert.match(context, /without being asked|do not wait to be asked/i)
 })
 
-test('names the three cases that need confirmation', () => {
+// The merge rules and confirm cases live in buildDistillPrompt, not the
+// injection — see prompt.test.mjs. The hook only has to route to the tool.
+test('routes to distill rather than restating its rules', () => {
   const root = newProject()
   const context = runHook(root).hookSpecificOutput.additionalContext
-  assert.match(context, /contradicts/i)
-  assert.match(context, /cross-cutting/i)
-  assert.match(context, /one line/i)
+  assert.match(context, /hindsight__distill/)
+  assert.doesNotMatch(context, /contradicts a lesson/i, 'confirm cases belong to the distill prompt')
+})
+
+test('keeps the pending note inside the hindsight tag', () => {
+  const root = newProject()
+  appendCandidate(root, { mistake: 'm', correction: 'c', rule: 'r', trigger: 't' })
+  const context = runHook(root).hookSpecificOutput.additionalContext
+  assert.match(context, /1 candidate from earlier is pending/)
+  assert.ok(context.trimEnd().endsWith('</hindsight>'), 'nothing may land outside the tag')
 })
 
 test('expires stale candidates at session start', () => {
@@ -97,10 +112,9 @@ test('expires stale candidates at session start', () => {
   assert.equal(readCandidates(root).length, 0, 'session start must have dropped it')
 })
 
-test('tells Claude to raise confirmations at the end of the turn', () => {
+test('states the 24-hour expiry so an unconfirmed candidate is not assumed permanent', () => {
   const root = newProject()
   const context = runHook(root).hookSpecificOutput.additionalContext
-  assert.match(context, /end of (your |the )?turn/i)
   assert.match(context, /24 hours/)
 })
 

@@ -32,7 +32,7 @@ async function guarded(fn) {
 
 server.tool(
   'record',
-  'Record a correction as a lesson candidate. Call this the moment the user corrects an approach you chose, rejects a tool call and explains why, an approach fails for a reason that would repeat, or you discover a project constraint that contradicts what you assumed. Candidates are distilled into .claude/rules/ when you call the distill tool.',
+  'Record a correction as a lesson candidate. Call this the moment the user corrects an approach you chose, rejects a tool call and explains why, an approach fails for a reason that would repeat, you discover a project constraint that contradicts what you assumed, or the user asks for the same thing a second or third time. This only queues the candidate; nothing reaches .claude/rules/ until you call distill and then apply.',
   {
     mistake: z.string().min(1).describe('What you actually did that was wrong'),
     correction: z.string().min(1).describe('What was correct instead'),

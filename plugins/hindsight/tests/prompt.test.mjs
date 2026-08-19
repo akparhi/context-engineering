@@ -75,3 +75,11 @@ test('names contradiction, cross-cutting, and shaky triggers as confirm-first', 
   assert.match(confirm, /new "crossCutting" lesson/)
   assert.match(confirm, /not confident/)
 })
+
+// This guidance used to live in the session-start injection; the prompt is now
+// its only home, so it has to be asserted here or it can vanish unnoticed.
+test('tells Claude to batch confirmations at turn end rather than interrupting', () => {
+  const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
+  assert.match(prompt, /end of your turn/i)
+  assert.match(prompt, /24 hours/)
+})
