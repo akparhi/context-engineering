@@ -8,7 +8,7 @@
     "ENABLE_LSP_TOOL": "1",
     "CLAUDE_CODE_EFFORT_LEVEL": "low",
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
-    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "270000"
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "250000"
   },
   "permissions": {
     "allow": [
@@ -32,7 +32,6 @@
       "Read(./next/**)",
       "PushNotification",
       "NotebookEdit",
-      "NotebookRead",
       "EnterPlanMode",
       "ExitPlanMode",
       "EnterWorktree",
@@ -114,7 +113,8 @@
     "superpowers@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "chrome-devtools-mcp@claude-plugins-official": false,
-    "context-mode@context-mode": true
+    "context-mode@context-mode": true,
+    "hindsight@akparhi": true
   },
   "extraKnownMarketplaces": {
     "context-mode": {
