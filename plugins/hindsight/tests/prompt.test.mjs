@@ -1,0 +1,77 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { buildDistillPrompt } from '../src/prompt.mjs'
+
+const candidates = [
+  {
+    id: 'abc12345',
+    mistake: 'Used moment.js',
+    correction: 'Use date-fns',
+    rule: 'Format dates with date-fns',
+    trigger: 'adding date formatting',
+    files_touched: ['src/api/orders.ts'],
+  },
+]
+
+test('includes the candidates and their fields', () => {
+  const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
+  assert.match(prompt, /moment\.js/)
+  assert.match(prompt, /date-fns/)
+  assert.match(prompt, /src\/api\/orders\.ts/)
+})
+
+test('states the caps numerically', () => {
+  const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
+  assert.match(prompt, /7/)
+  assert.match(prompt, /12/)
+  assert.match(prompt, /5/)
+})
+
+test('demands merging over appending and requires JSON output', () => {
+  const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
+  assert.match(prompt, /merge/i)
+  assert.match(prompt, /JSON/)
+  assert.match(prompt, /quarantine/i)
+})
+
+test('includes existing lessons so they can be merged into', () => {
+  const prompt = buildDistillPrompt({
+    candidates,
+    current: {
+      crossCutting: [{ text: 'Existing lesson', date: '2026-08-01', trigger: 't', count: 1 }],
+      areas: {},
+    },
+  })
+  assert.match(prompt, /Existing lesson/)
+})
+
+test('instructs reader to call hindsight__apply tool', () => {
+  const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
+  assert.match(prompt, /hindsight__apply/)
+})
+
+test('directs doubt toward areas rather than cross-cutting', () => {
+  const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
+  assert.match(prompt, /Doubt defaults to "areas"/)
+  assert.match(prompt, /scarcest space/)
+})
+
+test('instructs on contradicting candidates and merge-when-in-doubt', () => {
+  const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
+  assert.match(prompt, /When in doubt, merge/)
+  assert.match(prompt, /Never keep both sides of a contradiction/)
+})
+
+test('separates apply-directly cases from confirm-first cases', () => {
+  const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
+  assert.match(prompt, /Apply directly, without asking/)
+  assert.match(prompt, /Ask the user first/)
+})
+
+test('names contradiction, cross-cutting, and shaky triggers as confirm-first', () => {
+  const prompt = buildDistillPrompt({ candidates, current: { crossCutting: [], areas: {} } })
+  const confirm = prompt.slice(prompt.indexOf('Ask the user first'))
+  assert.match(confirm, /contradicts an existing lesson/)
+  assert.match(confirm, /new "crossCutting" lesson/)
+  assert.match(confirm, /not confident/)
+})

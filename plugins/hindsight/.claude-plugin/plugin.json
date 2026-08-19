@@ -1,0 +1,15 @@
+{
+  "name": "hindsight",
+  "version": "0.1.0",
+  "description": "Records corrections during a session and distills them into a small, contextual lesson set in .claude/rules/",
+  "author": {
+    "name": "Anand Parhi"
+  },
+  "keywords": ["mcp", "memory", "lessons", "corrections", "rules"],
+  "mcpServers": {
+    "hindsight": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/run",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/src/server.mjs"]
+    }
+  }
+}

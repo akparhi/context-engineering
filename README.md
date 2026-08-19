@@ -106,3 +106,21 @@ The 1%-skill rule is deliberately absolutist. Under time pressure a "probably do
 - "checkpoint commits" ⟷ `fileCheckpointingEnabled: true` as the in-session layer beneath them; git stays the durable record
 - "context is precious" ⟷ `deny` on `dist/`/`next/`, compaction at 300k, unused MCP off
 - Prompts bypassed ⟷ audio hooks as the only human-attention channel
+
+---
+
+## Marketplace
+
+This repo doubles as a private Claude Code plugin marketplace. On a new machine, register the marketplace and install the hindsight plugin:
+
+```bash
+claude plugin marketplace add /path/to/context-engineering
+(cd /path/to/context-engineering/plugins/hindsight && bun install --frozen-lockfile || npm ci)
+claude plugin install hindsight@akparhi
+```
+
+The MCP server will not start until its Node.js dependencies are installed; the second command above installs them. Without this step the `record`, `distill`, and `apply` tools will not exist, even though the plugin is registered.
+
+Profile settings are still chosen per machine from `work/`, `darkforest/`, or `shared/`.
+
+See [`plugins/hindsight/README.md`](plugins/hindsight/README.md) for what the hindsight plugin does and how to use it.

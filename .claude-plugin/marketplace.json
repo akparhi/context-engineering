@@ -1,0 +1,23 @@
+{
+  "name": "akparhi",
+  "owner": {
+    "name": "Anand Parhi"
+  },
+  "metadata": {
+    "description": "Personal Claude Code plugins and configs",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "hindsight",
+      "source": "./plugins/hindsight",
+      "description": "Records corrections during a session and distills them into a small, contextual lesson set in .claude/rules/",
+      "version": "0.1.0",
+      "author": {
+        "name": "Anand Parhi"
+      },
+      "category": "development",
+      "keywords": ["mcp", "memory", "lessons", "corrections", "rules"]
+    }
+  ]
+}
