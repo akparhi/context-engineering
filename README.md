@@ -119,3 +119,5 @@ claude plugin install hindsight@akparhi
 ```
 
 Profile settings are still chosen per machine from `work/`, `darkforest/`, or `shared/`.
+
+See [`plugins/hindsight/README.md`](plugins/hindsight/README.md) for what the hindsight plugin does and how to use it.
