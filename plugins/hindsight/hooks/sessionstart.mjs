@@ -24,7 +24,10 @@ Ask the user before applying only when: the candidate contradicts a lesson
 already in .claude/rules/, it would add a new cross-cutting lesson (those load in
 every future session), or you can state a trigger but are not confident it is the
 right one. Everything else — a new area lesson, a merge, evicting a stale entry
-to stay under a cap — you apply directly and mention in that one line.
+to stay under a cap — you apply directly and mention in that one line. Raise any
+confirmation at the end of your turn, batched with your summary, rather than
+interrupting the work to ask. A candidate nobody confirms is dropped after
+24 hours; if the mistake recurs it will be recorded again.
 
 Lessons already in .claude/rules/ are a memory aid, not a standing order. The
 user's current message outranks any lesson that contradicts it — when they
@@ -36,11 +39,13 @@ conflict, follow the user and record the correction.
 async function main() {
   const { findProjectRoot } = await import('../src/paths.mjs')
   const { readCandidates } = await import('../src/candidates.mjs')
+  const { expireCandidates } = await import('../src/expiry.mjs')
 
   const root = findProjectRoot(process.cwd())
   if (!root) return
 
-  const pending = readCandidates(root).length
+  const { kept } = expireCandidates(root, {})
+  const pending = kept.length
   const note = pending
     ? `\n\n${pending} candidate(s) from earlier are pending. Fold them in with hindsight__distill and hindsight__apply at the next natural pause.`
     : ''

@@ -45,6 +45,8 @@ After recording a correction, Claude folds the candidates in without being asked
 
 Claude asks first only in three cases: when a candidate contradicts an existing lesson, when it would add a new cross-cutting lesson, or when Claude can state a trigger but is not confident it is the right one. Everything else is applied and reported in one line. Nothing is written unless the model explicitly calls `apply`.
 
+When one of those three cases arises, Claude raises the confirmation at the end of the turn — batched with the turn summary — rather than interrupting work mid-task. A candidate that is neither applied nor confirmed within 24 hours is dropped from the queue at the next session start; the drop is keyed on each candidate's `recorded_at` timestamp. Dropping is not a loss: if the mistake recurs it gets recorded again, and recurrence is the signal that it was worth keeping.
+
 ## Hand-editing lessons
 
 You can edit `.claude/rules/hindsight.md` and `.claude/rules/hindsight-<area>.md` directly. Edits are preserved between distillations, but any bullet may still be merged, reworded, or evicted the next time Claude distills. To permanently drop a lesson, delete its bullet from the file. To drop a pending candidate before it becomes a lesson, use the `remove` tool: ask Claude to remove the candidate by its id. The id is shown in the reply from `record` and also in the output of `list`.

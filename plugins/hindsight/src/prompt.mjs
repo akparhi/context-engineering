@@ -25,7 +25,7 @@ Apply directly, without asking: a new lesson under an area glob, a candidate tha
 merges into an existing lesson, and evicting the oldest entry to stay under a cap.
 These are the common cases; do not turn them into questions.
 
-Ask the user first, in one short question, only when: the candidate contradicts an existing lesson, it would add a new "crossCutting" lesson, or you can state a trigger but are not confident it is the right one. Asking often is worse than occasionally getting one of these cases wrong.
+Ask the user first, in one short question, only when: the candidate contradicts an existing lesson, it would add a new "crossCutting" lesson, or you can state a trigger but are not confident it is the right one. Asking often is worse than occasionally getting one of these cases wrong. Raise these at the end of your turn alongside your summary rather than interrupting the work, and note that an unconfirmed candidate is dropped after 24 hours.
 
 Today's date: ${new Date().toISOString().slice(0, 10)}
 

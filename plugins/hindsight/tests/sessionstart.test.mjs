@@ -1,11 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, copyFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, copyFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { appendCandidate } from '../src/candidates.mjs'
+import { appendCandidate, readCandidates } from '../src/candidates.mjs'
+import { hindsightPaths } from '../src/paths.mjs'
 
 const hook = fileURLToPath(new URL('../hooks/sessionstart.mjs', import.meta.url))
 
@@ -83,6 +84,24 @@ test('names the three cases that need confirmation', () => {
   assert.match(context, /contradicts/i)
   assert.match(context, /cross-cutting/i)
   assert.match(context, /one line/i)
+})
+
+test('expires stale candidates at session start', () => {
+  const root = newProject()
+  const paths = hindsightPaths(root)
+  const old = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+  mkdirSync(paths.dir, { recursive: true })
+  writeFileSync(paths.candidates, JSON.stringify({ id: 'aaaaaaaa', recorded_at: old, mistake: 'm', correction: 'c', rule: 'r', trigger: 't' }) + '\n')
+  const context = runHook(root).hookSpecificOutput.additionalContext
+  assert.doesNotMatch(context, /1 candidate\(s\) from earlier are pending/, 'an expired candidate must not be reported as pending')
+  assert.equal(readCandidates(root).length, 0, 'session start must have dropped it')
+})
+
+test('tells Claude to raise confirmations at the end of the turn', () => {
+  const root = newProject()
+  const context = runHook(root).hookSpecificOutput.additionalContext
+  assert.match(context, /end of (your |the )?turn/i)
+  assert.match(context, /24 hours/)
 })
 
 test('stays silent when its own modules cannot be loaded', () => {
