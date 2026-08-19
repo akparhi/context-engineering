@@ -136,5 +136,7 @@ export function applyLessonSet(root, proposed) {
     logFailure(root, `failed to persist lesson set: ${error.message}`)
     return { status: 'failed', reason: error.message }
   }
-  return { status: 'ok' }
+  // Claude Code loads rule files at session start and never re-reads them, so the
+  // set travels back in the tool result to bind for the rest of this session.
+  return { status: 'ok', applied: capped }
 }

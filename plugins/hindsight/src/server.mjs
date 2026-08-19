@@ -32,7 +32,7 @@ async function guarded(fn) {
 
 server.tool(
   'record',
-  'Record a correction as a lesson candidate. Call this the moment the user corrects an approach you chose, rejects a tool call and explains why, an approach fails for a reason that would repeat, you discover a project constraint that contradicts what you assumed, or the user asks for the same thing a second or third time. This only queues the candidate; nothing reaches .claude/rules/ until you call distill and then apply.',
+  'Record a correction as a lesson candidate. Call this the moment the user corrects an approach you chose, rejects a tool call and explains why, an approach fails for a reason that would repeat, you discover a project constraint that contradicts what you assumed, or the user asks for the same thing a second or third time. IMPORTANT: This only queues the candidate; nothing reaches .claude/rules/ until you call distill and then apply.',
   {
     mistake: z.string().min(1).describe('What you actually did that was wrong'),
     correction: z.string().min(1).describe('What was correct instead'),
@@ -102,6 +102,21 @@ server.tool(
   })
 )
 
+// Area lessons carry their globs: without them an area-scoped lesson reads as
+// universal, which is the opposite of what scoping it was for.
+function renderAppliedSet({ crossCutting = [], areas = {} } = {}) {
+  const sections = []
+  if (crossCutting.length) {
+    sections.push(['Always in effect:', ...crossCutting.map((l) => `- ${l.text}`)].join('\n'))
+  }
+  for (const [area, body] of Object.entries(areas)) {
+    if (!body?.lessons?.length) continue
+    const globs = body.paths?.length ? body.paths.join(', ') : area
+    sections.push([`When working on ${globs}:`, ...body.lessons.map((l) => `- ${l.text}`)].join('\n'))
+  }
+  return sections.length ? sections.join('\n\n') : 'The lesson set is now empty.'
+}
+
 const lessonShape = z.object({
   text: z.string(),
   date: z.string().optional(),
@@ -134,10 +149,19 @@ server.tool(
   async ({ crossCutting, areas, quarantine = [] }) => guarded(async () => {
     const root = requireRoot()
     const result = applyLessonSet(root, { crossCutting, areas, quarantine })
+    if (result.status !== 'ok') {
+      return text(`Rejected, nothing written: ${result.reason}. Fix this and call apply again.`)
+    }
     return text(
-      result.status === 'ok'
-        ? 'Applied. Lessons written to .claude/rules/ and the candidate queue cleared.'
-        : `Rejected, nothing written: ${result.reason}. Fix this and call apply again.`
+      [
+        'Applied. Lessons written to .claude/rules/ and the candidate queue cleared.',
+        '',
+        'These are in effect from now on. Claude Code loaded .claude/rules/ at session',
+        'start and does not re-read it, so this list — not the files — is what binds for',
+        'the rest of this session. Follow it as you would a rule loaded at startup.',
+        '',
+        renderAppliedSet(result.applied),
+      ].join('\n')
     )
   })
 )

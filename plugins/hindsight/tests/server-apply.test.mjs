@@ -94,3 +94,31 @@ test('list shows pending candidate ids so they can be removed', async () => {
   assert.match(body, new RegExp(id))
   assert.match(body, /a memorable rule/)
 })
+
+// Claude Code loads .claude/rules/ once at session start, so a freshly applied
+// lesson is inert until the next session unless the tool result carries it back.
+test('apply echoes the applied lessons so they bind for the rest of the session', async () => {
+  const root = newProject()
+  appendCandidate(root, { mistake: 'm', correction: 'c', rule: 'r', trigger: 't' })
+  const reply = await callTool(root, 'apply', {
+    crossCutting: [{ text: 'Prefer fd over find', date: '2026-08-19', trigger: 'searching for files' }],
+    areas: {
+      api: {
+        paths: ['src/api/**'],
+        lessons: [{ text: 'Validate request bodies with Zod', date: '2026-08-19', trigger: 'editing a route' }],
+      },
+    },
+  })
+  const body = reply.result.content[0].text
+  assert.match(body, /Prefer fd over find/, 'cross-cutting lesson text must come back')
+  assert.match(body, /Validate request bodies with Zod/, 'area lesson text must come back')
+  assert.match(body, /src\/api\/\*\*/, 'an area lesson without its glob reads as universal')
+  assert.match(body, /in effect/i, 'the echo must say the lessons are binding, not just list them')
+})
+
+test('apply says so plainly when the applied set is empty', async () => {
+  const root = newProject()
+  appendCandidate(root, { mistake: 'm', correction: 'c', rule: 'r', trigger: 't' })
+  const reply = await callTool(root, 'apply', { crossCutting: [], areas: {} })
+  assert.match(reply.result.content[0].text, /empty/i)
+})
