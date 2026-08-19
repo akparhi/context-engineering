@@ -28,7 +28,7 @@ test('emits the capture contract as additionalContext', () => {
   assert.equal(parsed.hookSpecificOutput.hookEventName, 'SessionStart')
   const ctx = parsed.hookSpecificOutput.additionalContext
   assert.match(ctx, /hindsight__record/)
-  assert.match(ctx, /<lesson_capture>/)
+  assert.match(ctx, /<hindsight>/)
   assert.match(ctx, /Do NOT record/)
 })
 

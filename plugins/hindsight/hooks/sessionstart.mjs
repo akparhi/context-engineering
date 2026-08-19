@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const CONTRACT = `<lesson_capture>
+const CONTRACT = `<hindsight>
 Call hindsight__record the moment any of these occur — before continuing the work:
 - The user corrects an approach, tool, pattern, or value you chose
 - The user rejects a tool call or plan, then explains why
@@ -32,7 +32,7 @@ interrupting the work to ask. A candidate nobody confirms is dropped after
 Lessons already in .claude/rules/ are a memory aid, not a standing order. The
 user's current message outranks any lesson that contradicts it — when they
 conflict, follow the user and record the correction.
-</lesson_capture>`
+</hindsight>`
 
 // Imports are dynamic and inside the try: a top-level import failure would crash
 // the hook before its own error handling could swallow it.

@@ -1,5 +1,5 @@
 ---
-name: distill-hindsight-lessons
+name: hindsight-distill
 description: Use when hindsight candidates are pending and you are folding them into the project lesson set, or when the user asks to distill lessons or mentions hindsight
 ---
 
