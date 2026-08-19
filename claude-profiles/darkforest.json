@@ -1,6 +1,6 @@
 {
   "cleanupPeriodDays": 14,
-  "outputStyle": "terse-ste",
+  "outputStyle": "terse",
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
@@ -133,7 +133,7 @@
     }
   },
   "spinnerTipsEnabled": false,
-  "alwaysThinkingEnabled": false,
+  "alwaysThinkingEnabled": true,
   "effortLevel": "low",
   "promptSuggestionEnabled": false,
   "autoUpdatesChannel": "latest",

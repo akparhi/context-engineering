@@ -129,7 +129,7 @@
       }
     }
   },
-  "outputStyle": "terse-ste",
+  "outputStyle": "unslop",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
   "effortLevel": "low",

@@ -1,5 +1,5 @@
 ---
-name: terse-ste
+name: terse
 description: Ultra-terse replies in Simplified Technical English. Few words, all plain, none mangled.
 keep-coding-instructions: true
 ---
