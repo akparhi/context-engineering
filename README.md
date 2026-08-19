@@ -1,6 +1,32 @@
-# work/ — Claude Code config for work machine
+# context-engineering — Claude Code config
 
 Two files, two jobs: `settings.json` configures the *harness* (what the tool is allowed to do, which models, which plugins). `CLAUDE.md` configures the *agent* (how it behaves once running).
+
+## Layout
+
+```
+claude-profiles/    one settings.json per machine
+  default.json      the default profile
+  darkforest.json
+shared/             config every profile links to
+  CLAUDE.md
+  skills/
+  output-styles/
+plugins/            this repo doubles as a plugin marketplace
+bin/link-profile    symlinks a config directory at the above
+```
+
+## Setup on a new machine
+
+```bash
+bin/link-profile                    # default profile -> ~/.claude
+bin/link-profile darkforest         # named profile -> ~/.claude
+bin/link-profile default ~/.work    # explicit profile and destination
+```
+
+The script links `settings.json` to the chosen profile and `skills/`, `output-styles/`, and `CLAUDE.md` to `shared/`. Re-running is safe: an existing symlink is repointed, and a real file is moved to `<name>.bak.<timestamp>` rather than overwritten.
+
+The sections below describe the `default` profile; `darkforest.json` differs only in machine-specific paths.
 
 ---
 
@@ -121,6 +147,6 @@ claude plugin install hindsight@akparhi
 
 The MCP server will not start until its Node.js dependencies are installed; the second command above installs them. Without this step the `record`, `distill`, and `apply` tools will not exist, even though the plugin is registered.
 
-Profile settings are still chosen per machine from `work/`, `darkforest/`, or `shared/`.
+Profile settings are chosen per machine with `bin/link-profile` — see Setup above.
 
 See [`plugins/hindsight/README.md`](plugins/hindsight/README.md) for what the hindsight plugin does and how to use it.
