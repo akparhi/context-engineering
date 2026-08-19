@@ -142,6 +142,38 @@ test('leaves no temp files behind after a failed write', () => {
   assert.deepEqual(leftover, [])
 })
 
+test('merges area names that slugify to the same file instead of losing one', () => {
+  const root = newProject()
+  const L = (t) => ({ text: t, date: '2026-08-19', trigger: 't', count: 1 })
+  const result = applyLessonSet(root, {
+    crossCutting: [],
+    areas: { api: { paths: ['a/**'], lessons: [L('lesson one')] }, API: { paths: ['b/**'], lessons: [L('lesson two')] } },
+    quarantine: [],
+  })
+  assert.equal(result.status, 'ok', result.reason)
+  const body = readFileSync(hindsightPaths(root).areaFile('api'), 'utf8')
+  assert.match(body, /lesson one/)
+  assert.match(body, /lesson two/, 'a colliding area name must not silently drop its lessons')
+  assert.match(body, /a\/\*\*/)
+  assert.match(body, /b\/\*\*/)
+})
+
+test('a colliding proposal never reports failure after writing', () => {
+  const root = newProject()
+  const L = (t) => ({ text: t, date: '2026-08-19', trigger: 't', count: 1 })
+  applyLessonSet(root, { crossCutting: [L('ORIGINAL')], areas: {}, quarantine: [] })
+  const result = applyLessonSet(root, {
+    crossCutting: [L('REPLACEMENT')],
+    areas: { api: { paths: ['a/**'], lessons: [L('one')] }, API: { paths: ['b/**'], lessons: [L('two')] } },
+    quarantine: [],
+  })
+  const cross = readFileSync(hindsightPaths(root).crossCutting, 'utf8')
+  // Either it fully succeeded, or it wrote nothing. A 'failed' status with the
+  // new content on disk is the defect.
+  if (result.status === 'failed') assert.match(cross, /ORIGINAL/, 'reported failure after committing a write')
+  else assert.match(cross, /REPLACEMENT/)
+})
+
 test('writeLessonSet deletes area files that are no longer in the set', () => {
   const root = newProject()
   writeLessonSet(root, { crossCutting: [], areas: { api: { paths: ['a/**'], lessons: [{ text: 'A', date: '2026-08-18', trigger: 't', count: 1 }] } } })

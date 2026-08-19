@@ -1,5 +1,7 @@
 # hindsight
 
+> **Setup:** Before using the plugin, install its Node.js dependencies inside `plugins/hindsight/` with `bun install --frozen-lockfile` or `npm ci`. The MCP server will not start until dependencies are present; without this step `record`, `distill`, and `apply` will not exist even after the plugin is registered.
+
 Hindsight turns in-session corrections into persistent Claude Code rules. When you correct Claude mid-session, it calls `record` to queue the correction as a candidate. Later — in the same session or a later one — Claude calls `distill` to compose a refined lesson set and `apply` to write it to `.claude/rules/`. Claude Code then loads those rule files natively on its own, with no extra wiring required.
 
 ## How it works
@@ -45,8 +47,8 @@ Nothing is written automatically. If there are no pending candidates, distill re
 
 ## Hand-editing lessons
 
-You can edit `.claude/rules/hindsight.md` and `.claude/rules/hindsight-<area>.md` directly. Edits are preserved between distillations, but any bullet may still be merged, reworded, or evicted the next time Claude distills. To permanently drop a lesson, delete its bullet from the file. To drop a pending candidate before it becomes a lesson, use the `remove` tool: ask Claude to remove the candidate by index (use `list` to see pending candidates with their indices).
+You can edit `.claude/rules/hindsight.md` and `.claude/rules/hindsight-<area>.md` directly. Edits are preserved between distillations, but any bullet may still be merged, reworded, or evicted the next time Claude distills. To permanently drop a lesson, delete its bullet from the file. To drop a pending candidate before it becomes a lesson, use the `remove` tool: ask Claude to remove the candidate by its id. The id is shown in the reply from `record` and also in the output of `list`.
 
 ## Quarantine
 
-A candidate is quarantined when it lacks a concrete trigger — the `trigger` field is vague or missing, which makes the lesson too general to be useful. Quarantined candidates are moved to `quarantine.jsonl` and need a second occurrence (a new candidate with a matching trigger) before they are promoted to a lesson.
+A candidate is quarantined when it lacks a concrete trigger — the `trigger` field is vague or missing, which makes the lesson too general to be useful. Quarantined candidates are moved to `quarantine.jsonl` and set aside. The file records each quarantined candidate along with a count of how many times it has been quarantined. Re-promotion to a lesson is not automatic: `quarantine.jsonl` is a record for human review. To turn a quarantined candidate into a lesson, either write it by hand into the appropriate file in `.claude/rules/`, or record a new candidate with a sharper, more concrete trigger phrase so it passes the quarantine check on the next distillation.

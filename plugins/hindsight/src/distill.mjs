@@ -37,10 +37,25 @@ export function writeLessonSet(root, set) {
 
   const writes = [[paths.crossCutting, renderLessonFile({ paths: [], lessons: set.crossCutting })]]
   const keep = new Set([basename(paths.crossCutting)])
+  // Distinct area names can slugify to one filename; merge them so two writes
+  // never race for the same path and silently drop one.
+  const byFile = new Map()
   for (const [area, body] of Object.entries(set.areas)) {
     const file = paths.areaFile(area)
+    const prior = byFile.get(file)
+    byFile.set(
+      file,
+      prior
+        ? {
+            paths: [...new Set([...prior.paths, ...(body.paths ?? [])])],
+            lessons: [...prior.lessons, ...(body.lessons ?? [])],
+          }
+        : { paths: body.paths ?? [], lessons: body.lessons ?? [] }
+    )
+  }
+  for (const [file, body] of byFile) {
     keep.add(basename(file))
-    writes.push([file, renderLessonFile({ paths: body.paths, lessons: body.lessons })])
+    writes.push([file, renderLessonFile(body)])
   }
 
   // Stage every file before moving any into place: a failure mid-staging leaves

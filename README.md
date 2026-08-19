@@ -115,8 +115,11 @@ This repo doubles as a private Claude Code plugin marketplace. On a new machine,
 
 ```bash
 claude plugin marketplace add /path/to/context-engineering
+(cd /path/to/context-engineering/plugins/hindsight && bun install --frozen-lockfile || npm ci)
 claude plugin install hindsight@akparhi
 ```
+
+The MCP server will not start until its Node.js dependencies are installed; the second command above installs them. Without this step the `record`, `distill`, and `apply` tools will not exist, even though the plugin is registered.
 
 Profile settings are still chosen per machine from `work/`, `darkforest/`, or `shared/`.
 

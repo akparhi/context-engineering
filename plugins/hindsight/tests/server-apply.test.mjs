@@ -85,3 +85,12 @@ test('apply reports the rejection reason so the model can retry', async () => {
   assert.match(body, /reject|failed/i)
   assert.ok(body.length > 20, 'rejection must explain why, not just say no')
 })
+
+test('list shows pending candidate ids so they can be removed', async () => {
+  const root = newProject()
+  const { id } = appendCandidate(root, { mistake: 'm', correction: 'c', rule: 'a memorable rule', trigger: 't' })
+  const reply = await callTool(root, 'list', {})
+  const body = reply.result.content[0].text
+  assert.match(body, new RegExp(id))
+  assert.match(body, /a memorable rule/)
+})

@@ -1,5 +1,14 @@
 export const CAPS = { crossCutting: 7, perArea: 12, areaFiles: 5 }
 
+// Must stay in sync with slugifyArea in paths.mjs — tests enforce this.
+export function slugifyArea(area) {
+  const slug = String(area)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return slug || 'misc'
+}
+
 function lessonErrors(lesson, where) {
   if (lesson === null || lesson === undefined || typeof lesson !== 'object' || Array.isArray(lesson)) {
     return [`${where}: lesson must be an object`]
@@ -62,12 +71,31 @@ function newestFirst(lessons) {
 export function enforceCaps(set) {
   const rawCC = set.crossCutting ?? []
   const crossCutting = newestFirst(rawCC.filter((l) => l !== null && l !== undefined)).slice(0, CAPS.crossCutting)
-  const entries = Object.entries(set.areas ?? {})
-    .filter(([, area]) => area !== null && area !== undefined && typeof area === 'object' && !Array.isArray(area))
-    .map(([name, area]) => [
-      name,
-      { ...area, lessons: newestFirst((area.lessons ?? []).filter((l) => l !== null && l !== undefined)).slice(0, CAPS.perArea) },
-    ])
+
+  // Collapse areas that share the same slug before applying per-area and file caps,
+  // so two names like 'api' and 'API' are merged rather than both truncated independently.
+  const bySlug = new Map()
+  for (const [name, area] of Object.entries(set.areas ?? {})) {
+    if (area === null || area === undefined || typeof area !== 'object' || Array.isArray(area)) continue
+    const slug = slugifyArea(name)
+    const prior = bySlug.get(slug)
+    if (prior) {
+      bySlug.set(slug, {
+        paths: [...new Set([...prior.paths, ...(area.paths ?? [])])],
+        lessons: [...prior.lessons, ...(area.lessons ?? []).filter((l) => l !== null && l !== undefined)],
+      })
+    } else {
+      bySlug.set(slug, {
+        paths: area.paths ?? [],
+        lessons: (area.lessons ?? []).filter((l) => l !== null && l !== undefined),
+      })
+    }
+  }
+
+  const entries = [...bySlug.entries()].map(([slug, area]) => [
+    slug,
+    { ...area, lessons: newestFirst(area.lessons).slice(0, CAPS.perArea) },
+  ])
   const areaAge = ([, area]) => newestFirst(area.lessons)[0]?.date ?? '0000-00-00'
   const areas = Object.fromEntries(
     entries.sort((a, b) => (areaAge(a) < areaAge(b) ? 1 : -1)).slice(0, CAPS.areaFiles)

@@ -81,10 +81,11 @@ server.tool(
     const bodies = files
       .filter((file) => existsSync(file))
       .map((file) => `# ${file}\n${readFileSync(file, 'utf8')}`)
-    const pending = readCandidates(root).length
-    return text(
-      [bodies.length ? bodies.join('\n\n') : 'No lesson files yet.', `\nPending candidates: ${pending}`].join('\n')
-    )
+    const pending = readCandidates(root)
+    const queue = pending.length
+      ? `\nPending candidates (${pending.length}):\n${pending.map((c) => `- ${c.id}: ${c.rule}`).join('\n')}`
+      : '\nPending candidates: 0'
+    return text([bodies.length ? bodies.join('\n\n') : 'No lesson files yet.', queue].join('\n'))
   })
 )
 

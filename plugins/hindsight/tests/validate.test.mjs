@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { CAPS, validateLessonSet, enforceCaps } from '../src/validate.mjs'
+import { CAPS, validateLessonSet, enforceCaps, slugifyArea as validateSlug } from '../src/validate.mjs'
+import { slugifyArea as pathsSlug } from '../src/paths.mjs'
 
 const lesson = (text, date = '2026-08-18') => ({ text, date, trigger: 't', count: 1 })
 const many = (n, prefix) => Array.from({ length: n }, (_, i) => lesson(`${prefix} ${i}`, `2026-08-${String(i + 1).padStart(2, '0')}`))
@@ -105,4 +106,10 @@ test('paths entries must be non-empty strings', () => {
 test('enforceCaps never throws on malformed areas', () => {
   assert.doesNotThrow(() => enforceCaps({ crossCutting: [], areas: { api: null } }))
   assert.doesNotThrow(() => enforceCaps({ crossCutting: [null], areas: {} }))
+})
+
+test('slugifyArea in validate.mjs matches slugifyArea in paths.mjs', () => {
+  for (const input of ['api', 'API', 'src/api', '../escape', '%%%', '']) {
+    assert.equal(validateSlug(input), pathsSlug(input), `slug mismatch for input ${JSON.stringify(input)}`)
+  }
 })
