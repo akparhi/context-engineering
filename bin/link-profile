@@ -57,6 +57,6 @@ link() {
 
 echo "profile '$profile' -> $dest"
 link "$settings" "$dest/settings.json"
-link "$repo/shared/skills" "$dest/skills"
-link "$repo/shared/output-styles" "$dest/output-styles"
-link "$repo/shared/CLAUDE.md" "$dest/CLAUDE.md"
+link "$repo/claude-shared/skills" "$dest/skills"
+link "$repo/claude-shared/output-styles" "$dest/output-styles"
+link "$repo/claude-shared/CLAUDE.md" "$dest/CLAUDE.md"
