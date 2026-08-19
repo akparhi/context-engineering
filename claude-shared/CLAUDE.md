@@ -20,9 +20,11 @@
 
 # Code Exploration
 
-- Searching TS/TSX/JS code → **`ast-grep`** by default (bin `ast-grep`): `ast-grep run -p '<pattern>' src`, `--json=compact`, `--debug-query`. Non-trivial pattern → `ast-grep` skill; mapping a file/dir's shape before reading it → `ast-grep-outline` skill. Grep only when the target isn't syntax — strings/comments, non-JS/TS files, log output.
-- Finding files → **`fd`**, not `find`.
-- Symbol types, definitions, usages → **`LSP`** tool, never grep-guessing.
+- TS/TSX/JS code search → `ast-grep` by default (bin `ast-grep`): `ast-grep run -p '<pattern>' src`, not grep.
+  - Non-trivial pattern → `ast-grep` skill; mapping a file/dir's shape → `ast-grep-outline` skill.
+  - Grep only for non-syntax targets: strings, comments, non-JS files, logs.
+- Finding files → `fd`, not `find`.
+- Symbol types, definitions, usages → `LSP` tool, never grep-guessing.
 </EXTREMELY-IMPORTANT>
 
 <GLOBAL-CODING-STANDARDS>
