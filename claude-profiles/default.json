@@ -99,12 +99,7 @@
           {
             "type": "command",
             "command": "\"/Users/akparhi/.work/hooks/context-mode-cache-heal.mjs\""
-          }
-        ]
-      },
-      {
-        "matcher": "startup|resume|clear|compact",
-        "hooks": [
+          },
           {
             "type": "command",
             "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/output-style-reminder.md\" 2>/dev/null"
@@ -121,8 +116,7 @@
     "context7@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "context-mode@context-mode": true,
-    "hindsight@akparhi": true
+    "context-mode@context-mode": true
   },
   "extraKnownMarketplaces": {
     "context-mode": {
