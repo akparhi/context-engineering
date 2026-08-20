@@ -1,0 +1,1 @@
+Crisp output defaults active: caveman grammar, yet concise; cut narration, keep substance.

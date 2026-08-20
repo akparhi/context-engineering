@@ -104,6 +104,15 @@
             "command": "\"/Users/akparhi/.darkforest/claude/hooks/context-mode-cache-heal.mjs\""
           }
         ]
+      },
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/output-style-reminder.md\" 2>/dev/null"
+          }
+        ]
       }
     ]
   },
