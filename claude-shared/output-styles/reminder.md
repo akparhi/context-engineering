@@ -1,0 +1,1 @@
+Terse output defaults active: caveman grammar, concise; cut narration, keep substance.

@@ -1,6 +1,6 @@
 {
   "cleanupPeriodDays": 14,
-  "outputStyle": "crisp",
+  "outputStyle": "terse",
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
@@ -105,7 +105,7 @@
           },
           {
             "type": "command",
-            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/output-style-reminder.md\" 2>/dev/null"
+            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null"
           }
         ]
       }

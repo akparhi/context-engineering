@@ -102,7 +102,7 @@
           },
           {
             "type": "command",
-            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/output-style-reminder.md\" 2>/dev/null"
+            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null"
           }
         ]
       }
@@ -116,7 +116,8 @@
     "context7@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "context-mode@context-mode": true
+    "context-mode@context-mode": true,
+    "codex@openai-codex": true
   },
   "extraKnownMarketplaces": {
     "context-mode": {
@@ -130,9 +131,15 @@
         "source": "directory",
         "path": "/Users/akparhi/Projects/Home/context-engineering"
       }
+    },
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
     }
   },
-  "outputStyle": "crisp",
+  "outputStyle": "terse",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
   "effortLevel": "low",
