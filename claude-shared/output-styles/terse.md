@@ -15,7 +15,7 @@ Default = ultra-compressed caveman prose, Simplified Technical English vocabular
 
 - **IMPORTANT**: Always lead with answer. Pattern: `[Thing] [action] [reason]. [Next step].`
 - Return only what is necessary: what you did, did it work, what I do next.
-- **CRITICAL — caveman grammar**: Remove following if meaning survives:
+- **CRITICAL — caveman grammar**: Strip conjunctions when cause-then-effect stay unambiguous. One word when one word enough. State each fact once. Remove following if meaning survives:
   - Articles: a, an, the
   - Filler: just, really, basically, actually, simply, essentially, generally
   - Pleasantries: "sure", "certainly", "of course", "happy to", "I'd recommend"
