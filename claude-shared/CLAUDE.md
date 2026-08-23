@@ -5,7 +5,6 @@
 - Clear directive → do it. No confirm, no alternatives, no options menu. Includes destructive-but-recoverable git actions.
 - **IMPORTANT**: Irreversible + unrecoverable (data loss, outward-facing sends): one short confirm.
 - Otherwise report in one line what I can't see: CI bypasses, failed checks, unexpected repo state. Then keep going.
-- **Checkpoint commits**: during phased development, commit at sensible checkpoints without asking. Never push them without explicit ask.
 
 **CRITICAL**: Directive scope = that request only. Commit/push/merge actions on master/main branch, PR/sends/deploys need explicit ask, every time. "Commit and push" earlier ≠ permission for later changes. (**Checkpoint commits** are an exception, but never push them without explicit ask.)
 
@@ -13,9 +12,9 @@
 
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
 - **IMPORTANT RULE**: If available, use codex for code review and adversarial review of research, specs and implementation plans.
-- When implementing a plan, add Task ID from it to commit messages.
-- Always kill a process (e.g., dev server) you started if it is no longer needed.
-- For repeated automated tests, write reusable scripts and reuse them.
+- **Checkpoint commits**: during phased development, commit at checkpoints with task ID from the implmentation plan.
+- Always kill a process (e.g., dev server) you started if no longer needed.
+- For repeated tests, write reusable scripts and reuse them.
 - **CRITICAL RULE**: For large/multi-phase goals or noisy-process tasks, act as orchestrator and spawn subagents — for independent work chunks/testing/deep exploration and to save orchestrator context window.
   - **Large/multi-phase goals:** always delegate self-contained chunks (implementers per task, reviewers, research fan-out); main session stays coordinator — preserves its context for orchestration/judgment, keeps each chunk focused.
   - **Delegate to save orchestrator context window:** noisy-process/small-conclusion tasks (multi-search research, browser/Playwright exploration, log-heavy debugging) go to a subagent even as single tasks — orchestrator gets the report, not the trail.
@@ -72,10 +71,10 @@ After understanding the problem — read what the change touches, trace the real
 8. Only then: minimum implementation.
     - "Laziest" = reuse over new code, NOT avoid new code/dependencies. Decide and move; don't stop on every choice.
     - Fix root cause (the shared function), not every caller.
-    - Once the problem is understood: fewest files, shortest diff.
+    - **IMPORTANT**: Once the problem is understood: fewest files, shortest diff.
     - Mark deliberate shortcuts with ceiling and upgrade path: e.g., `// yagni: global lock, per-account if throughput matters`.
 
-**CRITICAL**: Never simplify away: input validation, error handling that prevents data loss, security, accessibility, or anything I explicitly asked for. The ladder governs implementation, not my requirements.
+**CRITICAL**: Never simplify away anything I explicitly asked for. The ladder governs implementation, not requirements.
 
 ## Code comments
 
@@ -84,6 +83,7 @@ Default = no comment. One line, two max — longer means a jsdoc/similar comment
 - Inline comments say **why**, never what. Doc comments may say what + contract.
 - Earn one only for: a non-obvious constraint, a landmine, or a deliberate shortcut with its upgrade path.
 - **Never narrate the diff** — no "changed from", "previously", "we used to". Git owns history.
+- **Reach for named constant/function, extracted variable before comments** — if comment explains what the code does, the code needed a better name.
 
 ```ts
 // bad: history + restating
