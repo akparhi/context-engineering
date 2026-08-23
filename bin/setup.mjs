@@ -158,6 +158,7 @@ async function main() {
       link(join(profilesDir, `${profile}.json`), join(dest, 'settings.json')),
       link(join(sharedDir, 'skills'), join(dest, 'skills')),
       link(join(sharedDir, 'output-styles'), join(dest, 'output-styles')),
+      link(join(sharedDir, 'rules'), join(dest, 'rules')),
       link(join(sharedDir, 'CLAUDE.md'), join(dest, 'CLAUDE.md')),
     ]) {
       console.log(line)
