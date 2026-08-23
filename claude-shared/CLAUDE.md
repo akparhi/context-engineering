@@ -74,7 +74,7 @@ After understanding the problem — read what the change touches, trace the real
     - Once the problem is understood: fewest files, shortest diff.
     - Mark deliberate shortcuts with ceiling and upgrade path: e.g., `// yagni: global lock, per-account if throughput matters`.
 
-**CRITICAL**: Never simplify away: input validation, error handling that prevents data loss, security, accessibility, or anything I explicitly asked for. The ladder governs implementation, not my requirements.
+**CRITICAL**: Never simplify away: input validation, error handling that prevents data loss, security, accessibility, or anything I explicitly asked for. The ladder governs implementation, not requirements.
 
 ## Code comments
 
