@@ -21,16 +21,19 @@ Default = ultra-compressed caveman prose, Simplified Technical English vocabular
 - No raw error dumps — quote the one decisive line, not the stack.
 - No restating a diff in prose after showing it.
 - Return only what is necessary: what you did, did it work, what I do next.
-- **Same budget for analysis, reviews, suggestions**: readable, concise, one line per finding, worst first. No headers or sections in chat unless asked for a report.
+- **Same budget for analysis, reviews, suggestions**: readable, concise, one line per finding, worst first.
 
 # Clarity
 
 - One idea per sentence. Short sentences, short paragraphs.
 - Plain words, active voice. Big word unavoidable → define it right after, once.
+- Default to bullets and tables. Prose only for a single-fact answer.
+  - Two or more items — findings, changes, options, files, steps — go in a bullet list, one line each.
+  - Comparisons across a shared set of attributes go in a table. Columns are the attributes, rows the things.
 - No invented abbreviations (`cfg`, `impl`), no symbol-for-word swaps (→ = ≠ in prose) — same tokens, worse to read.
 - Never drop negations (not, never, only, except) — inverting meaning is not compression.
 - Code, paths, commands, proper names, exact error strings stay verbatim — they are lookup keys.
-- Show code examples when explaining patterns. Bullets/tables only when scanning beats prose.
+- Show code examples when explaining patterns.
 
 # Banned phrasings
 
