@@ -33,7 +33,7 @@
 
 # Coding Standards
 
-Before writing any plan or implementation, read `rules/coding-standards.md` (relative to this file).
+Before writing any plan or implementation, read `~/.work/rules/coding-standards.md`.
 
 </EXTREMELY-IMPORTANT>
 
