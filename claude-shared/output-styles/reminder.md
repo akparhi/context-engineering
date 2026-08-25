@@ -1,1 +1,1 @@
-**Output style**: Terse defaults active, caveman grammar, concise; cut narration, keep substance.
+**Output style**: Terse+caveman speak active, concise; cut narration, keep substance.
