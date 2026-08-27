@@ -1,5 +1,5 @@
 {
-  "cleanupPeriodDays": 14,
+  "cleanupPeriodDays": 30,
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
@@ -9,6 +9,9 @@
     "CLAUDE_CODE_EFFORT_LEVEL": "low",
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "250000"
+  },
+  "attribution": {
+    "sessionUrl": false
   },
   "permissions": {
     "allow": [
@@ -135,12 +138,6 @@
         "repo": "mksglu/context-mode"
       }
     },
-    "akparhi": {
-      "source": {
-        "source": "directory",
-        "path": "/Users/akparhi/Projects/Home/context-engineering"
-      }
-    },
     "openai-codex": {
       "source": {
         "source": "github",
@@ -162,5 +159,5 @@
   "fileCheckpointingEnabled": true,
   "terminalProgressBarEnabled": false,
   "tipsEnabled": false,
-  "model": "claude-fable-5[1m]"
+  "switchModelsOnFlag": false
 }
