@@ -129,16 +129,9 @@
     "superpowers@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "context-mode@context-mode": true,
-    "codex@openai-codex": true,
-    "think@akparhi": true
+    "codex@openai-codex": true
   },
   "extraKnownMarketplaces": {
-    "akparhi": {
-      "source": {
-        "source": "directory",
-        "path": "/Users/akparhi/Projects/Home/context-engineering"
-      }
-    },
     "context-mode": {
       "source": {
         "source": "github",
@@ -155,7 +148,7 @@
   "outputStyle": "terse",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
-  "effortLevel": "low",
+  "effortLevel": "high",
   "promptSuggestionEnabled": false,
   "autoUpdatesChannel": "latest",
   "plansDirectory": "./.claude/plans",
