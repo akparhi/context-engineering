@@ -11,6 +11,7 @@
 # Working Principles
 
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
+- **`think` tool**: use it when complex reasoning or brainstorming is needed — before choosing an abstraction, module boundary, or data model; before refactoring/writing code, or fixing a bug; before deciding a delegation split. Brainstorm several options in the thought, then assess which is simplest and most effective.
 - **IMPORTANT RULE**: If available, use codex for code review and adversarial review of research, specs and implementation plans.
 - **Checkpoint commits**: during phased development, commit at checkpoints with task ID from the implmentation plan.
 - Always kill a process (e.g., dev server) you started if no longer needed.

@@ -18,6 +18,17 @@
       },
       "category": "development",
       "keywords": ["mcp", "memory", "lessons", "corrections", "rules"]
+    },
+    {
+      "name": "think",
+      "source": "./plugins/think",
+      "description": "A no-op scratchpad tool for reasoning mid-task about architecture, delegation, and coding decisions without taking an action",
+      "version": "0.1.0",
+      "author": {
+        "name": "Anand Parhi"
+      },
+      "category": "development",
+      "keywords": ["mcp", "reasoning", "architecture", "delegation"]
     }
   ]
 }

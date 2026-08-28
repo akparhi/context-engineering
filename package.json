@@ -10,6 +10,6 @@
   },
   "scripts": {
     "setup": "node bin/setup.mjs",
-    "test": "cd plugins/hindsight && bun run test"
+    "test": "cd plugins/hindsight && bun run test && cd ../think && bun run test"
   }
 }

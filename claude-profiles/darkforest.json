@@ -1,6 +1,5 @@
 {
   "cleanupPeriodDays": 30,
-  "outputStyle": "terse",
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
@@ -138,9 +137,16 @@
     "commit-commands@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,
-    "context-mode@context-mode": true
+    "context-mode@context-mode": true,
+    "think@akparhi": true
   },
   "extraKnownMarketplaces": {
+    "akparhi": {
+      "source": {
+        "source": "directory",
+        "path": "/Users/akparhi/Projects/Home/context-engineering"
+      }
+    },
     "context-mode": {
       "source": {
         "source": "github",
@@ -148,6 +154,7 @@
       }
     }
   },
+  "outputStyle": "terse",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": true,
   "effortLevel": "low",

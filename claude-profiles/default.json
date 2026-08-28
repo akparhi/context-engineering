@@ -129,9 +129,16 @@
     "superpowers@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "context-mode@context-mode": true,
-    "codex@openai-codex": true
+    "codex@openai-codex": true,
+    "think@akparhi": true
   },
   "extraKnownMarketplaces": {
+    "akparhi": {
+      "source": {
+        "source": "directory",
+        "path": "/Users/akparhi/Projects/Home/context-engineering"
+      }
+    },
     "context-mode": {
       "source": {
         "source": "github",
@@ -156,8 +163,8 @@
   "skipDangerousModePermissionPrompt": true,
   "theme": "auto",
   "verbose": true,
+  "switchModelsOnFlag": false,
   "fileCheckpointingEnabled": true,
   "terminalProgressBarEnabled": false,
-  "tipsEnabled": false,
-  "switchModelsOnFlag": false
+  "tipsEnabled": false
 }
