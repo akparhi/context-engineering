@@ -148,7 +148,7 @@
   "outputStyle": "terse",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
-  "effortLevel": "high",
+  "effortLevel": "low",
   "promptSuggestionEnabled": false,
   "autoUpdatesChannel": "latest",
   "plansDirectory": "./.claude/plans",
