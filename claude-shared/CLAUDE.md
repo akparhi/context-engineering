@@ -12,7 +12,7 @@
 
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
 - **IMPORTANT RULE**: If available, use codex for code review and adversarial review of research, specs and implementation plans.
-- **Checkpoint commits**: during phased development, commit at checkpoints with task ID from the implmentation plan — `<phase>-<task-id>: <description>`.
+- **Checkpoint commits**: during phased development, commit at checkpoints with task ID from implmentation plan — `<phase>-<task-id>: <description>`.
 - Always kill a process (e.g., dev server) you started if no longer needed.
 - For repeated tests, write reusable scripts and reuse them.
 - **CRITICAL RULE**: For large/multi-phase goals or noisy-process tasks, act as orchestrator and spawn subagents — for independent work chunks/testing/deep exploration and to save orchestrator context window.
@@ -78,11 +78,11 @@ After understanding the problem — read what the change touches, trace the real
 
 ## Code comments
 
-Default = no comment. One line, two max — longer means a jsdoc/similar comment.
+Default = no comment. One line, two max — longer = jsdoc/similar comment.
 
 - Inline comments say **why**, never what. Doc comments may say what + contract.
-- Earn one only for: a non-obvious constraint, a landmine, or a deliberate shortcut with its upgrade path.
-- **Never narrate the diff** — no "changed from", "previously", "we used to". Git owns history.
+- Earn one only for: a non-obvious constraint, landmine, or deliberate shortcut with its upgrade path.
+- **Never narrate diff** — no "changed from", "previously", "we used to". Git owns history.
 - **Reach for named constant/function, extracted variable before comments** — if comment explains what code does, the code needed better name.
 
 ```ts
