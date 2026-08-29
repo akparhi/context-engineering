@@ -11,9 +11,8 @@
 # Working Principles
 
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
-- **`think` tool**: use it when complex reasoning or brainstorming is needed — before choosing an abstraction, module boundary, or data model; before refactoring/writing code, or fixing a bug; before deciding a delegation split. Brainstorm several options in the thought, then assess which is simplest and most effective.
 - **IMPORTANT RULE**: If available, use codex for code review and adversarial review of research, specs and implementation plans.
-- **Checkpoint commits**: during phased development, commit at checkpoints with task ID from the implmentation plan.
+- **Checkpoint commits**: during phased development, commit at checkpoints with task ID from the implmentation plan — `<phase>-<task-id>: <description>`.
 - Always kill a process (e.g., dev server) you started if no longer needed.
 - For repeated tests, write reusable scripts and reuse them.
 - **CRITICAL RULE**: For large/multi-phase goals or noisy-process tasks, act as orchestrator and spawn subagents — for independent work chunks/testing/deep exploration and to save orchestrator context window.
@@ -68,11 +67,11 @@ After understanding the problem — read what the change touches, trace the real
 4. Native platform feature? → use it (e.g., DB constraint over app logic).
 5. Already-installed dep? → use it.
 6. Trivial + stable? → one line inline.
-7. Non-trivial (parsing, dates, crypto, retries, validation)? → prefer a mature library over hand-rolling; pick best, note choice + runner-up, proceed. Ask only if consequential (lock-in, security, heavy/unmaintained dep).
+7. Non-trivial (parsing, dates, crypto, retries, validation)? → prefer mature library over hand-rolling; pick best, note choice + runner-up, proceed. Ask only if consequential (lock-in, security, heavy/unmaintained dep).
 8. Only then: minimum implementation.
     - "Laziest" = reuse over new code, NOT avoid new code/dependencies. Decide and move; don't stop on every choice.
-    - Fix root cause (the shared function), not every caller.
-    - **IMPORTANT**: Once the problem is understood: fewest files, shortest diff.
+    - Fix root cause, not every caller.
+    - **IMPORTANT**: Once problem is understood: fewest files, shortest diff.
     - Mark deliberate shortcuts with ceiling and upgrade path: e.g., `// yagni: global lock, per-account if throughput matters`.
 
 **CRITICAL**: Never simplify away anything I explicitly asked for. The ladder governs implementation, not requirements.
@@ -84,11 +83,11 @@ Default = no comment. One line, two max — longer means a jsdoc/similar comment
 - Inline comments say **why**, never what. Doc comments may say what + contract.
 - Earn one only for: a non-obvious constraint, a landmine, or a deliberate shortcut with its upgrade path.
 - **Never narrate the diff** — no "changed from", "previously", "we used to". Git owns history.
-- **Reach for named constant/function, extracted variable before comments** — if comment explains what the code does, the code needed a better name.
+- **Reach for named constant/function, extracted variable before comments** — if comment explains what code does, the code needed better name.
 
 ```ts
 // bad: history + restating
-// We used to fetch in useEffect but that double-fetched on mount. 30 min for admins.
+// Used to fetch in useEffect but that double-fetched on mount. 30 min for admins.
 const timeout = auth?.role === 'Admin' ? 30 * 60 * 1000 : 15 * 60 * 1000
 
 // good: names carry it

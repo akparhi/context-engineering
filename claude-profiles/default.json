@@ -8,7 +8,7 @@
     "ENABLE_LSP_TOOL": "1",
     "CLAUDE_CODE_EFFORT_LEVEL": "low",
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
-    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "256000"
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "240000"
   },
   "attribution": {
     "sessionUrl": false
