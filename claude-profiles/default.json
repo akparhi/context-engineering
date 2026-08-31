@@ -97,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null"
+            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.work}/output-styles/reminder.md\" 2>/dev/null"
           }
         ]
       }
@@ -107,11 +107,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"/Users/akparhi/.claude/hooks/context-mode-cache-heal.mjs\""
+            "command": "\"${CLAUDE_CONFIG_DIR:-$HOME/.work}/hooks/context-mode-cache-heal.mjs\""
           },
           {
             "type": "command",
-            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null"
+            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.work}/output-styles/reminder.md\" 2>/dev/null"
           }
         ]
       }
