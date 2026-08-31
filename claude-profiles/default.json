@@ -121,12 +121,12 @@
   "disableWorkflows": true,
   "disableArtifact": true,
   "enabledPlugins": {
-    "commit-commands@claude-plugins-official": true,
-    "context7@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
     "context-mode@context-mode": true,
-    "codex@openai-codex": true
+    "codex@openai-codex": true,
+    "typescript-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "context-mode": {
