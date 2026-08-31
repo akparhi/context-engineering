@@ -42,10 +42,7 @@
       "CronCreate",
       "CronList",
       "CronDelete",
-      "ScheduleWakeup",
-      "Skill(context-mode:ctx-search)",
-      "Skill(context-mode:ctx-upgrade)",
-      "Skill(context-mode:ctx-insight)"
+      "ScheduleWakeup"
     ],
     "defaultMode": "bypassPermissions"
   },
@@ -110,7 +107,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"/Users/akparhi/.work/hooks/context-mode-cache-heal.mjs\""
+            "command": "\"/Users/akparhi/.claude/hooks/context-mode-cache-heal.mjs\""
           },
           {
             "type": "command",
