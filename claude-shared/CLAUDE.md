@@ -4,9 +4,9 @@
 
 - Clear directive → do it. No confirm, no alternatives, no options menu. Includes destructive-but-recoverable git actions.
 - **IMPORTANT**: Irreversible + unrecoverable (data loss, outward-facing sends): one short confirm.
-- Otherwise report in one line what I can't see: CI bypasses, failed checks, unexpected repo state. Then keep going.
+- Report in one line what I can't see: CI bypasses, failed checks, unexpected repo state. Then keep going.
 
-**CRITICAL**: Directive scope = that request only. Commit/push/merge actions on master/main branch, PR/sends/deploys need explicit ask, every time. "Commit and push" earlier ≠ permission for later changes. (**Checkpoint commits** are an exception, but never push them without explicit ask.)
+**CRITICAL**: Directive scope = that request only. Commit/push/merge actions on master/main branch, PR/sends/deploys need explicit ask, every time. "Commit and push" earlier ≠ permission for later changes. (**Checkpoint commits** are an exception.)
 
 # Working Principles
 
@@ -18,9 +18,9 @@
 - **CRITICAL RULE**: For large/multi-phase goals or noisy-process tasks, act as orchestrator and spawn subagents — for independent work chunks/testing/deep exploration and to save orchestrator context window.
   - **Large/multi-phase goals:** always delegate self-contained chunks (implementers per task, reviewers, research fan-out); main session stays coordinator — preserves its context for orchestration/judgment, keeps each chunk focused.
   - **Delegate to save orchestrator context window:** noisy-process/small-conclusion tasks (multi-search research, browser/Playwright exploration, log-heavy debugging) go to a subagent even as single tasks — orchestrator gets the report, not the trail.
-  - **Subagent type:** Least-powerful model that fits: transcription/normal exploration → haiku, implementation/integration/testing/judgment/deep exploration → sonnet, architecture/final-review → opus.
+  - **Subagent type:** Least-powerful model that fits: transcription/normal exploration → haiku, implementation/integration/testing/judgment/deep exploration → sonnet, architecture/final-review → opus. NEVER fable subagents.
   - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
-  - **Do NOT fan out** for small targeted tasks or one-off debugging asks — do those inline.
+  - **Do NOT fan out** for small targeted tasks or one-off debugging asks.
 
 # Code Exploration
 
@@ -32,7 +32,7 @@
 
 </EXTREMELY-IMPORTANT>
 
-<GLOBAL-CODING-STANDARDS>
+<coding-standards>
 
 # Global Coding Standards
 
@@ -81,7 +81,7 @@ After understanding the problem — read what the change touches, trace the real
 Default = no comment. One line, two max — longer = jsdoc/similar comment.
 
 - Inline comments say **why**, never what. Doc comments may say what + contract.
-- Earn one only for: a non-obvious constraint, landmine, or deliberate shortcut with its upgrade path.
+- Comment for: a non-obvious constraint, landmine, or deliberate shortcut with its upgrade path.
 - **Never narrate diff** — no "changed from", "previously", "we used to". Git owns history.
 - **Reach for named constant/function, extracted variable before comments** — if comment explains what code does, the code needed better name.
 
@@ -94,4 +94,4 @@ const timeout = auth?.role === 'Admin' ? 30 * 60 * 1000 : 15 * 60 * 1000
 const IDLE_TIMEOUT_ADMIN = 30 * 60 * 1000
 const IDLE_TIMEOUT_USER = 15 * 60 * 1000
 ```
-</GLOBAL-CODING-STANDARDS>
+</coding-standards>
