@@ -3,7 +3,7 @@
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-    "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-1[1m]",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
     "ENABLE_LSP_TOOL": "1",
@@ -88,7 +88,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "afplay /System/Library/Sounds/Submarine.aiff"
+            "command": "jq -e '.agent_id // empty' >/dev/null 2>&1 || afplay /System/Library/Sounds/Submarine.aiff"
           }
         ]
       }
