@@ -146,7 +146,7 @@
   "outputStyle": "terse",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
-  "effortLevel": "low",
+  "effortLevel": "medium",
   "promptSuggestionEnabled": false,
   "autoUpdatesChannel": "latest",
   "plansDirectory": "./.claude/plans",
@@ -157,5 +157,6 @@
   "switchModelsOnFlag": false,
   "fileCheckpointingEnabled": true,
   "terminalProgressBarEnabled": false,
-  "tipsEnabled": false
+  "tipsEnabled": false,
+  "model": "claude-fable-5-1[1m]"
 }
