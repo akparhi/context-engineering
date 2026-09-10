@@ -31,7 +31,6 @@
       "Write"
     ],
     "deny": [
-      "Read(./.env.example)",
       "Read(./dist/**)",
       "Read(./next/**)",
       "PushNotification",
@@ -146,7 +145,7 @@
   "outputStyle": "terse",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
-  "effortLevel": "medium",
+  "effortLevel": "low",
   "promptSuggestionEnabled": false,
   "autoUpdatesChannel": "latest",
   "plansDirectory": "./.claude/plans",
