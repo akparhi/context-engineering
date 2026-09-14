@@ -154,5 +154,11 @@
   "switchModelsOnFlag": false,
   "fileCheckpointingEnabled": true,
   "terminalProgressBarEnabled": false,
-  "tipsEnabled": false
+  "tipsEnabled": false,
+  "skillOverrides": {
+    "context-mode:ctx-insight": "off",
+    "context-mode:ctx-stats": "off",
+    "superpowers:using-git-worktrees": "off",
+    "context-mode:ctx-upgrade": "off"
+  }
 }
