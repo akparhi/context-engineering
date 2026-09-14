@@ -9,7 +9,7 @@
   "disableClaudeAiConnectors": true,
   "disableRemoteControl": true,
   "disableWorkflows": true,
-  "effortLevel": "low",
+  "effortLevel": "medium",
   "enabledPlugins": {
     "codex@openai-codex": true,
     "commit-commands@claude-plugins-official": true,
@@ -24,7 +24,6 @@
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "256000",
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
-    "CLAUDE_CODE_EFFORT_LEVEL": "low",
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
     "ENABLE_LSP_TOOL": "1"
   },
