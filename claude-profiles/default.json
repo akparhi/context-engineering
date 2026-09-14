@@ -1,21 +1,123 @@
 {
-  "cleanupPeriodDays": 30,
-  "env": {
-    "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-    "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-1[1m]",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
-    "ENABLE_LSP_TOOL": "1",
-    "CLAUDE_CODE_EFFORT_LEVEL": "low",
-    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
-    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "256000"
+  "alwaysThinkingEnabled" : false,
+  "attribution" : {
+    "sessionUrl" : false
   },
-  "attribution": {
-    "sessionUrl": false
+  "autoUpdatesChannel" : "latest",
+  "cleanupPeriodDays" : 30,
+  "disableArtifact" : true,
+  "disableClaudeAiConnectors" : true,
+  "disableRemoteControl" : true,
+  "disableWorkflows" : true,
+  "effortLevel" : "low",
+  "enabledPlugins" : {
+    "codex@openai-codex" : true,
+    "commit-commands@claude-plugins-official" : true,
+    "context-mode@context-mode" : true,
+    "context7@claude-plugins-official" : true,
+    "superpowers@claude-plugins-official" : true,
+    "typescript-lsp@claude-plugins-official" : true
   },
-  "permissions": {
-    "allow": [
+  "env" : {
+    "ANTHROPIC_DEFAULT_FABLE_MODEL" : "claude-fable-5-1[1m]",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL" : "claude-opus-5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL" : "claude-sonnet-4-6",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW" : "256000",
+    "CLAUDE_CODE_DISABLE_1M_CONTEXT" : "0",
+    "CLAUDE_CODE_EFFORT_LEVEL" : "low",
+    "CLAUDE_CODE_ENABLE_TELEMETRY" : "0",
+    "ENABLE_LSP_TOOL" : "1"
+  },
+  "extraKnownMarketplaces" : {
+    "context-mode" : {
+      "source" : {
+        "repo" : "mksglu\/context-mode",
+        "source" : "github"
+      }
+    },
+    "openai-codex" : {
+      "source" : {
+        "repo" : "openai\/codex-plugin-cc",
+        "source" : "github"
+      }
+    }
+  },
+  "fileCheckpointingEnabled" : true,
+  "hooks" : {
+    "Notification" : [],
+    "PermissionRequest" : [
+      {
+        "hooks" : [
+          {
+            "command" : "afplay \/System\/Library\/Sounds\/Ping.aiff",
+            "type" : "command"
+          }
+        ],
+        "matcher" : "*"
+      }
+    ],
+    "PostToolUse" : [
+
+    ],
+    "PreToolUse" : [
+      {
+        "hooks" : [
+          {
+            "command" : "afplay \/System\/Library\/Sounds\/Ping.aiff",
+            "type" : "command"
+          }
+        ],
+        "matcher" : "AskUserQuestion"
+      },
+      {
+        "hooks" : [
+          {
+            "command" : "afplay \/System\/Library\/Sounds\/Ping.aiff",
+            "type" : "command"
+          }
+        ],
+        "matcher" : "ExitPlanMode"
+      }
+    ],
+    "SessionStart" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\"${CLAUDE_CONFIG_DIR:-$HOME\/.claude}\/hooks\/context-mode-cache-heal.mjs\"",
+            "type" : "command"
+          },
+          {
+            "command" : "cat \"${CLAUDE_CONFIG_DIR:-$HOME\/.claude}\/output-styles\/reminder.md\" 2>\/dev\/null",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "Stop" : [
+      {
+        "hooks" : [
+          {
+            "command" : "jq -e '.agent_id \/\/ empty' >\/dev\/null 2>&1 || afplay \/System\/Library\/Sounds\/Sosumi.aiff",
+            "type" : "command"
+          }
+        ],
+        "matcher" : ""
+      }
+    ],
+    "UserPromptSubmit" : [
+      {
+        "hooks" : [
+          {
+            "command" : "cat \"${CLAUDE_CONFIG_DIR:-$HOME\/.claude}\/output-styles\/reminder.md\" 2>\/dev\/null",
+            "type" : "command"
+          }
+        ]
+      }
+    ]
+  },
+  "outputStyle" : "terse",
+  "permissions" : {
+    "allow" : [
       "Bash",
       "Edit",
       "Glob",
@@ -30,9 +132,10 @@
       "WebSearch",
       "Write"
     ],
-    "deny": [
-      "Read(./dist/**)",
-      "Read(./next/**)",
+    "defaultMode" : "bypassPermissions",
+    "deny" : [
+      "Read(.\/dist\/**)",
+      "Read(.\/next\/**)",
       "PushNotification",
       "NotebookEdit",
       "EnterPlanMode",
@@ -43,119 +146,16 @@
       "CronList",
       "CronDelete",
       "ScheduleWakeup"
-    ],
-    "defaultMode": "bypassPermissions"
-  },
-  "disableClaudeAiConnectors": true,
-  "hooks": {
-    "Notification": [],
-    "PermissionRequest": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "afplay /System/Library/Sounds/Funk.aiff"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [],
-    "PreToolUse": [
-      {
-        "matcher": "AskUserQuestion",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "afplay /System/Library/Sounds/Funk.aiff"
-          }
-        ]
-      },
-      {
-        "matcher": "ExitPlanMode",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "afplay /System/Library/Sounds/Funk.aiff"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -e '.agent_id // empty' >/dev/null 2>&1 || afplay /System/Library/Sounds/Submarine.aiff"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.work}/output-styles/reminder.md\" 2>/dev/null"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_CONFIG_DIR:-$HOME/.work}/hooks/context-mode-cache-heal.mjs\""
-          },
-          {
-            "type": "command",
-            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.work}/output-styles/reminder.md\" 2>/dev/null"
-          }
-        ]
-      }
     ]
   },
-  "disableRemoteControl": true,
-  "disableWorkflows": true,
-  "disableArtifact": true,
-  "enabledPlugins": {
-    "superpowers@claude-plugins-official": true,
-    "context7@claude-plugins-official": true,
-    "commit-commands@claude-plugins-official": true,
-    "context-mode@context-mode": true,
-    "codex@openai-codex": true,
-    "typescript-lsp@claude-plugins-official": true
-  },
-  "extraKnownMarketplaces": {
-    "context-mode": {
-      "source": {
-        "source": "github",
-        "repo": "mksglu/context-mode"
-      }
-    },
-    "openai-codex": {
-      "source": {
-        "source": "github",
-        "repo": "openai/codex-plugin-cc"
-      }
-    }
-  },
-  "outputStyle": "terse",
-  "spinnerTipsEnabled": false,
-  "alwaysThinkingEnabled": false,
-  "effortLevel": "low",
-  "promptSuggestionEnabled": false,
-  "autoUpdatesChannel": "latest",
-  "plansDirectory": "./.claude/plans",
-  "tui": "fullscreen",
-  "skipDangerousModePermissionPrompt": true,
-  "theme": "auto",
-  "verbose": true,
-  "switchModelsOnFlag": false,
-  "fileCheckpointingEnabled": true,
-  "terminalProgressBarEnabled": false,
-  "tipsEnabled": false,
-  "model": "claude-fable-5-1[1m]"
+  "plansDirectory" : ".\/.claude\/plans",
+  "promptSuggestionEnabled" : false,
+  "skipDangerousModePermissionPrompt" : true,
+  "spinnerTipsEnabled" : false,
+  "switchModelsOnFlag" : false,
+  "terminalProgressBarEnabled" : false,
+  "theme" : "auto",
+  "tipsEnabled" : false,
+  "tui" : "fullscreen",
+  "verbose" : true
 }

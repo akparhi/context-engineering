@@ -11,6 +11,7 @@
 # Working Principles
 
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
+- **IMPORTANT RULE**: If available, use codex for code review and adversarial review of research, specs and implementation plans.
 - **Checkpoint commits**: during phased development, commit at checkpoints with task ID from implmentation plan — `<phase>-<task-id>: <description>`.
 - Always kill a process (e.g., dev server) you started if no longer needed.
 - For repeated tests, write reusable scripts and reuse them.
