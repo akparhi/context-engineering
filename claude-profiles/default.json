@@ -1,23 +1,5 @@
 {
-  "alwaysThinkingEnabled": false,
-  "attribution": {
-    "sessionUrl": false
-  },
-  "autoUpdatesChannel": "latest",
   "cleanupPeriodDays": 30,
-  "disableArtifact": true,
-  "disableClaudeAiConnectors": true,
-  "disableRemoteControl": true,
-  "disableWorkflows": true,
-  "effortLevel": "medium",
-  "enabledPlugins": {
-    "codex@openai-codex": true,
-    "commit-commands@claude-plugins-official": true,
-    "context-mode@context-mode": true,
-    "context7@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true
-  },
   "env": {
     "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-1[1m]",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5",
@@ -27,92 +9,9 @@
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
     "ENABLE_LSP_TOOL": "1"
   },
-  "extraKnownMarketplaces": {
-    "context-mode": {
-      "source": {
-        "repo": "mksglu/context-mode",
-        "source": "github"
-      }
-    },
-    "openai-codex": {
-      "source": {
-        "repo": "openai/codex-plugin-cc",
-        "source": "github"
-      }
-    }
+  "attribution": {
+    "sessionUrl": false
   },
-  "fileCheckpointingEnabled": true,
-  "hooks": {
-    "Notification": [],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "command": "afplay /System/Library/Sounds/Ping.aiff",
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
-      }
-    ],
-    "PostToolUse": [],
-    "PreToolUse": [
-      {
-        "hooks": [
-          {
-            "command": "afplay /System/Library/Sounds/Ping.aiff",
-            "type": "command"
-          }
-        ],
-        "matcher": "AskUserQuestion"
-      },
-      {
-        "hooks": [
-          {
-            "command": "afplay /System/Library/Sounds/Ping.aiff",
-            "type": "command"
-          }
-        ],
-        "matcher": "ExitPlanMode"
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "command": "\"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/context-mode-cache-heal.mjs\"",
-            "type": "command"
-          },
-          {
-            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null",
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "command": "jq -e '.agent_id // empty' >/dev/null 2>&1 || afplay /System/Library/Sounds/Sosumi.aiff",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null",
-            "type": "command"
-          }
-        ]
-      }
-    ]
-  },
-  "outputStyle": "terse",
   "permissions": {
     "allow": [
       "Bash",
@@ -129,7 +28,6 @@
       "WebSearch",
       "Write"
     ],
-    "defaultMode": "bypassPermissions",
     "deny": [
       "Read(./dist/**)",
       "Read(./next/**)",
@@ -143,16 +41,111 @@
       "CronList",
       "CronDelete",
       "ScheduleWakeup"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "disableClaudeAiConnectors": true,
+  "hooks": {
+    "Notification": [],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Ping.aiff"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [],
+    "PreToolUse": [
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Ping.aiff"
+          }
+        ]
+      },
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Ping.aiff"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/context-mode-cache-heal.mjs\""
+          },
+          {
+            "type": "command",
+            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -e '.agent_id // empty' >/dev/null 2>&1 || afplay /System/Library/Sounds/Sosumi.aiff"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null"
+          }
+        ]
+      }
     ]
   },
-  "plansDirectory": "./.claude/plans",
-  "promptSuggestionEnabled": false,
-  "skipDangerousModePermissionPrompt": true,
+  "disableRemoteControl": true,
+  "disableWorkflows": true,
+  "disableArtifact": true,
+  "enabledPlugins": {},
+  "extraKnownMarketplaces": {
+    "context-mode": {
+      "source": {
+        "source": "github",
+        "repo": "mksglu/context-mode"
+      }
+    },
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
+    }
+  },
+  "outputStyle": "terse",
   "spinnerTipsEnabled": false,
-  "switchModelsOnFlag": false,
-  "terminalProgressBarEnabled": false,
-  "theme": "auto",
-  "tipsEnabled": false,
+  "alwaysThinkingEnabled": false,
+  "effortLevel": "medium",
+  "promptSuggestionEnabled": false,
+  "autoUpdatesChannel": "latest",
+  "plansDirectory": "./.claude/plans",
   "tui": "fullscreen",
-  "verbose": true
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "auto",
+  "verbose": true,
+  "switchModelsOnFlag": false,
+  "fileCheckpointingEnabled": true,
+  "terminalProgressBarEnabled": false,
+  "tipsEnabled": false
 }
