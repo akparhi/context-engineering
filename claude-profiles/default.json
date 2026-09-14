@@ -1,5 +1,5 @@
 {
-  "cleanupPeriodDays": 30,
+  "cleanupPeriodDays": 14,
   "env": {
     "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-1[1m]",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5",
