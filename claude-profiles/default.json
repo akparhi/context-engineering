@@ -1,123 +1,121 @@
 {
-  "alwaysThinkingEnabled" : false,
-  "attribution" : {
-    "sessionUrl" : false
+  "alwaysThinkingEnabled": false,
+  "attribution": {
+    "sessionUrl": false
   },
-  "autoUpdatesChannel" : "latest",
-  "cleanupPeriodDays" : 30,
-  "disableArtifact" : true,
-  "disableClaudeAiConnectors" : true,
-  "disableRemoteControl" : true,
-  "disableWorkflows" : true,
-  "effortLevel" : "low",
-  "enabledPlugins" : {
-    "codex@openai-codex" : true,
-    "commit-commands@claude-plugins-official" : true,
-    "context-mode@context-mode" : true,
-    "context7@claude-plugins-official" : true,
-    "superpowers@claude-plugins-official" : true,
-    "typescript-lsp@claude-plugins-official" : true
+  "autoUpdatesChannel": "latest",
+  "cleanupPeriodDays": 30,
+  "disableArtifact": true,
+  "disableClaudeAiConnectors": true,
+  "disableRemoteControl": true,
+  "disableWorkflows": true,
+  "effortLevel": "low",
+  "enabledPlugins": {
+    "codex@openai-codex": true,
+    "commit-commands@claude-plugins-official": true,
+    "context-mode@context-mode": true,
+    "context7@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
   },
-  "env" : {
-    "ANTHROPIC_DEFAULT_FABLE_MODEL" : "claude-fable-5-1[1m]",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL" : "claude-opus-5",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL" : "claude-sonnet-4-6",
-    "CLAUDE_CODE_AUTO_COMPACT_WINDOW" : "256000",
-    "CLAUDE_CODE_DISABLE_1M_CONTEXT" : "0",
-    "CLAUDE_CODE_EFFORT_LEVEL" : "low",
-    "CLAUDE_CODE_ENABLE_TELEMETRY" : "0",
-    "ENABLE_LSP_TOOL" : "1"
+  "env": {
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-1[1m]",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "256000",
+    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
+    "CLAUDE_CODE_EFFORT_LEVEL": "low",
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
+    "ENABLE_LSP_TOOL": "1"
   },
-  "extraKnownMarketplaces" : {
-    "context-mode" : {
-      "source" : {
-        "repo" : "mksglu\/context-mode",
-        "source" : "github"
+  "extraKnownMarketplaces": {
+    "context-mode": {
+      "source": {
+        "repo": "mksglu/context-mode",
+        "source": "github"
       }
     },
-    "openai-codex" : {
-      "source" : {
-        "repo" : "openai\/codex-plugin-cc",
-        "source" : "github"
+    "openai-codex": {
+      "source": {
+        "repo": "openai/codex-plugin-cc",
+        "source": "github"
       }
     }
   },
-  "fileCheckpointingEnabled" : true,
-  "hooks" : {
-    "Notification" : [],
-    "PermissionRequest" : [
+  "fileCheckpointingEnabled": true,
+  "hooks": {
+    "Notification": [],
+    "PermissionRequest": [
       {
-        "hooks" : [
+        "hooks": [
           {
-            "command" : "afplay \/System\/Library\/Sounds\/Ping.aiff",
-            "type" : "command"
+            "command": "afplay /System/Library/Sounds/Ping.aiff",
+            "type": "command"
           }
         ],
-        "matcher" : "*"
+        "matcher": "*"
       }
     ],
-    "PostToolUse" : [
-
-    ],
-    "PreToolUse" : [
+    "PostToolUse": [],
+    "PreToolUse": [
       {
-        "hooks" : [
+        "hooks": [
           {
-            "command" : "afplay \/System\/Library\/Sounds\/Ping.aiff",
-            "type" : "command"
+            "command": "afplay /System/Library/Sounds/Ping.aiff",
+            "type": "command"
           }
         ],
-        "matcher" : "AskUserQuestion"
+        "matcher": "AskUserQuestion"
       },
       {
-        "hooks" : [
+        "hooks": [
           {
-            "command" : "afplay \/System\/Library\/Sounds\/Ping.aiff",
-            "type" : "command"
+            "command": "afplay /System/Library/Sounds/Ping.aiff",
+            "type": "command"
           }
         ],
-        "matcher" : "ExitPlanMode"
+        "matcher": "ExitPlanMode"
       }
     ],
-    "SessionStart" : [
+    "SessionStart": [
       {
-        "hooks" : [
+        "hooks": [
           {
-            "command" : "\"${CLAUDE_CONFIG_DIR:-$HOME\/.claude}\/hooks\/context-mode-cache-heal.mjs\"",
-            "type" : "command"
+            "command": "\"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/context-mode-cache-heal.mjs\"",
+            "type": "command"
           },
           {
-            "command" : "cat \"${CLAUDE_CONFIG_DIR:-$HOME\/.claude}\/output-styles\/reminder.md\" 2>\/dev\/null",
-            "type" : "command"
+            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null",
+            "type": "command"
           }
         ]
       }
     ],
-    "Stop" : [
+    "Stop": [
       {
-        "hooks" : [
+        "hooks": [
           {
-            "command" : "jq -e '.agent_id \/\/ empty' >\/dev\/null 2>&1 || afplay \/System\/Library\/Sounds\/Sosumi.aiff",
-            "type" : "command"
+            "command": "jq -e '.agent_id // empty' >/dev/null 2>&1 || afplay /System/Library/Sounds/Sosumi.aiff",
+            "type": "command"
           }
         ],
-        "matcher" : ""
+        "matcher": ""
       }
     ],
-    "UserPromptSubmit" : [
+    "UserPromptSubmit": [
       {
-        "hooks" : [
+        "hooks": [
           {
-            "command" : "cat \"${CLAUDE_CONFIG_DIR:-$HOME\/.claude}\/output-styles\/reminder.md\" 2>\/dev\/null",
-            "type" : "command"
+            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null",
+            "type": "command"
           }
         ]
       }
     ]
   },
-  "outputStyle" : "terse",
-  "permissions" : {
-    "allow" : [
+  "outputStyle": "terse",
+  "permissions": {
+    "allow": [
       "Bash",
       "Edit",
       "Glob",
@@ -132,10 +130,10 @@
       "WebSearch",
       "Write"
     ],
-    "defaultMode" : "bypassPermissions",
-    "deny" : [
-      "Read(.\/dist\/**)",
-      "Read(.\/next\/**)",
+    "defaultMode": "bypassPermissions",
+    "deny": [
+      "Read(./dist/**)",
+      "Read(./next/**)",
       "PushNotification",
       "NotebookEdit",
       "EnterPlanMode",
@@ -148,14 +146,14 @@
       "ScheduleWakeup"
     ]
   },
-  "plansDirectory" : ".\/.claude\/plans",
-  "promptSuggestionEnabled" : false,
-  "skipDangerousModePermissionPrompt" : true,
-  "spinnerTipsEnabled" : false,
-  "switchModelsOnFlag" : false,
-  "terminalProgressBarEnabled" : false,
-  "theme" : "auto",
-  "tipsEnabled" : false,
-  "tui" : "fullscreen",
-  "verbose" : true
+  "plansDirectory": "./.claude/plans",
+  "promptSuggestionEnabled": false,
+  "skipDangerousModePermissionPrompt": true,
+  "spinnerTipsEnabled": false,
+  "switchModelsOnFlag": false,
+  "terminalProgressBarEnabled": false,
+  "theme": "auto",
+  "tipsEnabled": false,
+  "tui": "fullscreen",
+  "verbose": true
 }
