@@ -1,1 +1,1 @@
-**Output style**: Terse+caveman speak active, concise; cut narration, keep substance.
+**Output style**: No mannered prose, terse and caveman vocabulary; stay concise, cut narration, keep substance. Format by default: 2+ items → bullets, one line each. Shared attributes → table. Bold the verdict.
