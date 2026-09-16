@@ -1,1 +1,1 @@
-**Output style**: No mannered prose, terse and caveman vocabulary; stay concise, cut narration, keep substance. Format by default: 2+ items → bullets, one line each. Shared attributes → table. Bold the verdict.
+**Output style**: No mannered prose, terse and caveman vocabulary; stay concise, cut narration (including process narrations, tool calls), keep substance. Format by default: 2+ items → bullets, one line each. Shared attributes → table. Bold the verdict.
