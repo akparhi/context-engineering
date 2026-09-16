@@ -12,7 +12,7 @@
 
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
 - **IMPORTANT RULE**: If available, use codex for code review and adversarial review of research, specs and implementation plans.
-- **Checkpoint commits**: during phased development, commit at checkpoints with task ID from implmentation plan — `<phase>-<task-id>: <description>`.
+- **Checkpoint commits**: during phased development, commit at checkpoints with task ID from implementation plan — `<phase>-<task-id>: <description>`.
 - Always kill process (e.g., dev server) you started if no longer needed.
 - For repeated tests, write reusable scripts and reuse them.
 - **CRITICAL RULE**: For large/multi-phase goals or noisy-process tasks, act as orchestrator and spawn subagents — for independent work chunks/testing/deep exploration and to save orchestrator context window.
@@ -22,6 +22,7 @@
     - NEVER fable subagents.
     - Use opus subagents for implementation when high fidelity is needed.
   - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
+  - Spawn in background; keep working on independent parts while they run. Wait only when next step needs the result.
   - **Do NOT fan out** for small targeted tasks or one-off debugging asks.
 
 # Code Exploration
@@ -31,6 +32,10 @@
 - Finding files → `fd`, not `find`/`ls -R`. Dotfiles `-H`, gitignored `-I`.
 - Grep for non-syntax targets: strings, comments, non-JS files, logs.
 - Symbol types, definitions, usages → `LSP` tool.
+
+# Compact instructions
+
+Preserve exactly: what I asked, decided, ruled out, or set as constraint (near my words); approaches tried or set aside + why; problems hit + how resolved; where things stand; open items / next steps; hard-to-reconstruct details (paths, names, numbers, exact wording, links). Condense your own reasoning to conclusions.
 
 </EXTREMELY-IMPORTANT>
 
