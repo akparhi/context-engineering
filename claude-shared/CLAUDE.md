@@ -19,8 +19,7 @@
   - **Large/multi-phase goals:** always delegate self-contained chunks (implementers per task, reviewers, research fan-out); main session stays coordinator — preserves its context for orchestration/judgment, keeps each chunk focused.
   - **Delegate to save orchestrator context window:** noisy-process/small-conclusion tasks (multi-search research, browser/Playwright exploration, log-heavy debugging) go to a subagent even as single tasks — orchestrator gets the report, not the trail.
   - **Subagent type:** Least-powerful model that fits: transcription/normal exploration → haiku, implementation/integration/testing/judgment/research/deep exploration → sonnet, architecture/final-review → opus.
-    - NEVER use fable subagents.
-    - **Exception — high fidelity tasks (initial planning, core feature building)**: use fable for planning/architecture, opus for implementation/integration.
+    - **Exception — high fidelity tasks (initial planning, core feature building)**: use fable for planning/architecture, opus for implementation/integration. Never fable for routine subagents.
   - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
   - Spawn in background; keep working on independent parts while they run. Wait only when next step needs the result.
   - **Do NOT fan out** for small targeted tasks or one-off debugging asks.
