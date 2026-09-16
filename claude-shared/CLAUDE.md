@@ -43,54 +43,50 @@ Preserve exactly: what I asked, decided, ruled out, or set as constraint (near m
 
 # Global Coding Standards
 
-**Write for the next reader.** They have none of your context — not this session, not why the old code was wrong. Where any rule below conflicts with readability, readability wins.
+**Write for the next reader** — they lack your context. Readability wins over any rule below.
 
-**Structure** — any non-trivial change:
+**Structure** (non-trivial change):
 
-- Happy path reads top-to-bottom, understandable without chasing callers; errors, invalid states, cleanup explicit.
-- Abstract on what varies (storage, transport, vendor SDK, auth, tenancy, clock/randomness), never on caller count. Can't name the axis → duplicate; a boundary at the wrong joint can't be moved.
-- Abstractions earn their place by hiding complexity from callers — no pass-through wrappers or indirection-only helpers.
-- Dependencies point inward: core logic never imports frameworks, DBs, HTTP, queues, UI, vendor types — behind core-owned ports, wired at the edge.
-- Business rules live in the model; controllers, handlers, hooks, serializers only translate.
-- Organize by feature, not `utils/`/`common/`/`*Service` grab-bags. One term per concept, matching domain language.
+- Happy path reads top-to-bottom without chasing callers; errors, invalid states, cleanup explicit.
+- Abstract on what varies (storage, transport, vendor SDK, auth, tenancy, clock/randomness), never on caller count. Can't name the axis → duplicate.
+- Abstraction must hide complexity from callers — no pass-through wrappers.
+- Dependencies point inward: core never imports frameworks, DBs, HTTP, queues, UI, vendor types — core-owned ports, wired at edge.
+- Business rules in the model; controllers/handlers/hooks/serializers only translate.
+- Organize by feature, not `utils/`/`common/`/`*Service`. One term per concept, domain language.
 - Split command from query; split functions mixing abstraction levels or hiding side effects.
 
-**Data & contracts** — persistence, messaging, cross-service/cross-version boundaries:
+**Data & contracts** (persistence, messaging, cross-service/version):
 
-- Every important write names its source of truth + consistency, durability, visibility expectation.
+- Important writes name source of truth + consistency/durability/visibility expectation.
 - Derived data (caches, indexes, projections) declares staleness, lag, rebuild path.
-- Retried/replayed/queued work is idempotent or transactional — no casual exactly-once claims.
-- Schemas, APIs, events, enums are versioned contracts: must survive old code, old data, rolling upgrades, in-flight messages. Additive and nullable by default.
+- Retried/replayed/queued work idempotent or transactional — no casual exactly-once.
+- Schemas/APIs/events/enums are versioned contracts: survive old code, old data, rolling upgrades, in-flight messages. Additive, nullable by default.
 - Assume crashes, partial writes, timeouts, duplicates, reordering, stale replicas, unknown success.
-- Validate at trust boundaries; prefer making invalid states unrepresentable over checking everywhere.
+- Validate at trust boundaries; make invalid states unrepresentable over checking everywhere.
+
 
 ## YAGNI: laziest thing that works
 
-After understanding the problem — read what the change touches, trace the real flow — climb this ladder and stop at the first rung that holds:
+Understand the problem first (read what change touches, trace real flow) — climb this ladder and stop at first rung that holds:
 
 1. Needs to exist? → no: skip.
-2. Already in this codebase? → reuse, don't rewrite.
-3. Stdlib covers it? → use it.
-4. Native platform feature? → use it (e.g., DB constraint over app logic).
-5. Already-installed dep? → use it.
-6. Trivial + stable? → one line inline.
-7. Non-trivial (parsing, dates, crypto, retries, validation)? → prefer mature library over hand-rolling; pick best, note choice + runner-up, proceed. Ask only if consequential (lock-in, security, heavy/unmaintained dep).
-8. Only then: minimum implementation.
-    - "Laziest" = reuse over new code, NOT avoid new code/dependencies. Decide and move; don't stop on every choice.
-    - Fix root cause, not every caller.
-    - **IMPORTANT**: Once problem is understood: fewest files, shortest diff.
-    - Mark deliberate shortcuts with ceiling and upgrade path: e.g., `// yagni: global lock, per-account if throughput matters`.
+2. Already available (codebase, stdlib, platform feature like DB constraint, installed dep)? → reuse.
+3. Trivial + stable? → one line inline.
+4. Non-trivial (parsing, dates, crypto, retries, validation)? → prefer mature library over hand-rolling; pick best, note choice + runner-up, proceed. Ask only if consequential (lock-in, security, heavy/unmaintained dep).
+5. Only then: minimum implementation.
 
-**CRITICAL**: Never simplify away anything I explicitly asked for. The ladder governs implementation, not requirements.
+- Laziest = reuse over new code, not avoid new code/deps. Decide and move.
+- **IMPORTANT**: Fix root cause, not every caller. **Fewest files, shortest diff.**
+- Mark deliberate shortcuts with ceiling + upgrade path: `// yagni: global lock, per-account if throughput matters`.
+- **CRITICAL**: Never simplify away anything I explicitly asked for. Ladder governs implementation, not requirements.
 
-## Code comments
+## Comments
 
-Default = no comment. One line, two max — longer = jsdoc/similar comment.
+Default = none. Inline = **why**, one line, two max; longer → doc comment (what + contract).
 
-- Inline comments say **why**, never what. Doc comments may say what + contract.
-- Comment for: a non-obvious constraint, landmine, or deliberate shortcut with its upgrade path.
-- **Never narrate diff** — no "changed from", "previously", "we used to". Git owns history.
-- **Reach for named constant/function, extracted variable before comments** — if comment explains what code does, the code needed better name.
+- Only for: non-obvious constraint, landmine, deliberate shortcut + upgrade path.
+- Never narrate diff ("previously", "used to") — git owns history.
+- Comment explains *what* → code needed a better name. Named constant/function first.
 
 ```ts
 // bad: history + restating
