@@ -26,13 +26,11 @@
 
 # Code Exploration
 
-- Finding files → `fd`, not `find`/`ls -R`. Dotfiles `-H`, gitignored `-I`.
-  - Bare `find` only for `-path`/`-newer`/`-exec` chains fd lacks.
-- TS/TSX/JS structural search → `ast-grep` (bin `ast-grep`): `ast-grep run -p '<pattern>' src`.
+- TS/TSX/JS code search → `ast-grep` by default (bin `ast-grep`): `ast-grep run -p '<pattern>' src`, not grep.
   - Non-trivial pattern → `ast-grep` skill; mapping a file/dir's shape → `ast-grep-outline` skill.
-  - Single known symbol in known file → grep fine.
-- Grep only for non-syntax targets: strings, comments, non-JS files, logs.
-- Symbol types, definitions, usages → `LSP` tool, never grep-guessing.
+- Finding files → `fd`, not `find`/`ls -R`. Dotfiles `-H`, gitignored `-I`.
+- Grep for non-syntax targets: strings, comments, non-JS files, logs.
+- Symbol types, definitions, usages → `LSP` tool.
 
 </EXTREMELY-IMPORTANT>
 
