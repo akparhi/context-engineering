@@ -13,12 +13,14 @@
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
 - **IMPORTANT RULE**: If available, use codex for code review and adversarial review of research, specs and implementation plans.
 - **Checkpoint commits**: during phased development, commit at checkpoints with task ID from implmentation plan — `<phase>-<task-id>: <description>`.
-- Always kill a process (e.g., dev server) you started if no longer needed.
+- Always kill process (e.g., dev server) you started if no longer needed.
 - For repeated tests, write reusable scripts and reuse them.
 - **CRITICAL RULE**: For large/multi-phase goals or noisy-process tasks, act as orchestrator and spawn subagents — for independent work chunks/testing/deep exploration and to save orchestrator context window.
   - **Large/multi-phase goals:** always delegate self-contained chunks (implementers per task, reviewers, research fan-out); main session stays coordinator — preserves its context for orchestration/judgment, keeps each chunk focused.
   - **Delegate to save orchestrator context window:** noisy-process/small-conclusion tasks (multi-search research, browser/Playwright exploration, log-heavy debugging) go to a subagent even as single tasks — orchestrator gets the report, not the trail.
-  - **Subagent type:** Least-powerful model that fits: transcription/normal exploration → haiku, implementation/integration/testing/judgment/deep exploration → sonnet, architecture/final-review → opus. NEVER fable subagents.
+  - **Subagent type:** Least-powerful model that fits: transcription/normal exploration → haiku, implementation/integration/testing/judgment/deep exploration → sonnet, architecture/final-review → opus.
+    - NEVER fable subagents.
+    - Use opus subagents for implementation when high fidelity is needed.
   - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
   - **Do NOT fan out** for small targeted tasks or one-off debugging asks.
 
