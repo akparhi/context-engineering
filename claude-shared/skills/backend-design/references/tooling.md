@@ -43,13 +43,13 @@ Scope: oxlint config, oxfmt, tsconfig flags, package.json scripts. All values ar
 
 ## oxfmt
 
-oxfmt has no config file; it reads defaults only. Run it as:
+This skill uses oxfmt defaults and adds no config file. Run it as:
 
 ```
 bun oxfmt --write src/
 ```
 
-Default settings match Prettier with 2-space indent and trailing commas. Do not add an `.oxfmtrc` or `prettier.config` file.
+Default settings match Prettier with 2-space indent and trailing commas. oxfmt does support project config (`.oxfmtrc.json`, `.oxfmtrc.jsonc`, `oxfmt.config.ts`, `oxfmt.config.mts`, found by walking up from the formatted file); leave it absent, and add no `prettier.config` either.
 
 ## `tsconfig.json`
 
@@ -89,7 +89,7 @@ Default settings match Prettier with 2-space indent and trailing commas. Do not 
 
 ## `no-restricted-imports` pattern reference
 
-The `no-restricted-imports` rule in the `src/client/**` override blocks any path matching `**/env/server*` or `**/server/env*`. This catches direct imports, aliased imports, and barrel re-exports.
+The `no-restricted-imports` rule in the `src/client/**` override blocks any path matching `**/env/server*` or `**/server/env*`. It matches the import specifier as written, so it catches direct and aliased paths, not a re-export reached through a barrel whose own specifier does not match.
 
 ```ts
 // blocked in src/client/**
@@ -107,7 +107,7 @@ One version of Zod across the entire project. Import from `"zod"` only — never
 // correct
 import { z } from "zod";
 
-// wrong — creates two Zod instances, breaks schema merging
+// wrong — same package, but a second spelling for one concept
 import { z } from "zod/v4";
 ```
 

@@ -31,8 +31,9 @@ export const verifyToken = createVerifier({
 `sub` (user id), `sid` (session id), `role`, `exp`. Nothing else.
 
 ```ts
-const accessToken = signAccessToken({ sub: user.id, sid: session.id, role: user.role });
+const accessToken = signAccessToken({ sub: user.id, sid: session.sid, role: user.role });
 ```
+
 
 Everything else — email, org, permissions, feature flags — is loaded server-side from the cached user record. A claim in a JWT cannot be revoked before `exp`; a lookup can. Refresh tokens carry `sub` and `sid` only, so a stolen refresh token cannot assert a role.
 
@@ -93,6 +94,7 @@ export const sessions = pgTable(
 );
 ```
 
+
 Logout sets `revokedAt` and deletes the L1 key. A role change revokes every session for that user, so the new role cannot wait out a stale token.
 
 ## Check `session:{sid}` in L1 for 5m, then the database
@@ -113,20 +115,27 @@ export async function loadSession(db: Database, sid: string) {
   const cached = sessionCache.get(`session:${sid}`);
   if (cached) return cached.valid ? cached : null;
 
-  const [row] = await db.select().from(sessions).where(eq(sessions.sid, sid)).limit(1);
-  const valid = Boolean(row) && !row.revokedAt && row.expiresAt > new Date().toISOString();
+  const [row] = await db
+    .select()
+    .from(sessions)
+    .where(and(eq(sessions.sid, sid), isNull(sessions.revokedAt), gt(sessions.expiresAt, sql`now()`)))
+    .limit(1);
+
+  const valid = Boolean(row);
   sessionCache.set(`session:${sid}`, { userId: row?.userId ?? "", valid });
-  return valid ? { userId: row.userId, valid } : null;
+  return row ? { userId: row.userId, valid: true } : null;
 }
 
 export const invalidateSession = (sid: string) => sessionCache.delete(`session:${sid}`);
 ```
 
+Compare expiry against `sql\`now()\`` in the query, never a string against a string in TypeScript. A `mode: "string"` timestamp reads back as the Postgres text form (`2026-09-16 10:00:00.123+00`), which is not ISO and does not sort lexically against `new Date().toISOString()`.
+
 Cache the negative result too — a revoked session otherwise hits the database on every replay.
 
-## Cache the user for 5m, invalidate on every `users` write
+## Cache the user under `user:{id}` from the verified `sub`
 
-Same tier, same TTL, same eviction rule. Key `user:{id}`.
+Same tier, same TTL, same eviction rule. The key is `user:{id}` where `id` is the `sub` claim of an already-verified token. Never key this cache by the token string: two tokens for one user would each get an entry, and `invalidateUser` could not find them.
 
 ```ts
 const userCache = new LRUCache<string, User>({ max: 10_000, ttl: 5 * 60 * 1000 });
@@ -351,6 +360,8 @@ Logged instead: `userId`, `orgId`, `requestId`, `role`, the auth outcome, and th
 | Refresh returns a new access token but the same refresh token | Rotate both and revoke the old `sid` |
 | Refresh token accepted twice | Replay: revoke every session for that user |
 | No `sessions` row check on the request path | Logout cannot revoke; check `session:{sid}` in L1 then the database |
+| Session expiry compared in TypeScript | Compare against `sql\`now()\`` in the query; `mode: "string"` is not ISO and does not sort against `toISOString()` |
+| User cache keyed by the token | Key `user:{id}` from the verified `sub`, or `invalidateUser` cannot find the entry |
 | Session or user cache TTL over `5m` | `5m` is the revocation lag ceiling |
 | Negative session lookup not cached | A revoked session hits the database on every replay |
 | `users` write with no `invalidateUser` after commit | Stale role or status survives up to `5m` |

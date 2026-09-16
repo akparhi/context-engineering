@@ -17,12 +17,19 @@ Never swallow unknown errors. Map them to `INTERNAL_SERVER_ERROR` at the router 
 Total timeout `5 s`, only idempotent methods or calls with an idempotency key are retried. Never retry 4xx except `429`.
 
 ```ts
-import { retry, circuitBreaker, handleAll, ConsecutiveBreaker, ExponentialBackoff, wrap } from 'cockatiel'
+import {
+  retry, circuitBreaker, handleAll, ConsecutiveBreaker,
+  ExponentialBackoff, fullJitterGenerator, wrap,
+} from 'cockatiel'
 
-// Retry: 3 attempts, exponential base 1 s, cap 30 s, full jitter
+// 3 total attempts: cockatiel's maxAttempts counts retries after the initial call
 const retryPolicy = retry(handleAll, {
-  maxAttempts: 3,
-  backoff: new ExponentialBackoff({ initialDelay: 1000, maxDelay: 30_000 }),
+  maxAttempts: 2,
+  backoff: new ExponentialBackoff({
+    generator: fullJitterGenerator, // default is decorrelated jitter, not full jitter
+    initialDelay: 1000,
+    maxDelay: 30_000,
+  }),
 })
 
 // Circuit breaker: open after 5 consecutive failures, half-open after 30 s, one probe
@@ -42,18 +49,21 @@ export async function httpFetch(
   const method = (init.method ?? 'GET').toUpperCase()
   const canRetry = IDEMPOTENT_METHODS.has(method) || !!init.idempotencyKey
 
-  const execute = () =>
-    fetch(url, {
+  const execute = async () => {
+    const res = await fetch(url, {
       ...init,
       signal: AbortSignal.timeout(5_000), // total timeout 5 s
-    }).then((res) => {
-      if (res.status === 429) {
-        const retryAfter = Number(res.headers.get('retry-after') ?? 1) * 1000
-        // Re-throw so the retry policy backs off using Retry-After
-        throw Object.assign(new Error('rate limited'), { retryAfter })
-      }
-      return res
     })
+
+    // Retryable statuses must throw: a returned Response counts as success,
+    // so neither the retry policy nor the breaker would ever see the failure.
+    if (res.status === 429 || res.status >= 500) {
+      await res.body?.cancel() // release the socket before retrying
+      throw new Error(`upstream ${res.status}`)
+    }
+
+    return res // other 4xx are returned as-is; never retried
+  }
 
   return canRetry ? resilient.execute(execute) : execute()
 }
@@ -66,10 +76,10 @@ export async function httpFetch(
 | Parameter | Value |
 | --- | --- |
 | Failure window | 5 consecutive failures |
-| Open duration | 60 s before half-open |
+| Open duration | 30 s before half-open |
 | Half-open probe | 1 request |
 
-Cockatiel's `ConsecutiveBreaker(5)` counts consecutive failures. `halfOpenAfter: 30_000` in the snippet above uses the brief's 30 s half-open wait. `verify:` cockatiel `halfOpenAfter` in ms vs `60s` window — the `60s` in the brief describes the *observation window* (failure counting period); cockatiel `ConsecutiveBreaker` counts consecutive failures without a time window. Brief ruling followed: 5 consecutive failures, 30 s half-open, one probe.
+Cockatiel's `ConsecutiveBreaker(5)` counts consecutive failures with no time window. `halfOpenAfter: 30_000` is milliseconds.
 
 ## Bulkheads via per-dependency concurrency limit
 
@@ -146,32 +156,42 @@ export async function createInvoiceWithOutbox(data: InvoiceInsert) {
 }
 ```
 
-Relay job (runs on a cron schedule) reads unprocessed rows and enqueues:
+Relay job (scheduled every `5s`) claims rows in a short transaction, then dispatches after that transaction commits:
 
 ```ts
 import { queue as invoiceQueue } from '../modules/invoice/jobs'
 import { db } from '../db'
 import { outbox } from '../db/schema/outbox.table'
-import { isNull } from 'drizzle-orm'
+import { isNull, eq } from 'drizzle-orm'
 
 export async function relayOutbox() {
-  const rows = await db
-    .select()
-    .from(outbox)
-    .where(isNull(outbox.processedAt))
-    .limit(100)
+  // 1. Claim inside a short transaction. skipLocked lets relays run concurrently.
+  const claimed = await db.transaction(async (tx) => {
+    const rows = await tx
+      .select()
+      .from(outbox)
+      .where(isNull(outbox.processedAt))
+      .limit(100)
+      .for('update', { skipLocked: true })
 
-  for (const row of rows) {
+    for (const row of rows) {
+      await tx
+        .update(outbox)
+        .set({ processedAt: new Date().toISOString() })
+        .where(eq(outbox.id, row.id))
+    }
+
+    return rows
+  })
+
+  // 2. Dispatch after commit. No queue call ran while rows were locked.
+  for (const row of claimed) {
     await invoiceQueue.add(row.jobName, row.payload, { jobId: row.id })
-    await db
-      .update(outbox)
-      .set({ processedAt: new Date().toISOString() })
-      .where(eq(outbox.id, row.id))
   }
 }
 ```
 
-BullMQ `jobId: row.id` makes re-relay idempotent — a duplicate enqueue is ignored.
+`outbox.id` is a UUID, so it is a legal `jobId`; BullMQ rejects colons, which UUIDs never contain. A crash between commit and dispatch loses the enqueue. Every processor must therefore tolerate replay from a recovery sweep of rows marked processed but never acknowledged downstream.
 
 ## Graceful degradation
 
@@ -180,7 +200,7 @@ When a non-critical dependency fails, serve stale cached data and declare stalen
 ```ts
 try {
   return await fetchFreshRates()
-} catch {
+} catch (err) {
   logger.warn({ err }, 'rates fetch failed, serving stale cache')
   const stale = await cache.get<ExchangeRates>('v1:rates:latest')
   if (!stale) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'rates unavailable' })
@@ -201,7 +221,7 @@ When the process is under memory or CPU pressure, reject new requests early with
 | Process crash mid-write | Transactional outbox; idempotent processors; DB constraints |
 | Partial write (multi-row insert) | Single transaction; all-or-nothing |
 | Outbound HTTP timeout | `AbortSignal.timeout(5000)`; circuit breaker opens after 5 failures |
-| Duplicate job delivery | `jobId` as idempotency key; processor checks completion state before acting |
+| Duplicate job delivery | `jobId` collapses enqueues only while the job exists; the processor's DB completion marker is the durable guard |
 | Message reorder | Keyset cursor; version/sequence field on events |
 | Stale read replica | Route writes to primary; route reads with `REPLICA` tag; declare staleness on cached responses |
 | Unknown success (no ack) | Idempotency key on mutation; check state before retrying; outbox relay re-enqueues safely |
@@ -212,6 +232,10 @@ When the process is under memory or CPU pressure, reject new requests early with
 | --- | --- |
 | Non-idempotent POST retried without idempotency key | Pass `idempotencyKey` or remove from retry path |
 | Circuit breaker thresholds changed from brief values | Restore: 5 consecutive failures, 30 s half-open, 1 probe |
+| `maxAttempts: 3` used for 3 total attempts | Cockatiel counts retries — use `maxAttempts: 2` |
+| `ExponentialBackoff` left on its default generator | Pass `generator: fullJitterGenerator` |
+| 5xx returned instead of thrown | Retry and breaker never count it — throw on 429 and 5xx |
+| Outbox claimed outside a transaction | Claim with `for update skip locked` in a tx, dispatch after commit |
 | `p-limit` shared across unrelated dependencies | Create one limiter instance per dependency |
 | Outbox relay not idempotent | Confirm `jobId: row.id` is set on `queue.add` |
 | Stale cache response has no staleness marker | Add `stale: true` to output and output schema |

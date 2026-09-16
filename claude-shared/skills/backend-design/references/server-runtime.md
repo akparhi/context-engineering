@@ -9,6 +9,7 @@ Scope: `src/server/index.ts`, `src/server/app.ts`, env modules, Vite proxy, Dock
 ```ts
 import { app } from "./app";
 import { registerWorkers, workers } from "./jobs";
+import { runMigrations } from "./db/migrate";
 import { sql } from "./db";
 import { redis } from "./lib/redis";
 import { env } from "./env/server";
@@ -17,6 +18,9 @@ import { logger } from "./lib/logger";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const PORT = env.PORT ?? 3000;
+
+// Migrations run under pg_advisory_lock before anything serves or consumes
+await runMigrations();
 
 const server = Bun.serve({
   fetch: app.fetch,
@@ -188,9 +192,15 @@ Remove the `/assets/*` and `index.html` static handlers in this variant; Next se
 
 ### `src/server/env/server.ts`
 
+`isServer` only makes t3-env throw when a server variable is *read* in the browser — it guards property access through a Proxy, not the import. Add an explicit top-level throw so bundling this module into client code fails immediately.
+
 ```ts
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
+
+if (typeof window !== "undefined") {
+  throw new Error("env/server.ts imported in a browser bundle");
+}
 
 export const env = createEnv({
   server: {
@@ -210,7 +220,6 @@ export const env = createEnv({
     AUTH_SECRET: process.env.AUTH_SECRET,
   },
   emptyStringAsUndefined: true,
-  // Throw if this module is imported in a browser context
   isServer: typeof window === "undefined",
 });
 ```
@@ -256,8 +265,16 @@ FROM base AS deps
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 
+FROM base AS build
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
+COPY . .
+RUN bun run build          # Vite emits the SPA into dist/client
+
 FROM base AS final
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=build /app/dist/client ./dist/client
+COPY drizzle ./drizzle
 COPY src ./src
 COPY tsconfig.json ./
 
@@ -273,7 +290,9 @@ CMD ["bun", "src/server/index.ts"]
 |---|---|
 | `/health` registered before `/rpc/*` | Health never routed to oRPC |
 | `c.newResponse(response.body, response)` used for oRPC routes | Not `c.json()` or `c.text()` |
-| `env/server.ts` has `isServer` guard | Throws when imported in browser |
+| `runMigrations()` awaited before `Bun.serve` and `registerWorkers()` | Nothing serves or consumes on an unmigrated schema |
+| `env/server.ts` has an explicit top-level `window` throw | `isServer` alone guards property access, not import |
+| Final image contains `dist/client` and `drizzle/` | SPA fallback and boot migrations both resolve |
 | `env/client.ts` uses `clientPrefix: "VITE_"` | All client vars prefixed |
 | `emptyStringAsUndefined: true` in both env modules | Empty strings not silently valid |
 | `runtimeEnv` lists every var explicitly | No `process.env` spread |

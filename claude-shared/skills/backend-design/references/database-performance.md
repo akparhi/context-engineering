@@ -205,7 +205,7 @@ export function withOrg<T>(orgId: string, fn: (tx: Tx) => Promise<T>) {
 
 The `true` third argument to `set_config` is what makes it transaction-local — the function form of `SET LOCAL`.
 
-Connect as a non-owner role. Table owners and superusers bypass RLS unless the table has `FORCE ROW LEVEL SECURITY`.
+Superusers and roles with `BYPASSRLS` always bypass RLS. Table owners bypass their own tables unless the table has `FORCE ROW LEVEL SECURITY`. Connect the app as a `NOSUPERUSER NOBYPASSRLS` non-owner role.
 
 ## Bound every statement and every lock wait
 
@@ -221,32 +221,50 @@ ALTER ROLE app_user SET lock_timeout = '3s';
 
 Override downward for a known-heavy read: `SET LOCAL statement_timeout = '30s'` inside its transaction.
 
-## Log any query over 200ms at warn, with the SQL text and param count
+## Log any query over 200ms at warn, timed at the call site
 
 Never the parameter values — they carry PII, tokens, and card data.
 
+Drizzle's `Logger.logQuery(query, params)` fires before execution and receives no duration, so it cannot report slow queries. Time the awaited call instead.
+
 ```ts
-import type { Logger } from "drizzle-orm/logger";
+// src/server/db/timed.ts
 import { logger } from "../lib/logger";
 
 const SLOW_QUERY_MS = 200;
 
-class SlowQueryLogger implements Logger {
-  logQuery(query: string, params: unknown[]): void {
-    const start = performance.now();
-    queueMicrotask(() => {
-      const durationMs = performance.now() - start;
-      if (durationMs > SLOW_QUERY_MS) {
-        logger.warn({ query, paramCount: params.length, durationMs }, "slow query");
-      }
-    });
+export async function timed<T>(label: string, run: () => Promise<T>): Promise<T> {
+  const start = performance.now();
+  try {
+    return await run();
+  } finally {
+    const durationMs = performance.now() - start;
+    if (durationMs > SLOW_QUERY_MS) logger.warn({ label, durationMs }, "slow query");
   }
 }
-
-export const db = drizzle({ client: sql, relations, logger: new SlowQueryLogger() });
 ```
 
-`verify:` Drizzle's `Logger.logQuery` fires before execution and receives no duration, so the microtask above measures scheduling, not query time. For true durations wrap the driver instead — postgres-js `onnotice`/debug hooks, or time the call site in `queries.ts`.
+Wrap the query in `queries.ts`, where the label is known:
+
+```ts
+export function listInvoices(db: Db, orgId: string) {
+  return timed("invoice.list", () =>
+    db.query.invoices.findMany({ where: { orgId: { eq: orgId } }, limit: 50 }),
+  );
+}
+```
+
+For the SQL text, add the postgres-js `debug` hook, which receives `(connection, query, parameters, paramTypes)` before each send. Log the query string and `parameters.length`, never the values.
+
+```ts
+const sql = postgres(env.DATABASE_URL, {
+  max: 10,
+  debug: (_conn, query, parameters) =>
+    logger.debug({ sql: query, paramCount: parameters.length }, "query"),
+});
+```
+
+Enable `debug` in development only — it fires on every query.
 
 `pg_stat_statements` is the server-side counterpart. Order by `mean_exec_time` to find the worst repeat offenders regardless of which process issued them.
 
@@ -289,5 +307,6 @@ Never cache a row read under `FOR UPDATE`, a money balance, or an authorization 
 | postgres-js behind transaction-mode PgBouncer with `prepare` unset | `prepare: false`, or PgBouncer 1.21+ with `max_prepared_statements = 200` |
 | No `statement_timeout` on the app role | `ALTER ROLE app_user SET statement_timeout = '10s'` |
 | Query params in a log line | Log SQL text and `params.length` only |
+| Slow queries timed inside `Logger.logQuery` | It runs before execution with no duration; wrap the awaited call in `timed()` |
 | Drizzle cache enabled with `global: true` | Opt in per query with `.$withCache()` |
 | `EXPLAIN` without `ANALYZE, BUFFERS` when diagnosing | `EXPLAIN (ANALYZE, BUFFERS)`, in a rolled-back transaction |

@@ -123,23 +123,27 @@ await db.transaction(async (tx) => {
 
 // modules/outbox/jobs.ts — polling worker dispatches pending events
 export async function pollOutbox(db: Db) {
-  const pending = await db
-    .select()
-    .from(outboxEvents)
-    .where(isNull(outboxEvents.processedAt))
-    .orderBy(asc(outboxEvents.createdAt))
-    .limit(100)
-    .for("update", { skipLocked: true });
+  await db.transaction(async tx => {
+    const pending = await tx
+      .select()
+      .from(outboxEvents)
+      .where(isNull(outboxEvents.processedAt))
+      .orderBy(asc(outboxEvents.createdAt))
+      .limit(100)
+      .for("update", { skipLocked: true });
 
-  for (const event of pending) {
-    await dispatch(event); // enqueue into BullMQ or call handler
-    await db
-      .update(outboxEvents)
-      .set({ processedAt: sql`now()`, attempts: event.attempts + 1 })
-      .where(eq(outboxEvents.id, event.id));
-  }
+    for (const event of pending) {
+      await dispatch(event); // enqueue into BullMQ or call handler
+      await tx
+        .update(outboxEvents)
+        .set({ processedAt: sql`now()`, attempts: event.attempts + 1 })
+        .where(eq(outboxEvents.id, event.id));
+    }
+  });
 }
 ```
+
+`.for("update", { skipLocked: true })` holds the row locks only until the enclosing transaction ends. On a pooled `db` handle with no transaction, the locks release at statement end and a second poller picks up the same rows.
 
 Schedule `pollOutbox` with `upsertJobScheduler` every 5 seconds. Idempotency key on the downstream job is the `outboxEvents.id`.
 

@@ -101,36 +101,78 @@ function createWorker<D, R>(
 
 ## `jobId` is the idempotency key — duplicate enqueues collapse
 
-Passing the same `jobId` twice does not create a second job. Derive `jobId` from domain identity (e.g., `invoice:${invoiceId}` or an external reference).
+Passing the same `jobId` twice does not create a second job. Derive `jobId` from domain identity, e.g. `invoice-${invoiceId}` or an external reference. A custom `jobId` must not contain `:`, which BullMQ reserves as its Redis key separator, and must not be all digits.
 
 ```typescript
-await enqueue({ invoiceId }, `invoice:${invoiceId}`);
+await enqueue({ orgId, invoiceId }, `invoice-${invoiceId}`);
 // Second call with same jobId is a no-op — BullMQ deduplicates
 ```
 
-## Processor checks a status marker before side effects
+Deduplication lasts only while the job exists in Redis. `removeOnComplete` deletes it after `1d` or `1000` entries, and the same `jobId` is then accepted again. The database-side idempotency marker in the next section is the real guard.
 
-Read a `processedAt` or status column before doing work. Write the completion marker in the same transaction as the outcome so partial processing is never silently swallowed.
+## Job data carries `orgId`; the processor sets the tenant scope
+
+There is no request context in a worker. Every job payload carries `{ orgId, ...ids }`. The processor opens a transaction and sets `app.org_id` before any tenant-scoped read, so RLS policies apply.
+
+```typescript
+export interface InvoiceJobData {
+  orgId: string;
+  invoiceId: string;
+}
+
+await db.transaction(async (tx) => {
+  await tx.execute(sql`select set_config('app.org_id', ${job.data.orgId}, true)`);
+  // tenant-scoped reads and writes on tx from here
+});
+```
+
+The `true` third argument makes the setting transaction-local, so it is discarded on commit and never leaks to the next pooled checkout.
+
+## Processor claims the work, sends outside the transaction, then marks it sent
+
+No network call goes inside `db.transaction`. A rollback cannot un-send an email. Claim the row in a short transaction, perform the side effect after it commits with a provider idempotency key, then record completion.
 
 ```typescript
 export async function processor(job: Job<InvoiceJobData>): Promise<void> {
-  const invoice = await db.query.invoices.findFirst({
-    where: eq(invoices.id, job.data.invoiceId),
+  const { orgId, invoiceId } = job.data;
+
+  // 1. Claim: lock the row, check the marker, record the attempt. Commits immediately.
+  const claimed = await db.transaction(async (tx) => {
+    await tx.execute(sql`select set_config('app.org_id', ${orgId}, true)`);
+
+    const invoice = await tx.query.invoices.findFirst({
+      where: { id: { eq: invoiceId } },
+      // FOR UPDATE so two workers cannot claim the same invoice
+    }).for("update");
+
+    if (!invoice) throw new UnrecoverableError("invoice not found");
+    if (invoice.sentAt) return undefined; // already sent — idempotent exit
+
+    await tx
+      .update(invoices)
+      .set({ sendClaimedAt: sql`now()` })
+      .where(eq(invoices.id, invoice.id));
+
+    return invoice;
   });
 
-  if (!invoice) throw new UnrecoverableError("invoice not found");
-  if (invoice.sentAt) return; // already processed — idempotent exit
+  if (!claimed) return;
 
+  // 2. Send outside the transaction. The provider deduplicates on this key.
+  await sendInvoiceEmail(claimed, { idempotencyKey: `invoice-${invoiceId}` });
+
+  // 3. Mark sent. If this fails, the retry re-sends and the provider drops the duplicate.
   await db.transaction(async (tx) => {
-    await sendInvoiceEmail(invoice); // side effect
+    await tx.execute(sql`select set_config('app.org_id', ${orgId}, true)`);
     await tx
       .update(invoices)
       .set({ sentAt: sql`now()` })
-      .where(eq(invoices.id, invoice.id));
-    // sentAt and email send are atomic — no partial state
+      .where(eq(invoices.id, invoiceId));
   });
 }
 ```
+
+The provider idempotency key, not the transaction, is what makes a duplicate send harmless. A stale `sendClaimedAt` with no `sentAt` after the lock duration means a crash between steps 2 and 3; the retry re-sends under the same key.
 
 ## Throw `UnrecoverableError` for permanent failures
 
@@ -214,27 +256,46 @@ adminApp.route(basePath, serverAdapter.registerPlugin());
 
 `SIGTERM`/`SIGINT` → stop accepting requests → drain in-flight → close workers → close DB and Redis → exit.
 
+`server.stop()` stops accepting connections and resolves once in-flight requests finish. `server.stop(true)` force-closes them instead — only use it after the drain budget is spent.
+
 ```typescript
-// src/server.ts
+// src/server/index.ts
 import { workers } from "@/server/jobs";
-import { sql } from "@/db";
-import { cacheRedis, jobsRedis } from "@/lib/redis";
-import { logger } from "@/lib/logger";
+import { sql } from "@/server/db";
+import { closeL2 } from "@/server/lib/cache/l2";
+import { jobsRedis } from "@/server/lib/redis";
+import { logger } from "@/server/lib/logger";
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+let shuttingDown = false;
 
 async function shutdown(signal: string): Promise<void> {
+  if (shuttingDown) return;
+  shuttingDown = true;
   logger.info({ signal }, "shutting down");
-  server.stop(true); // stop accepting new requests
-  await new Promise((r) => setTimeout(r, 10_000)); // drain 10s
-  await Promise.all(workers.map((w) => w.close())); // 30s BullMQ timeout
+
+  const hardExit = setTimeout(() => {
+    logger.error("shutdown: hard exit at 45s");
+    process.exit(1);
+  }, 45_000);
+  hardExit.unref();
+
+  // Drain: stop() resolves when in-flight requests finish; cap the wait at 10s
+  await Promise.race([server.stop(), sleep(10_000)]);
+  await server.stop(true); // force-close whatever survived the drain budget
+
+  await Promise.race([Promise.all(workers.map((w) => w.close())), sleep(30_000)]);
   await sql.end();
-  await cacheRedis.quit();
+  await closeL2();
   await jobsRedis.quit();
+
+  clearTimeout(hardExit);
   process.exit(0);
 }
 
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT",  () => shutdown("SIGINT"));
-setTimeout(() => process.exit(1), 45_000).unref(); // hard exit
 ```
 
 ## Test processors by calling them directly
@@ -273,7 +334,11 @@ Keep workers in-process behind `ROLE=all|worker` by default. Split to a separate
 | `concurrency` matches workload type | 5 default, 20 IO-bound, 1 CPU-bound |
 | `lockDuration: 30000` | Set on every worker |
 | Idempotency check before side effects | Read `processedAt`/status before acting |
-| Write marker in same transaction as outcome | Atomicity of marker + work |
+| `jobId` contains no `:` | BullMQ reserves the colon — use `invoice-${id}` |
+| DB marker guards the side effect, not `jobId` alone | Queue dedup ends when the job is removed |
+| No network call inside `db.transaction` | Claim in tx, send after commit, then mark sent |
+| Job data carries `orgId` | Processor runs `set_config('app.org_id', ..., true)` in the tx |
+| Graceful drain uses `server.stop()` first | `stop(true)` only after the 10s budget |
 | `UnrecoverableError` for permanent failures | Not retried, goes to failed set |
 | `maxRetriesPerRequest: null` on jobs ioredis | Required for BullMQ blocking |
 | Workers registered only for `ROLE=all\|worker` | `registerWorkers()` checks `env.ROLE` |

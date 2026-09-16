@@ -61,11 +61,19 @@ const timing = base.middleware(async ({ context, next, path }) => {
 
 export const procedure = base
   .use(timing)
-  .use(async ({ next, procedure: p }) => {
+  .use(async ({ context, next, procedure: p }) => {
     if (getUseTransaction(p) !== true) return next();
-    return rootDb.transaction(tx => next({ context: { db: tx } }));
+    return rootDb.transaction(async tx => {
+      const orgId = context.org?.id;
+      if (orgId) {
+        await tx.execute(sql`select set_config('app.org_id', ${orgId}, true)`);
+      }
+      return next({ context: { db: tx } });
+    });
   });
 ```
+
+`set_config(..., true)` is the transaction-local form of `SET LOCAL app.org_id`, which the tenant RLS policies read. Without it every policy on the `tx` evaluates against an unset setting and matches nothing. Tenant-scoped reads need the same scope, so mark them `useTransaction(true)` as well.
 
 `defineMeta(key, merge)` returns a setter and a getter pair. `.$meta<T>({})` on the builder plus `procedure["~orpc"].meta` in middleware is the v1 form and was removed in v2.
 
@@ -112,7 +120,7 @@ export const withPermission = (...required: string[]) =>
 
 Applying `.use` at both router level and procedure level runs the same middleware twice — v2 removed automatic dedupe. Cache expensive middleware behind a context flag: `if (context.permissionsLoaded) return next()`, otherwise load and `return next({ context: { permissions, permissionsLoaded: true } })`.
 
-## Derive input schemas from the table, refine at the boundary
+## Derive input schemas from the table, allow-list the client fields
 
 Zod 4, one version: `import { z } from "zod"`. Table-derived schemas come from `drizzle-orm/zod` on Drizzle v1 — never the standalone `drizzle-zod` package.
 
@@ -125,11 +133,13 @@ export const createInvoiceInput = createInsertSchema(invoices, {
   amountMinor: schema => schema.positive(),
   currency: schema => schema.length(3),
 })
-  .omit({ id: true, orgId: true, createdAt: true, updatedAt: true, createdBy: true, updatedBy: true })
+  .pick({ number: true, amountMinor: true, currency: true, dueAt: true, customerId: true })
   .extend({ idempotencyKey: z.uuid() });
 ```
 
-Omit server-owned columns — `orgId` comes from the authenticated context, never the client. Refinement callbacks extend the generated field schema; passing a bare Zod schema replaces it including its nullability.
+`.pick()` is an allow-list: a column added in a later migration is not client-writable by default. Server-owned columns — `id`, `orgId`, `createdAt`, `updatedAt`, `deletedAt`, `createdBy`, `updatedBy` — are never picked; `orgId` comes from the authenticated context.
+
+Refinement callbacks extend the generated field schema; passing a bare Zod schema replaces it including its nullability.
 
 ## Output schemas are required on OpenAPI-exposed procedures
 
@@ -139,7 +149,7 @@ Omit server-owned columns — `orgId` comes from the authenticated context, neve
 const invoiceOutput = z.object({
   id: z.uuid(),
   number: z.string(),
-  amountMinor: z.number().int(),
+  amountMinor: z.number().int(), // bigint({ mode: "number" }); ceiling 2^53 - 1 minor units
   currency: z.string().length(3),
   createdAt: z.iso.datetime(),
 });
@@ -150,6 +160,10 @@ export const get = authed
   .output(invoiceOutput)
   .handler(({ input, context }) => getInvoice(context.db, context.org.id, input.id));
 ```
+
+Money stays a `bigint` column in minor units, read with `bigint({ mode: "number" })` so the row yields a JS number that `z.number().int()` accepts. The ceiling is `2^53 - 1` minor units — about `90` trillion in a two-decimal currency. Switch that column to `mode: "bigint"` and the output field to `z.string()` if a single amount can exceed it.
+
+A `mode: "string"` timestamp column reads back as the Postgres text form (`2026-09-16 10:00:00.123+00`), which `z.iso.datetime()` rejects. Convert in the query with `sql\`to_char(...)\``, or read the column as `mode: "date"` and call `.toISOString()` in the handler.
 
 Return entity fields explicitly. Never spread a table row into the response — new columns leak on the next migration.
 
@@ -230,7 +244,8 @@ export const pageInput = z.object({
   cursor: z.string().optional(),
 });
 
-const cursorShape = z.object({ createdAt: z.iso.datetime(), id: z.uuid() });
+// createdAt is carried as the exact string read from the row, not re-formatted
+const cursorShape = z.object({ createdAt: z.string().min(1), id: z.uuid() });
 type Cursor = z.infer<typeof cursorShape>;
 
 export const encodeCursor = (c: Cursor): string =>
@@ -247,6 +262,8 @@ export const decodeCursor = (raw: string | undefined): Cursor | null => {
 export const pageOutput = <T extends z.ZodType>(item: T) =>
   z.object({ items: z.array(item), nextCursor: z.string().nullable() });
 ```
+
+The cursor carries `createdAt` exactly as read from the row, so it round-trips into the comparison unchanged. Validating it as `z.iso.datetime()` rejects the Postgres text form that a `mode: "string"` column actually returns (`2026-09-16 10:00:00.123+00`).
 
 An invalid cursor is a client error: throw `BAD_REQUEST`, never fall back to page one silently.
 
@@ -472,7 +489,9 @@ Error shape changes: with `toORPCRouter`, tRPC errors arrive wrapped in `ORPCErr
 | `import { createInsertSchema } from "drizzle-zod"` | `from "drizzle-orm/zod"` on Drizzle v1 |
 | Procedure served over OpenAPI with no `.output` | Add the output schema; the generator has nothing to emit without it |
 | Handler returns a spread table row | List response fields explicitly so new columns cannot leak |
-| `orgId` accepted in an input schema | Take it from `context.org.id`; `.omit({ orgId: true })` on the derived schema |
+| `orgId` accepted in an input schema | Take it from `context.org.id`; `.pick()` the client fields on the derived schema |
+| Derived insert schema built with `.omit()` | `.pick()` the client fields; an omit list lets the next migration's column through |
+| Transactional middleware without `set_config('app.org_id', ...)` | Tenant RLS policies match nothing on that `tx` |
 | `limit`/`offset` in a list input | Keyset `{ limit, cursor }`; offset only for admin tables under 10k rows |
 | Cursor is a plain id or a raw timestamp | Opaque `base64url` JSON over `(createdAt, id)`, validated on decode |
 | List query fetches exactly `limit` rows | Fetch `limit + 1` to derive `nextCursor` without a `count` |

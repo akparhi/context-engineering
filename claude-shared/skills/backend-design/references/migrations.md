@@ -10,13 +10,25 @@ bunx drizzle-kit generate --name add_invoice_status
 bunx drizzle-kit check               # verify the journal is consistent
 ```
 
-`generate` writes an `.sql` file plus a snapshot under `drizzle/meta/`. Both are committed together — the snapshot is how the next diff knows where it started.
+`generate` writes one folder per migration, named with a timestamp, containing `migration.sql` and `snapshot.json`. Commit the whole folder — the snapshot is how the next diff knows where it started.
+
+```
+drizzle/
+  20242409125510_add_invoice_status/
+    migration.sql
+    snapshot.json
+  20242409135510_backfill_invoice_currency/
+    migration.sql
+    snapshot.json
+```
+
+Drizzle v1 removed `meta/_journal.json`; migration order comes from the folder timestamps. A project upgrading from v0 runs `bunx drizzle-kit up` once to convert the old journal and snapshots. `drizzle-kit drop` no longer exists — delete the folder instead.
 
 Read the generated SQL before committing. Look for a rename rendered as `DROP` + `ADD` (data loss) and a `NOT NULL` added to a populated table (fails). Also look for an index on a large table (write lock) and a type change (table rewrite).
 
-Never hand-edit a generated schema migration. Change the schema and regenerate. Hand-written SQL belongs in a `--custom` file, which is journal-tracked; a loose `.sql` dropped into `drizzle/` is not in `meta/_journal.json` and never runs.
+Never hand-edit a generated schema migration. Change the schema and regenerate. Hand-written SQL belongs in a `--custom` migration, which gets its own timestamped folder; a loose `.sql` dropped into `drizzle/` is in no folder and never runs.
 
-Statements in a generated file are separated by `--> statement-breakpoint`. That marker is what the migrator splits on.
+Statements in a `migration.sql` are separated by `--> statement-breakpoint`. That marker is what the migrator splits on. It does not commit between statements.
 
 CI gate: run `generate` and fail if it produces a diff.
 
@@ -32,29 +44,36 @@ Every replica runs the same startup path. The lock makes exactly one of them app
 
 ```ts
 // src/server/index.ts
+import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { sql as sqlTag } from "drizzle-orm";
+import postgres from "postgres";
 import { app } from "./app";
-import { db, sql } from "./db/client";
+import { env } from "./env/server";
 import { logger } from "./lib/logger";
 
 const MIGRATE_LOCK = sqlTag`hashtext('migrate')`;
 
-await db.execute(sqlTag`select pg_advisory_lock(${MIGRATE_LOCK})`);
+// one physical connection, so lock, migrate and unlock share a session
+const migrationClient = postgres(env.DATABASE_URL, { max: 1 });
+const migrationDb = drizzle({ client: migrationClient });
+
+await migrationDb.execute(sqlTag`select pg_advisory_lock(${MIGRATE_LOCK})`);
 try {
-  await migrate(db, { migrationsFolder: "./drizzle" });
+  await migrate(migrationDb, { migrationsFolder: "./drizzle" });
   logger.info("migrations applied");
 } finally {
-  await db.execute(sqlTag`select pg_advisory_unlock(${MIGRATE_LOCK})`);
+  await migrationDb.execute(sqlTag`select pg_advisory_unlock(${MIGRATE_LOCK})`);
+  await migrationClient.end();
 }
 
 const server = Bun.serve({ port: Bun.env.PORT ?? 3000, fetch: app.fetch });
 logger.info({ port: server.port }, "listening");
 ```
 
-`pg_advisory_lock` is session-scoped, so it must be unlocked explicitly — hence the `finally`. Use the session lock here, not `pg_advisory_xact_lock`, because `migrate()` runs its own transactions.
+`pg_advisory_lock` is session-scoped, so it must be unlocked explicitly — hence the `finally`. Use the session lock here, not `pg_advisory_xact_lock`, because `migrate()` runs its own transaction.
 
-The lock must be held on a connection that outlives the migration. With `max: 10` postgres-js reuses connections; take the lock and run the migration on the same `db` handle as above.
+The lock lives on a connection, not on a handle. The app pool (`max: 10`) hands out a different physical connection per statement, so an unlock issued through it can land on a connection that never held the lock. Migrations therefore get their own `max: 1` client, closed as soon as they finish.
 
 ## Expand and contract for every rename and every type change
 
@@ -79,40 +98,44 @@ Adding a `NOT NULL` column without a default to a populated table fails. A volat
 ALTER TABLE invoices ADD COLUMN currency char(3);
 ```
 
-**Step 2 — backfill in batches** in a `--custom` migration. One statement per `1000` rows, looped, so no single statement holds a long lock.
+**Step 2 — backfill in batches**, outside the migrator. `migrate()` wraps every pending file in one transaction, so a `COMMIT` inside a migration cannot run there. Batched backfills need their own transaction per batch, so they go in `scripts/db-ops.ts` (defined below) or a one-off job.
 
-```bash
-bunx drizzle-kit generate --custom --name backfill_invoice_currency
-```
+```ts
+// bun scripts/backfill-invoice-currency.ts
+import postgres from "postgres";
+import { env } from "../src/server/env/server";
+import { logger } from "../src/server/lib/logger";
 
-```sql
--- drizzle/0014_backfill_invoice_currency.sql
-DO $$
-DECLARE
-  updated integer;
-BEGIN
-  LOOP
+const sql = postgres(env.DATABASE_URL, { max: 1 });
+
+for (;;) {
+  const rows = await sql`
     UPDATE invoices SET currency = 'AED'
-    WHERE id IN (
-      SELECT id FROM invoices WHERE currency IS NULL LIMIT 1000
-    );
-    GET DIAGNOSTICS updated = ROW_COUNT;
-    EXIT WHEN updated = 0;
-    COMMIT;
-  END LOOP;
-END $$;
+    WHERE id IN (SELECT id FROM invoices WHERE currency IS NULL LIMIT 1000)
+    RETURNING id`;
+  logger.info({ updated: rows.count }, "backfill batch");
+  if (rows.count === 0) break;
+}
+
+await sql.end();
 ```
 
-The backfill is idempotent — it targets only `currency IS NULL`, so a re-run is a no-op.
+Each statement is its own transaction, so no batch holds a lock across the whole table. The backfill is idempotent — it targets only `currency IS NULL`, so a re-run is a no-op. Run it to completion and verify `SELECT count(*) FROM invoices WHERE currency IS NULL` returns `0` before shipping step 3.
 
-`verify:` `COMMIT` inside a `DO` block requires a procedure-style block and fails when the block itself runs inside a transaction. If the migrator wraps each file in a transaction, run the loop as a one-off operational script against the same database instead, then ship step 3.
+**Step 3 — tighten without a full-table lock**, across two releases. A direct `SET NOT NULL` scans the whole table under `ACCESS EXCLUSIVE`. `CHECK ... NOT VALID` then `VALIDATE CONSTRAINT` holds only `SHARE UPDATE EXCLUSIVE` during the scan — but only if the two run in separate transactions. Inside one `migrate()` transaction the `ACCESS EXCLUSIVE` lock taken by `ADD CONSTRAINT` is held until commit, through the entire scan, and `--> statement-breakpoint` does not release it.
 
-**Step 3 — tighten without a full-table lock.** A direct `SET NOT NULL` scans the whole table under a strong lock. `CHECK ... NOT VALID` then `VALIDATE CONSTRAINT` takes only a `SHARE UPDATE EXCLUSIVE` lock during the scan.
+Release A adds the constraint, unvalidated. This is a catalog-only change:
 
 ```sql
+-- drizzle/20242409140000_invoices_currency_not_null/migration.sql
 ALTER TABLE invoices ADD CONSTRAINT invoices_currency_not_null
   CHECK (currency IS NOT NULL) NOT VALID;
---> statement-breakpoint
+```
+
+Release B validates it, then tightens the column:
+
+```sql
+-- drizzle/20242410090000_invoices_currency_validate/migration.sql
 ALTER TABLE invoices VALIDATE CONSTRAINT invoices_currency_not_null;
 --> statement-breakpoint
 ALTER TABLE invoices ALTER COLUMN currency SET NOT NULL;
@@ -120,9 +143,9 @@ ALTER TABLE invoices ALTER COLUMN currency SET NOT NULL;
 ALTER TABLE invoices DROP CONSTRAINT invoices_currency_not_null;
 ```
 
-On Postgres 12+ a validated `CHECK (col IS NOT NULL)` lets `SET NOT NULL` skip its own scan, so the last two statements are cheap.
+On a table where the validation scan is long enough to matter, run the `VALIDATE` through `scripts/db-ops.ts` before deploying release B, and edit the migration statement to a no-op re-validate.
 
-The backfill migration must be ordered before the tightening migration in `drizzle/meta/_journal.json`. Generate the custom file first, then the schema file.
+On Postgres 12+ a validated `CHECK (col IS NOT NULL)` lets `SET NOT NULL` skip its own scan, so the last two statements are cheap.
 
 ## Build large indexes concurrently, outside `migrate()`
 
@@ -162,11 +185,11 @@ DROP INDEX CONCURRENTLY invoices_org_created_idx;
 `ALTER TYPE ... ADD VALUE` runs inside a transaction, but the new value is unusable until commit. `migrate()` runs all pending files in one transaction, so a default or backfill using the value in the same run fails.
 
 ```sql
--- drizzle/0016_invoice_status_add_refunded.sql
+-- drizzle/20242411100000_invoice_status_add_refunded/migration.sql
 ALTER TYPE invoice_status ADD VALUE IF NOT EXISTS 'refunded';
 ```
 
-Nothing else in that file. Code that writes `'refunded'` ships in the release after the migration lands.
+`migrate()` batches every pending file into one transaction, so a separate file is not a separate commit. The only reliable split is a release boundary: ship the `ADD VALUE` alone, deploy, then ship the code and migrations that write `'refunded'`.
 
 Postgres cannot remove an enum value. Removal means creating a new type, migrating every column, and dropping the old type — a full expand/contract cycle.
 
@@ -176,16 +199,24 @@ A set that gains or loses members more than yearly is not an enum. Use a lookup 
 
 Adding an FK to a populated table scans the whole child table under a lock. Split it:
 
+Release A adds it unvalidated:
+
 ```sql
 ALTER TABLE invoice_items
   ADD CONSTRAINT invoice_items_invoice_id_fk
   FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
   NOT VALID;
---> statement-breakpoint
+```
+
+Release B validates it:
+
+```sql
 ALTER TABLE invoice_items VALIDATE CONSTRAINT invoice_items_invoice_id_fk;
 ```
 
 `NOT VALID` enforces the constraint on new rows immediately and skips the scan. `VALIDATE CONSTRAINT` checks existing rows under a weaker lock.
+
+The two must commit separately. In one `migrate()` transaction the `ADD CONSTRAINT` locks both tables until commit, so the weaker validation lock buys nothing. Split by release, or run the `VALIDATE` through `scripts/db-ops.ts` before deploying release B.
 
 Index the referencing column in the same release — Postgres does not, and an unindexed FK makes parent deletes scan the child table.
 
@@ -193,7 +224,8 @@ Index the referencing column in the same release — Postgres does not, and an u
 
 ```ts
 // src/server/db/seed.ts
-import { db, sql } from "./client";
+import { sql } from "drizzle-orm";
+import { db, client } from "./client";
 import { billingPlans } from "./schema";
 import { logger } from "../lib/logger";
 
@@ -211,10 +243,10 @@ await db
   });
 
 logger.info({ count: PLANS.length }, "seeded billing plans");
-await sql.end();
+await client.end();
 ```
 
-Run with `bun src/server/db/seed.ts`. Seeds carry reference data only — plans, roles, feature flags, country codes. Demo and test fixtures live in test setup, never in the seed.
+`sql` here is the Drizzle fragment tag from `drizzle-orm`, not the postgres-js client; `client` is the postgres-js handle `db/client.ts` also exports. Run with `bun src/server/db/seed.ts`. Seeds carry reference data only — plans, roles, feature flags, country codes. Demo and test fixtures live in test setup, never in the seed.
 
 A seed that fails on a second run is broken. Every write is an upsert keyed on a natural unique column.
 
@@ -239,14 +271,14 @@ Take a snapshot before any migration that drops a column, drops a table, or rewr
 | --- | --- |
 | Generated SQL reviewed | Read line by line; no unintended `DROP`, no surprise rewrite |
 | Rename rendered as DROP + ADD | Rewritten as expand/contract across releases |
-| New `NOT NULL` column | Added nullable, backfilled in `1000`-row batches, tightened via `CHECK ... NOT VALID` |
-| Backfill ordering | Custom backfill file has a lower index than the tightening file in `meta/_journal.json` |
+| New `NOT NULL` column | Added nullable, backfilled in `1000`-row batches, `CHECK ... NOT VALID` and `VALIDATE` in separate releases |
+| Backfill placement | Run as an ops script or one-off job, not as a migration; completed before the tightening release |
 | Backfill idempotent | Re-running changes nothing; predicate targets only unmigrated rows |
 | Index on a large table | Built via `scripts/db-ops.ts` with `CONCURRENTLY` before deploy; migration statement edited to `IF NOT EXISTS` |
 | Enum change | `ALTER TYPE ... ADD VALUE IF NOT EXISTS` in one release; first use of the value in the next; no removals planned |
-| New foreign key | Added `NOT VALID`, validated separately, referencing column indexed |
+| New foreign key | Added `NOT VALID` in one release, validated in the next, referencing column indexed |
 | Column drop | Two releases after the last code that reads it |
-| Journal and snapshots | `drizzle/meta/_journal.json` and the snapshot committed with the `.sql` |
+| Migration folder | Whole timestamped folder committed: `migration.sql` and `snapshot.json` together |
 | `push` used | Never against a shared or production database |
 | Applied in staging first | Same migration ran clean against production-shaped data |
 | Row counts | Verified before and after every backfill |
@@ -258,13 +290,16 @@ Take a snapshot before any migration that drops a column, drops a table, or rewr
 | Detection | Fix |
 | --- | --- |
 | Generated `.sql` edited by hand | Revert; change the schema and regenerate |
-| Loose `.sql` added to `drizzle/` without `generate --custom` | Regenerate through `--custom` so it lands in `meta/_journal.json` |
+| Loose `.sql` added to `drizzle/` without `generate --custom` | Regenerate through `--custom` so it lands in its own timestamped folder |
 | `push` in a deploy script or CI job | `generate` + `migrate`; `push` is dev-only |
 | `migrate()` called without an advisory lock | Wrap in `pg_advisory_lock(hashtext('migrate'))` with an unlock in `finally` |
+| Boot lock taken on the pooled app handle | Use a dedicated `postgres(url, { max: 1 })` client so lock and unlock share one session |
+| `COMMIT` inside a migration file | Move the batched work to an ops script; `migrate()` owns the transaction |
+| `ADD CONSTRAINT ... NOT VALID` and `VALIDATE CONSTRAINT` in one migration | Split across two releases, or run the `VALIDATE` via `scripts/db-ops.ts` |
 | `migrate()` called after `Bun.serve` | Move it before; the server must not accept traffic on an old schema |
 | `ALTER TABLE ... RENAME COLUMN` in a migration | Expand/contract: add, dual-write, backfill, switch reads, drop |
 | `ADD COLUMN ... NOT NULL` on a populated table | Add nullable → batched backfill → `CHECK ... NOT VALID` → `VALIDATE` → `SET NOT NULL` |
-| Backfill as a single unbounded `UPDATE` | Loop `1000` rows per statement with an `EXIT WHEN` on zero rows |
+| Backfill as a single unbounded `UPDATE` | Loop `1000` rows per statement in an ops script; stop when a batch updates zero rows |
 | `CREATE INDEX` without `CONCURRENTLY` on a table over `1M` rows | Build via `scripts/db-ops.ts` first; edit the migration statement to `IF NOT EXISTS` |
 | `ALTER TYPE ... ADD VALUE` and a statement using the value in the same deploy | Split across two releases |
 | Code writing a new enum value in the same release as the `ADD VALUE` | Split across two releases |
@@ -273,3 +308,4 @@ Take a snapshot before any migration that drops a column, drops a table, or rewr
 | Seed script failing on a second run | Convert every write to `onConflictDoUpdate` on a natural key |
 | A `down` migration file | Delete it; write the inverse forward migration instead |
 | Row deleted from `__drizzle_migrations` | Restore the row; resolve the drift with a forward migration |
+| `drizzle/meta/_journal.json` referenced or expected | v1 uses timestamped folders; run `drizzle-kit up` once to convert a v0 project |

@@ -267,7 +267,9 @@ await db.transaction(async (tx) => {
 });
 ```
 
-RLS applies to the connecting role. Connect as a non-owner role — table owners and superusers bypass policies unless the table has `FORCE ROW LEVEL SECURITY`.
+RLS applies to the connecting role. Superusers and roles with `BYPASSRLS` always bypass policies. Table owners bypass their own tables unless the table has `FORCE ROW LEVEL SECURITY`.
+
+Connect the app as a role that is `NOSUPERUSER NOBYPASSRLS` and does not own the tables.
 
 ## Derive Zod schemas from tables, never hand-write them
 
@@ -280,7 +282,15 @@ import { z } from "zod";
 export const invoiceSelect = createSelectSchema(invoices);
 export const invoiceInsert = createInsertSchema(invoices, {
   currency: (s) => s.length(3).toUpperCase(),
-}).omit({ id: true, createdAt: true, updatedAt: true, deletedAt: true });
+}).omit({
+  id: true,
+  orgId: true,
+  createdAt: true,
+  updatedAt: true,
+  deletedAt: true,
+  createdBy: true,
+  updatedBy: true,
+});
 export const invoiceUpdate = createUpdateSchema(invoices).pick({ status: true });
 ```
 

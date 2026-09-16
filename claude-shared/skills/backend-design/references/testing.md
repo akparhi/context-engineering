@@ -53,10 +53,10 @@ export class FakeMailer implements Mailer {
 Use in a service test:
 
 ```ts
-import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'bun:test'
 import { FakeMailer } from '../../test/fakes/fake-mailer'
 import { InvoiceService } from './service'
-import { db, migrate, truncate } from '../../test/db'
+import { db, migrate, truncate, teardown } from '../../test/db'
 
 let service: InvoiceService
 let mailer: FakeMailer
@@ -67,7 +67,8 @@ beforeAll(async () => {
   service = new InvoiceService(db, mailer)
 })
 
-afterAll(() => truncate())
+afterAll(() => teardown())
+afterEach(() => truncate())
 
 it('sends an email after invoice creation', async () => {
   await service.createAndSend({ orgId: 'org-1', amount: 5000, currency: 'USD' })
@@ -86,25 +87,30 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testconta
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { migrate as drizzleMigrate } from 'drizzle-orm/postgres-js/migrator'
-import * as schema from '../server/db/schema'
+import { relations } from '../server/db/relations'
 
-let container: StartedPostgreSqlContainer
+let container: StartedPostgreSqlContainer | undefined
 let sql: ReturnType<typeof postgres>
 export let db: ReturnType<typeof drizzle>
 
 export async function migrate() {
   container = await new PostgreSqlContainer('postgres:17').start()
   sql = postgres(container.getConnectionUri())
-  db = drizzle(sql, { schema })
+  db = drizzle({ client: sql, relations, casing: 'snake_case' })
   await drizzleMigrate(db, { migrationsFolder: './drizzle' })
 }
 
 export async function truncate() {
   await sql`TRUNCATE TABLE invoices, outbox RESTART IDENTITY CASCADE`
-  await sql.end()
-  await container.stop()
+}
+
+export async function teardown() {
+  await sql?.end()
+  await container?.stop()
 }
 ```
+
+`relations` and `casing` must match production, or the relational queries and generated SQL under test differ from the deployed ones. `teardown` is separate from `truncate` so a test file can reset between tests and close once at the end.
 
 When the Docker socket is unavailable (CI without Docker), fall back to a `test` service in `compose.yml`:
 
@@ -129,10 +135,12 @@ export async function migrate() {
     container = await new PostgreSqlContainer('postgres:17').start()
     sql = postgres(container.getConnectionUri())
   }
-  db = drizzle(sql, { schema })
+  db = drizzle({ client: sql, relations, casing: 'snake_case' })
   await drizzleMigrate(db, { migrationsFolder: './drizzle' })
 }
 ```
+
+`container` stays `undefined` on this path, so `teardown` closes the client and stops the container only if the fixture started one.
 
 ## Router tests via oRPC `call`
 
@@ -141,23 +149,36 @@ export async function migrate() {
 ```ts
 import { call } from '@orpc/server'
 import { invoiceRouter } from './router'
-import { db, migrate, truncate } from '../../test/db'
+import { db, migrate, truncate, teardown } from '../../test/db'
 
 beforeAll(() => migrate())
-afterAll(() => truncate())
+afterAll(() => teardown())
+
+const ABSENT_ID = '00000000-0000-7000-8000-000000000000'
+
+function authedContext() {
+  return {
+    db,
+    user: { id: Bun.randomUUIDv7(), role: 'member' as const },
+    orgId: Bun.randomUUIDv7(),
+    requestId: Bun.randomUUIDv7(),
+    headers: new Headers(),
+    logger,
+  }
+}
 
 it('returns NOT_FOUND for unknown invoice', async () => {
   await expect(
-    call(invoiceRouter.get, { id: 'does-not-exist' }, {
-      context: { db, userId: 'user-1', orgId: 'org-1' },
-    }),
+    call(invoiceRouter.get, { id: ABSENT_ID }, { context: authedContext() }),
   ).rejects.toMatchObject({ code: 'NOT_FOUND' })
 })
 ```
 
+A UUID input schema rejects `'does-not-exist'` with `BAD_REQUEST` before the handler runs, so an absent id must still be a well-formed UUID. The context must satisfy the authenticated `BaseContext` in full, or the auth middleware fails first and the test never reaches `NOT_FOUND`.
+
 ## Auth middleware tests
 
-Test the middleware directly by constructing a minimal oRPC context.
+Test the middleware directly by constructing an oRPC context. The middleware reads the `access_token` cookie and verifies the JWT before it looks up the session, so a revocation test needs a validly signed token naming the revoked `sid`.
 
 ```ts
 it('rejects missing cookie with UNAUTHORIZED', async () => {
@@ -167,39 +188,47 @@ it('rejects missing cookie with UNAUTHORIZED', async () => {
 })
 
 it('rejects revoked session with UNAUTHORIZED', async () => {
-  const headers = new Headers({ cookie: 'sid=revoked-session-id' })
+  const { sid, userId } = await seedSession(db)
+  await revokeSession(db, sid)
+
+  const token = await signAccessToken({ sub: userId, sid, role: 'member' })
+  const headers = new Headers({ cookie: `access_token=${token}` })
+
   await expect(
-    call(protectedProcedure, {}, { context: { headers } }),
+    call(protectedProcedure, {}, { context: { db, headers } }),
   ).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
 })
 ```
 
 ## Job processor tests
 
-Call `processor` directly with a fake `Job`. Assert idempotency by calling twice.
+Call `processor` directly with a fake `Job`. Both calls live in one test, so the assertion does not depend on another test having run first.
 
 ```ts
 import type { Job } from 'bullmq'
 import { processor } from './jobs'
-import { db, migrate, truncate } from '../../test/db'
+import { db, migrate, truncate, teardown } from '../../test/db'
 
 function fakeJob(data: Record<string, unknown>): Job {
   return { id: 'job-1', data, attemptsMade: 0, queueName: 'invoice.send' } as unknown as Job
 }
 
 beforeAll(() => migrate())
-afterAll(() => truncate())
+afterAll(() => teardown())
 
-it('sends invoice email', async () => {
-  const job = fakeJob({ invoiceId: 'inv-1' })
+it('sends the invoice email exactly once across two runs', async () => {
+  const invoiceId = await seedInvoice(db, { orgId })
+  const job = fakeJob({ orgId, invoiceId })
+
   await processor(job)
-  // assert side effect
-})
+  await processor(job)
 
-it('is idempotent on second call', async () => {
-  const job = fakeJob({ invoiceId: 'inv-1' })
-  await processor(job) // second call; must not double-send
-  // assert sent count is still 1
+  const [row] = await db
+    .select({ sentAt: invoices.sentAt })
+    .from(invoices)
+    .where(eq(invoices.id, invoiceId))
+  expect(row.sentAt).not.toBeNull()
+  expect(mailer.sent).toHaveLength(1)
 })
 ```
 
@@ -218,7 +247,7 @@ it('keyset pagination has no gaps or duplicates', async () => {
     const page = await call(
       invoiceRouter.list,
       { cursor, limit: 20 },
-      { context: { db, userId: 'u-1', orgId: 'org-1' } },
+      { context: authedContext() },
     )
     for (const row of page.items) {
       expect(seen.has(row.id)).toBe(false)
@@ -246,8 +275,10 @@ it('migrates a fresh DB and responds to select 1', async () => {
 
 ```toml
 [test]
-coverageThreshold = { line = 80 }
+coverageThreshold = { lines = 0.8, functions = 0.8 }
 ```
+
+Thresholds are fractions, not percentages, and Bun checks them per file, not against the aggregate. Bun accepts a `statements` key but does not enforce it.
 
 Run with:
 
@@ -275,7 +306,11 @@ Start the compose `db-test` service before this step, or let `DATABASE_URL` abse
 | Drizzle mocked with `jest.mock` or `mock()` | Remove mock; use real Postgres via Testcontainers |
 | `TRUNCATE` missing `RESTART IDENTITY CASCADE` | Add both clauses to reset sequences and FK rows |
 | Router test uses HTTP fetch instead of `call` | Import `call` from `@orpc/server` and call directly |
-| Processor test does not assert idempotency | Add second call and assert side-effect count is unchanged |
+| Processor test does not assert idempotency | Call the processor twice in one test and assert the side-effect count is unchanged |
 | Pagination test checks only first page | Loop until `nextCursor` is `undefined`; count total rows |
 | No migration smoke test | Add a test file that calls `migrate()` and runs `select 1` |
-| `bun:test` missing from imports | Use `import { describe, it, expect, beforeAll, afterAll } from 'bun:test'` |
+| `drizzle(sql, { schema })` in the test fixture | `drizzle({ client: sql, relations, casing: 'snake_case' })`, matching production |
+| `container.stop()` called unconditionally | Type `container` as optional and stop only a fixture-owned one; always `await sql?.end()` |
+| Router test id that is not a UUID | Use a well-formed absent UUID; a bad one fails input validation with `BAD_REQUEST` |
+| Partial oRPC context in a router test | Supply the full authenticated `BaseContext`: `db`, `user`, `orgId`, `requestId`, `headers`, `logger` |
+| `bun:test` missing from imports | Use `import { describe, it, expect, beforeAll, afterAll, afterEach } from 'bun:test'` |

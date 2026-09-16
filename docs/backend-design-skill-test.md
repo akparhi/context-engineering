@@ -69,3 +69,5 @@ Score 4 pass / 4 partial / 7 fail.
 Score 13 pass / 2 partial / 0 fail (RED: 4 / 4 / 7).
 
 Skill gaps reported by GREEN agent, to fix: job payload must carry `orgId` for tenant-scoped processors; caching write path (update → commit → invalidate) missing an example; `@bull-board/hono` mount and `serveStatic` fallback forms need verification; `drizzle-orm/postgres-js/migrator` import path under v1 unconfirmed.
+
+Fix round 1 applied after GREEN (see `docs/backend-design-skill-fixes.md`): 55 codex rows applied after verification, 61 dropped as design additions beyond the researched sources; GREEN gaps G1–G7 applied. Second GREEN run not performed.

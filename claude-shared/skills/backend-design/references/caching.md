@@ -7,7 +7,7 @@ Three-tier caching for the Bun + Hono + Drizzle stack — exact values only, no 
 `lru-cache` with `max: 10_000` and `ttl` in milliseconds (≤ 5 minutes). One shared instance per process.
 
 ```typescript
-// src/lib/cache/l1.ts
+// src/server/lib/cache/l1.ts
 import { LRUCache } from "lru-cache";
 
 export const l1 = new LRUCache<string, unknown>({
@@ -16,22 +16,27 @@ export const l1 = new LRUCache<string, unknown>({
 });
 ```
 
-## Use L2 Redis via keyv + @keyv/redis for shared data
+## Use L2 Redis via `@keyv/redis`, which runs on `@redis/client`
 
-`@keyv/redis` wraps ioredis. Use a separate ioredis connection for cache (one for cache, one for BullMQ). Set `keyPrefix` per environment to isolate staging from production.
+`@keyv/redis` is built on `@redis/client`, not ioredis. It owns its own connection. Set `namespace` per environment to isolate staging from production.
 
 ```typescript
-// src/lib/cache/l2.ts
+// src/server/lib/cache/l2.ts
 import Keyv from "keyv";
 import KeyvRedis from "@keyv/redis";
-import { env } from "@/env/server";
+import { env } from "@/server/env/server";
 
-const keyvRedis = new KeyvRedis(env.REDIS_URL, {
+export const keyvRedis = new KeyvRedis(env.REDIS_URL, {
   namespace: `${env.APP_ENV}:cache`, // isolates staging/prod
 });
 
 export const l2 = new Keyv({ store: keyvRedis });
+
+// Shutdown closes this connection; `force` skips the QUIT round-trip
+export const closeL2 = () => keyvRedis.disconnect();
 ```
+
+BullMQ keeps a separate ioredis connection with `maxRetriesPerRequest: null`. The two clients never share a handle.
 
 ## Key format is `v1:{entity}:{id}[:{variant}]`
 
@@ -52,7 +57,7 @@ Every key begins with `v1:` so future format changes can flush cleanly by prefix
 ## TTL map in seconds — use these names everywhere
 
 ```typescript
-// src/lib/cache/ttls.ts
+// src/server/lib/cache/ttls.ts
 export const ttls = {
   xxs: 60,       //  1 min
   xs:  600,      // 10 min
@@ -69,9 +74,10 @@ export const ttls = {
 Prevents stampede: concurrent callers for the same key share one in-flight promise. Check L1 first, then L2, then call loader.
 
 ```typescript
-// src/lib/cache/cached.ts
+// src/server/lib/cache/cached.ts
 import { l1 } from "./l1";
 import { l2 } from "./l2";
+import { logger } from "@/server/lib/logger";
 
 const inflight = new Map<string, Promise<unknown>>();
 
@@ -89,22 +95,27 @@ export async function cached<T>(
     return l2hit;
   }
 
-  if (inflight.has(key)) return inflight.get(key) as Promise<T>;
+  const existing = inflight.get(key) as Promise<T> | undefined;
+  if (existing) return existing;
 
-  const promise = loader().then(async (value) => {
+  const promise = (async () => {
+    const value = await loader();
     l1.set(key, value, { ttl: Math.min(ttlSeconds, 5 * 60) * 1000 });
     await l2.set(key, value, ttlSeconds * 1000);
-    inflight.delete(key);
     return value;
-  });
+  })();
 
   inflight.set(key, promise);
-  return promise;
+  try {
+    return await promise;
+  } finally {
+    inflight.delete(key); // also on rejection, or the failed promise is served forever
+  }
 }
 
 export function invalidate(key: string): void {
   l1.delete(key);
-  void l2.delete(key);
+  l2.delete(key).catch((err) => logger.error({ err, key }, "l2 invalidation failed"));
 }
 ```
 
@@ -113,42 +124,58 @@ export function invalidate(key: string): void {
 `queries.ts` is the only file that touches the DB. Cache there, not in the service or router.
 
 ```typescript
-// modules/users/queries.ts
-import { cached, invalidate } from "@/lib/cache/cached";
-import { ttls } from "@/lib/cache/ttls";
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+// modules/org-settings/queries.ts
+import { cached, invalidate } from "@/server/lib/cache/cached";
+import { ttls } from "@/server/lib/cache/ttls";
+import { db } from "@/server/db";
 
-export async function getUserById(
-  id: string,
+export async function getOrgSettings(
+  orgId: string,
   opts?: { skipCache?: boolean },
-): Promise<User | undefined> {
-  const key = `v1:user:${id}`;
-  // stale ≤ 5m; rebuild: invalidateUser(id)
-  if (opts?.skipCache) return fetchUser(id);
-  return cached(key, ttls.xs, () => fetchUser(id));
+): Promise<OrgSettings | undefined> {
+  // stale ≤ 10m; rebuild: invalidateOrgSettings(orgId)
+  if (opts?.skipCache) return fetchOrgSettings(orgId);
+  return cached(`v1:org-settings:${orgId}`, ttls.xs, () => fetchOrgSettings(orgId));
 }
 
-async function fetchUser(id: string) {
-  return db.select().from(users).where(eq(users.id, id)).then((r) => r[0]);
+async function fetchOrgSettings(orgId: string) {
+  return db.query.orgSettings.findFirst({
+    where: { orgId: { eq: orgId }, deletedAt: { isNull: true } },
+  });
 }
 
-export function invalidateUser(id: string): void {
-  invalidate(`v1:user:${id}`);
+export function invalidateOrgSettings(orgId: string): void {
+  invalidate(`v1:org-settings:${orgId}`);
 }
 ```
 
 ## Invalidate after commit, never inside the transaction
 
-Call `invalidate()` after `db.transaction()` resolves. Invalidating inside the transaction risks evicting cache before the write is visible to other readers.
+`await invalidate()` after `db.transaction()` resolves. Invalidating inside the transaction evicts the key while the write is still invisible to other readers, so a concurrent read refills the cache with pre-write data.
 
 ```typescript
-// service.ts — correct
-await db.transaction(async (tx) => {
-  await tx.update(users).set({ name }).where(eq(users.id, id));
-});
-invalidateUser(id); // outside transaction, after it resolves
+// modules/org-settings/service.ts
+import { db } from "@/server/db";
+import { orgSettings } from "./table";
+import { invalidateOrgSettings } from "./queries";
+import { eq } from "drizzle-orm";
+
+export async function updateOrgSettings(
+  orgId: string,
+  patch: OrgSettingsPatch,
+): Promise<OrgSettings> {
+  const updated = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(orgSettings)
+      .set(patch)
+      .where(eq(orgSettings.orgId, orgId))
+      .returning();
+    return row;
+  });
+
+  invalidateOrgSettings(orgId); // after commit, never inside it
+  return updated;
+}
 ```
 
 ## Keep Drizzle cache opt-in and call `.$withCache()` on chosen queries
@@ -156,45 +183,41 @@ invalidateUser(id); // outside transaction, after it resolves
 With `global: false` (the default) nothing is cached unless you opt in. Call `.$withCache()` only on read-heavy queries where staleness is acceptable. Never set `global: true`.
 
 ```typescript
-// src/db/index.ts
+// src/server/db/index.ts
 import { drizzle } from "drizzle-orm/postgres-js";
-import { upstashCache } from "drizzle-orm/cache/upstash"; // verify: swap for custom cache adapter
+import { upstashCache } from "drizzle-orm/cache/upstash";
 
 export const db = drizzle(sql, {
-  cache: upstashCache({ url: env.UPSTASH_URL, token: env.UPSTASH_TOKEN }), // verify: adapter API
+  cache: upstashCache({ url: env.UPSTASH_URL, token: env.UPSTASH_TOKEN }),
 });
 
 // queries.ts — opt in per query
 const configs = await db
   .select()
   .from(featureFlags)
-  .$withCache(); // cache with default TTL
+  .$withCache({ config: { ex: ttls.sm } });
 
-// Invalidate by table after mutation
-await db.$cache.invalidate({ tables: featureFlags }); // verify: API surface in drizzle-orm@rc
+// Invalidate by table after the write transaction commits
+await db.$cache.invalidate({ tables: featureFlags });
 ```
 
-## Redis client setup — one connection per concern
+## Give cache and jobs separate Redis clients
 
-Use ioredis. One shared connection for `@keyv/redis` (cache), a separate one for BullMQ (`maxRetriesPerRequest: null` required by BullMQ).
+Two clients, two libraries. `@keyv/redis` creates its own `@redis/client` connection from the URL. BullMQ needs ioredis with `maxRetriesPerRequest: null` for its blocking commands.
 
 ```typescript
-// src/lib/redis.ts
+// src/server/lib/redis.ts
 import Redis from "ioredis";
-import { env } from "@/env/server";
+import { env } from "@/server/env/server";
 
-// Cache connection — normal reconnect behavior
-export const cacheRedis = new Redis(env.REDIS_URL, {
-  keyPrefix: `${env.APP_ENV}:`,
-  lazyConnect: true,
-});
-
-// Jobs connection — BullMQ requirement
+// Jobs connection — BullMQ requirement. The cache connection lives in cache/l2.ts.
 export const jobsRedis = new Redis(env.REDIS_URL, {
   maxRetriesPerRequest: null, // required for BullMQ blocking commands
   lazyConnect: true,
 });
 ```
+
+Shutdown closes both: `await closeL2()` from `cache/l2.ts` and `await jobsRedis.quit()`.
 
 ## Declare staleness on every cached query
 
@@ -211,7 +234,7 @@ Every cached query gets a one-line comment declaring max staleness and the inval
 Increment counters so dashboards show cache effectiveness. Labels: `tier` (`l1` | `l2`), `hit` (boolean).
 
 ```typescript
-// src/lib/cache/metrics.ts
+// src/server/lib/cache/metrics.ts
 let hits = { l1: 0, l2: 0 };
 let misses = { l1: 0, l2: 0 };
 
@@ -233,10 +256,11 @@ export function getCacheMetrics() { return { hits, misses }; }
 | Key starts with `v1:` | Yes — all keys use `v1:{entity}:{id}` format |
 | L1 TTL ≤ 5 minutes | Enforced by `Math.min(ttlSeconds, 5 * 60)` in helper |
 | L1 `max: 10_000` set | `new LRUCache({ max: 10_000, ... })` |
-| Single-flight for stampede | `inflight` map in `cached()` |
+| Single-flight for stampede | `inflight` map in `cached()`, deleted in `finally` |
 | Invalidation after commit | `invalidate()` called outside `db.transaction()` |
+| L2 delete failure logged | `.catch()` on `l2.delete` calls `logger.error` |
 | Cache opt-in | Default `global: false`; never `global: true` |
-| Separate ioredis connections | `cacheRedis` and `jobsRedis` are distinct instances |
+| Cache and jobs use separate clients | `@keyv/redis` on `@redis/client`; BullMQ on ioredis |
 | `maxRetriesPerRequest: null` on jobs connection | Required by BullMQ blocking commands |
 | Staleness comment on each query | `// stale ≤ Xm; rebuild: fn()` |
 | Auth decisions exempt | TTL > 5m and money balances are never cached |

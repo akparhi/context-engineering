@@ -46,7 +46,7 @@ Extract a worker process only when worker CPU starves request latency, when scal
 Port interface in `lib/ports/`, adapter in `lib/adapters/`. Services import the port. Mailer, payments, storage and clock all follow this.
 
 ### Outbox for side effects that must survive a crash
-Insert the `outbox_events` row in the same transaction as the write; a poller dispatches it. The downstream job's idempotency key is `outboxEvents.id`.
+Insert the `outbox_events` row in the same transaction as the write. A relay polls every `5s`, claims `limit(100)` rows with `for update skip locked` in a short transaction, and dispatches after commit. The downstream job's idempotency key is `outboxEvents.id`.
 
 ## Server runtime
 
@@ -190,7 +190,7 @@ RLS reads `SET LOCAL app.org_id` set inside the same transaction as the query. A
 Generate, review, apply safely. Recipes in [references/migrations.md](references/migrations.md).
 
 ### Generate, review, commit, then apply under one lock
-`drizzle-kit generate`, read the SQL, commit it; `push` is a local convenience, never a deploy step. `migrate()` runs under `pg_advisory_lock(hashtext('migrate'))` before `Bun.serve`.
+`drizzle-kit generate` writes one timestamp folder with `migration.sql` and `snapshot.json`; read the SQL, commit it. `push` is a local convenience, never a deploy step. `migrate()` runs under `pg_advisory_lock(hashtext('migrate'))` on a dedicated `max: 1` connection, before `Bun.serve`.
 
 ### Expand and contract for every rename
 Add the new column, dual-write, backfill, switch reads, then drop the old column in a later release. A single-step rename breaks the running old code.
@@ -240,7 +240,7 @@ It exports `queue`, `enqueue()` and `processor`. `src/server/jobs/index.ts` regi
 One queue per action such as `invoice.send`, never a shared `default` queue with a switch inside. Options: `attempts: 3`, `backoff: { type: "exponential", delay: 1000 }`, `removeOnComplete: { age: 86400, count: 1000 }`, `removeOnFail: { age: 604800 }`.
 
 ### `jobId` is the idempotency key
-A duplicate enqueue with the same `jobId` collapses into the existing job. Derive it from the domain fact, not from a random value.
+A duplicate enqueue with the same `jobId` collapses into the existing job, but only while that job still exists in Redis. Derive it from the domain fact (`invoice-{id}`, no colons), and keep the DB-side marker as the real guard.
 
 ### Concurrency and lock are explicit
 Worker `concurrency` is `5` by default, `20` for IO-bound work, `1` for CPU-bound work. `lockDuration: 30000`.
@@ -290,7 +290,7 @@ Connect `1s`, total `5s`, via `AbortSignal.timeout()`. A call with no timeout is
 cockatiel `ConsecutiveBreaker(5)`. Half-open after `30s`, with one probe request.
 
 ### Bulkhead each dependency
-One `p-limit` instance per external dependency. Never share a limiter across unrelated dependencies.
+One `pLimit(10)` instance per external dependency, and BullMQ `limiter: { max: 100, duration: 1000 }` on workers that call a rate-limited provider. Never share a limiter across unrelated dependencies.
 
 ### Degrade with declared staleness, on a classified error
 When a non-critical dependency fails, serve the stale cache entry and mark it stale in the output schema; never stale money or auth data. Classify each failure as client, dependency or internal and map it to an oRPC code, since a `catch` rethrowing a bare object loses the contract.
