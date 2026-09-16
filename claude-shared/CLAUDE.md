@@ -63,7 +63,7 @@
 
 After understanding the problem — read what the change touches, trace the real flow — climb this ladder and stop at the first rung that holds:
 
-1. Does it need to exist? → no: skip it.
+1. Needs to exist? → no: skip.
 2. Already in this codebase? → reuse, don't rewrite.
 3. Stdlib covers it? → use it.
 4. Native platform feature? → use it (e.g., DB constraint over app logic).
