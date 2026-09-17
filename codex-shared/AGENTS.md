@@ -33,10 +33,12 @@
 | --- | --- | --- |
 | `explorer` | Luna / low | Locate code and trace behavior |
 | `researcher` | Luna / high | Current documentation and web research |
-| `worker` | Unpinned role; Sol / low default; Luna / medium for simpler tasks; Astra / low for 3D or games | Implementation and testing |
-| `reviewer` | Sol / medium | Consequential correctness, architecture and final review |
+| `worker` | Unpinned role; Luna / high for simple tasks; Sol / low for anything beyond simple; Astra / low for 3D or games | Implementation and testing |
+| `reviewer` | Sol / low | Consequential correctness, architecture and final review |
 
-The orchestrator sets model and effort explicitly on every isolated worker spawn. Fixed model/effort settings in custom roles take precedence over spawn overrides; the `worker` role stays unpinned so its model and effort remain explicit. Raise effort selectively for high-fidelity work when needed; these choices improve routing but do not guarantee quota savings.
+**IMPORTANT worker selection:** Use Luna/high for straightforward, narrowly scoped changes with a known approach. Use Sol/low for anything beyond simple, including multi-file behavior changes, integration, ambiguous debugging or design decisions; when uncertain, choose Sol/low. Use Astra/low for 3D/game implementation.
+
+The orchestrator sets model and effort explicitly on every isolated worker spawn. Omitted values fall back to global Luna/high; this fallback is not the choice for non-simple implementation. Fixed model/effort settings in custom roles take precedence over spawn overrides; the `worker` role stays unpinned so its model and effort remain explicit. Raise effort selectively for high-fidelity work when needed; these choices improve routing but do not guarantee quota savings.
 
 **Compaction**
 

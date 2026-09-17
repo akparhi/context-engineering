@@ -58,8 +58,8 @@ enabled = false
 [agents]
 enabled = true
 max_concurrent_threads_per_session = 3
-default_subagent_model = "gpt-5.6-sol"
-default_subagent_reasoning_effort = "low"
+default_subagent_model = "gpt-5.6-luna"
+default_subagent_reasoning_effort = "high"
 
 # Start Context7 locally through npx for current library documentation; allow 30s startup.
 [mcp_servers.context7]
