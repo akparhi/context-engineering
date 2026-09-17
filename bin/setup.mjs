@@ -156,7 +156,7 @@ async function main() {
     console.log(`\nprofile '${profile}' -> ${dest}`)
     for (const line of [
       link(join(profilesDir, `${profile}.json`), join(dest, 'settings.json')),
-      link(join(sharedDir, 'skills'), join(dest, 'skills')),
+      link(join(repo, 'shared', 'skills'), join(dest, 'skills')),
       link(join(sharedDir, 'output-styles'), join(dest, 'output-styles')),
       link(join(sharedDir, 'CLAUDE.md'), join(dest, 'CLAUDE.md')),
     ]) {

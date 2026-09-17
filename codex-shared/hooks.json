@@ -1,0 +1,39 @@
+{
+  "description": "macOS Funk attention and Submarine completion sounds, matching Claude profile 42387a7 (2026-09-01).",
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CODEX_HOME:-$HOME/.codex}/hooks/sound.mjs\" attention",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "(^|[.:/])(request_user_input|request_user_input_async|AskUserQuestion)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CODEX_HOME:-$HOME/.codex}/hooks/sound.mjs\" attention",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CODEX_HOME:-$HOME/.codex}/hooks/sound.mjs\" complete",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

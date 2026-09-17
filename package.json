@@ -3,13 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Claude Code configuration, shared skills, and a private plugin marketplace",
+  "description": "Repo-managed Claude Code and Codex configuration, shared skills, and plugins",
   "engines": {
     "bun": ">=1.2",
     "node": ">=22"
   },
   "scripts": {
     "setup": "node bin/setup.mjs",
-    "test": "cd plugins/hindsight && bun run test && cd ../think && bun run test"
+    "test": "cd plugins/hindsight && bun run test && cd ../think && bun run test",
+    "setup:codex": "node bin/setup-codex.mjs",
+    "test:config": "node --test tests/config.test.mjs"
   }
 }

@@ -1,0 +1,520 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+# Personal default; machine-specific desktop preferences and trust entries below.
+model = "gpt-6-astra"
+model_reasoning_effort = "low"
+model_verbosity = "low"
+service_tier = "default"
+personality = "pragmatic"
+
+# Match the existing unattended setup: no approval prompts and unrestricted local execution.
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+
+# Compact at 256k total tokens; leave the model’s actual context capacity at its default.
+model_auto_compact_token_limit = 256000
+model_auto_compact_token_limit_scope = "total"
+
+# Use fresh native web results, independently of ChatGPT connectors.
+web_search = "live"
+
+# Enable local hooks, agents and plugins; disable app, catalog and computer-use integrations.
+[features]
+hooks = true
+multi_agent = true
+plugins = true
+apps = false
+# Hide remote catalog discovery; cached, explicitly enabled plugins can still load.
+remote_plugin = false
+recommended_plugins = false
+# Do not auto-install MCP dependencies requested by a skill.
+skill_mcp_dependency_install = false
+browser_use = false
+computer_use = false
+# Keep the machine awake while a turn is running.
+prevent_idle_sleep = true
+
+# Disable ChatGPT connector tools by default; explicit per-app settings can override this.
+[apps._default]
+enabled = false
+
+# Opt out of Codex usage analytics.
+[analytics]
+enabled = false
+
+# Disable the /feedback submission feature.
+[feedback]
+enabled = false
+
+# Cap parallel children and choose their fallback model/effort; agents/*.toml specialize roles.
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 3
+default_subagent_model = "gpt-5.6-terra"
+default_subagent_reasoning_effort = "medium"
+
+# Start Context7 locally through npx for current library documentation; allow 30s startup.
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
+startup_timeout_sec = 30
+
+# Terminal UI: show model/context/quota status; custom sound hooks replace TUI notifications.
+[tui]
+notifications = false
+status_line = ["model-with-reasoning", "context-remaining", "context-window-size", "five-hour-limit", "weekly-limit"]
+
+# CLI-managed model-availability notice state; does not select the model or reasoning effort.
+[tui.model_availability_nux]
+gpt-6-astra = 1
+
+# Load installed Superpowers engineering skills, even with remote catalog browsing disabled.
+[plugins."superpowers@openai-curated-remote"]
+enabled = true
+
+# Disable bundled app integration tools.
+[plugins."codex-app-tools@openai-bundled"]
+enabled = false
+
+# Disable bundled website building and hosting workflows.
+[plugins."sites@openai-bundled"]
+enabled = false
+
+# Disable the bundled browser automation plugin.
+[plugins."browser@openai-bundled"]
+enabled = false
+
+# Disable unified browser/computer automation tools.
+[plugins."unified-computer-use@openai-bundled"]
+enabled = false
+
+# Disable bundled interactive visualization workflows.
+[plugins."visualize@openai-bundled"]
+enabled = false
+
+# Keep the separate computer-use plugin disabled.
+[plugins."computer-use@openai-bundled"]
+enabled = false
+
+# Disable bundled Word/document artifact workflows.
+[plugins."documents@openai-primary-runtime"]
+enabled = false
+
+# Disable bundled PDF artifact workflows; the standalone PDF skill is disabled below.
+[plugins."pdf@openai-primary-runtime"]
+enabled = false
+
+# Disable bundled spreadsheet and live Excel workflows.
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = false
+
+# Disable bundled reusable artifact-template creation.
+[plugins."template-creator@openai-primary-runtime"]
+enabled = false
+
+# Disable bundled PowerPoint/Slides workflows.
+[plugins."presentations@openai-primary-runtime"]
+enabled = false
+
+# Disable the remote plugin discovery and account-management skill bundle.
+[plugins."plugin-management@openai-curated-remote"]
+enabled = false
+
+# Keep the existing local PDF skill installed but out of the active skill catalog.
+[[skills.config]]
+path = "/Users/akparhi/.codex/skills/pdf/SKILL.md"
+enabled = false
+
+# Trust this directory itself; nested Git repositories need explicit entries below.
+[projects."/Users/akparhi/Projects"]
+trust_level = "trusted"
+
+# Trust this directory itself; nested Git repositories need explicit entries below.
+[projects."/Users/akparhi/Documents/Codex"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Projects/Alaan/athena-web"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Projects/Home/pantheon"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Projects/Home/house-design"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Documents/Codex/2026-09-06/realtime-voice-chat"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Documents/Codex/2026-09-06/realtime-voice-chat-2"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Projects/Home/context-engineering"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Documents/Codex/2026-09-06/hi"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Documents/Codex/2026-09-06/hi-2"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Documents/Codex/2026-09-06/hi-3"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Documents/Codex/2026-09-07/in-x20"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Projects/Home/interior-design"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Documents/Codex/2026-09-08/hi"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Documents/Codex/2026-09-10/realtime-voice-chat"]
+trust_level = "trusted"
+
+# Trust this saved workspace so its project-local Codex configuration can load.
+[projects."/Users/akparhi/Projects/Home/insomnia"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/accounting"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/agent-poll"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/alaan-ai"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/alaanpay-infra"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/anthropos"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/athena-web/.claude/worktrees/agent-a449a513344a09273"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/banking-baas"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/chrome-extension"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/core"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/dedicated-downtime-page"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/dlc"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/expense-management"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/invoice"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/payment-service"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/platform-ai"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/qa-e2e-tests"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/referrals"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/rewards-service"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/synapse"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/team-productivity"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/verification-orchestrator"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/accounting"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/anthropos"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/athena-web"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/banking-baas"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/cards"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/core"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/expense-management"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/identity-service"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/internal-packages"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/invoice"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/neoleap"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/notification-system"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/nymcard"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/payment-service"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/receipt-collector"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/referrals"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/rewards-service"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Alaan/workspace/repos/verification-orchestrator"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/1b"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/2b"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/4b"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/9b"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/TVindicators"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/claude-code-router"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/claude-code-router/.tmp/free-claude-code"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/darkclouds"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/darkforest"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/gods-eye-view"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/homebrew-tap"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/house-design/.tmp/react-planner"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/house-design/.tmp/shadcn-scratch/vite-app"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/icons"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/md-pdf"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/queryframe-lite"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/switchboard"]
+trust_level = "trusted"
+
+# Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
+[projects."/Users/akparhi/Projects/Home/t3code"]
+trust_level = "trusted"
+
+# Preserve desktop UI, composer, notifications, Git and worktree preferences for this machine.
+[desktop]
+appearanceTheme = "system"
+appearanceLightCodeThemeId = "codex"
+sansFontSize = 16
+codeFontSize = 15
+usePointerCursors = true
+followUpQueueMode = "steer"
+composerEnterBehavior = "cmdIfMultiline"
+preventSleepWhileRunning = true
+keepRemoteControlAwakeWhilePluggedIn = true
+git-branch-prefix = "akparhi/"
+git-always-force-push = false
+conversationDetailMode = "STEPS_COMMANDS"
+worktree-keep-count = 3
+open-link-in-target-preference = "in-app-browser"
+ambient-suggestions-enabled = false
+git-pull-request-merge-method = "squash"
+git-create-pull-request-as-draft = false
+reviewDelivery = "inline"
+worktree-upstream-refresh-mode = "best-effort"
+selected-avatar-id = "rocky"
+avatar-overlay-mascot-width-px = 115
+enabled-reasoning-efforts = ["low", "medium", "high", "xhigh", "persistent"]
+dictationDictionary = []
+dock-icon-preference = "codex-system"
+appearanceDiffMarkerStyle = "color"
+show-context-window-usage = true
+notifications-permissions-enabled = true
+toys-audio-visualizer-enabled = false
+appearanceDarkCodeThemeId = "raycast"
+
+# Light app-shell palette (chrome means window/UI surfaces, not the Chrome browser).
+[desktop.appearanceLightChromeTheme]
+accent = "#0169cc"
+accentSource = "chatgpt"
+contrast = 60
+ink = "#0d0d0d"
+opaqueWindows = false
+surface = "#f3f3f3"
+
+# Light-mode font overrides; empty means use app defaults.
+[desktop.appearanceLightChromeTheme.fonts]
+
+# Light-mode colors for added/removed lines and skill indicators.
+[desktop.appearanceLightChromeTheme.semanticColors]
+diffAdded = "#00a240"
+diffRemoved = "#e02e2a"
+skill = "#751ed9"
+
+# Dark app-shell palette, including text, surfaces, accent and transparency.
+[desktop.appearanceDarkChromeTheme]
+accent = "#ff6363"
+accentSource = "custom"
+contrast = 60
+ink = "#fefefe"
+opaqueWindows = false
+surface = "#101010"
+
+# Dark-mode code and interface font overrides.
+[desktop.appearanceDarkChromeTheme.fonts]
+code = '"Jetbrains Mono"'
+ui = "Inter"
+
+# Dark-mode colors for added/removed lines and skill indicators.
+[desktop.appearanceDarkChromeTheme.semanticColors]
+diffAdded = "#59d499"
+diffRemoved = "#ff6363"
+skill = "#cf2f98"
+
+# Locate the app-bundled local catalog; registration alone does not enable its plugins.
+[marketplaces.openai-bundled]
+source_type = "local"
+source = "/Users/akparhi/.codex/.tmp/bundled-marketplaces/openai-bundled"
+
+# Locate the runtime-bundled local catalog; individual plugin switches above control loading.
+[marketplaces.openai-primary-runtime]
+source_type = "local"
+source = "/Users/akparhi/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
+
+# Codex-managed trust records for hooks.json; new or changed definitions require review.
+[hooks.state]
+
+# Trust the reviewed question-tool sound hook at this machine-specific source path.
+[hooks.state."/Users/akparhi/.codex/hooks.json:pre_tool_use:0:0"]
+trusted_hash = "sha256:46e2c1bd8b85aa9c81e46a0b84f98424ae0029a4ff9ee7ba4f712542aec9ab9d"
+
+# Trust the reviewed approval-request sound hook.
+[hooks.state."/Users/akparhi/.codex/hooks.json:permission_request:0:0"]
+trusted_hash = "sha256:69c942eabcfb7584bc088a069a19a96afac047b27cfdc9fa6ddf3a0185d2d09d"
+
+# Trust the reviewed turn-completion sound hook.
+[hooks.state."/Users/akparhi/.codex/hooks.json:stop:0:0"]
+trusted_hash = "sha256:6f7d85f66e622bc23ad24e0f349bfcf5d8ca6847428e2601161ed82dd9ce35ba"
