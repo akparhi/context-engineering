@@ -116,11 +116,11 @@ Codex has no documented one-for-one equivalent of Claude's `syncClaudeAiSkills` 
 | Role | Model / effort | Scope |
 |---|---|---|
 | explorer | GPT-5.6 Luna / low | Read-only code mapping and reference tracing |
-| researcher | GPT-5.6 Sol / medium | Read-only web and Context7 research; primary-source URLs |
-| worker | GPT-5.6 Terra / medium | Bounded implementation and tests |
-| reviewer | GPT-6 Astra / high | Read-only correctness/security/architecture review |
+| researcher | GPT-5.6 Luna / high | Read-only web and Context7 research; primary-source URLs |
+| worker | Sol/low default; Luna/high for simpler tasks; Astra/low for 3D/games | Implementation and tests; Astra baseline for 3D/games |
+| reviewer | GPT-5.6 Sol / medium | Read-only correctness/security/architecture review |
 
-Three concurrent children maximum; untyped children default to Terra/medium. Role instructions disable recursive delegation. Small tasks stay in the parent. Read-only roles request a read-only sandbox, but parent runtime permission overrides can take precedence. Roles and model availability depend on the installed harness; standalone role files are not an assertion that every client exposes an `agent_type` argument.
+Three concurrent children maximum; untyped children default to Sol/low. The main session stays the orchestrator: delegate implementation, research, exploration, testing and review, including single noisy tasks. Small tasks use one focused child rather than fan-out. Pass isolated briefs and artifact paths; return concise conclusions and verification summaries. Role instructions disable recursive delegation. Choose higher effort up front for high-fidelity work. The single `worker` role leaves model/effort unpinned: the orchestrator sets both explicitly on an isolated spawn; omitted values fall back to global Sol/low defaults. Other roles pin model/effort; for another tier, use an isolated `default` agent with explicit model and effort. For 3D/game implementation, start at Astra/low and raise Astra effort when fidelity demands it. Read-only roles request a read-only sandbox, but parent runtime permission overrides can take precedence. Roles and model availability depend on the installed harness; standalone role files are not an assertion that every client exposes an `agent_type` argument.
 
 ### Sound hooks
 

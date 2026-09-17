@@ -9,12 +9,31 @@
 
 # Context and delegation
 
-- Handle small, targeted tasks in the main session. Delegate bounded, independent work when it saves context or latency; do useful work alongside it.
-- Use `explorer` for locating code and tracing behavior; `researcher` for current documentation and web research; `worker` for implementation; `reviewer` for consequential correctness, architecture and final review.
-- Default subagent: GPT-5.6 Terra, medium effort. Explorer: Luna/low; research: Sol/medium; implementation: Terra/medium; review: Astra/high. Escalate after concrete uncertainty or failure, not routinely.
-- Limit concurrent children to three. Give each a concrete question, constraints, owned files and completion criteria. Avoid overlapping writers and recursive fan-out.
-- Prefer focused briefs and file paths over full conversation copies. Request concise conclusions, evidence, changed paths, checks and unresolved risks. Reuse an existing agent for follow-ups.
-- During compaction preserve user requirements, decisions, exclusions, failed approaches and reasons, current state, next steps, exact paths and hard-to-reconstruct details. Condense reasoning to conclusions.
+**CRITICAL orchestration boundary**
+
+- The main session is always the orchestrator. Keep product and technical decisions and coordination there; delegate exploration, research, implementation, testing and review.
+- Keep the parent context to decisions, constraints and concise evidence/status. Children return reports; do not paste logs, transcripts or full files.
+
+**IMPORTANT delegation rules**
+
+- Use one bounded child for a small or noisy task. Use at most three concurrent children for independent tasks; never use recursive fan-out or overlapping writers, and do not duplicate delegated investigations.
+- Give each child a fresh context with `fork_turns: "none"` and a minimal brief containing the goal, owned paths, constraints and completion checks. Pass artifacts by file path. Reuse an existing agent for follow-ups.
+- Require brief reports with conclusions, changed paths, check results and unresolved risks.
+
+**Routing**
+
+| Role | Model / effort | Scope |
+| --- | --- | --- |
+| `explorer` | Luna / low | Locate code and trace behavior |
+| `researcher` | Luna / high | Current documentation and web research |
+| `worker` | Unpinned role; Sol / low default; Luna / medium for simpler tasks; Astra / low for 3D or games | Implementation and testing |
+| `reviewer` | Sol / medium | Consequential correctness, architecture and final review |
+
+The orchestrator sets model and effort explicitly on every isolated spawn. Raise effort selectively for high-fidelity work when needed; do not inflate every task. The `worker` role stays unpinned so routing choices remain explicit.
+
+**Compaction**
+
+- Preserve user requirements, decisions, exclusions, failed approaches and reasons, current state, next steps, exact paths and hard-to-reconstruct details. Condense reasoning to conclusions.
 
 # Tools and skills
 
