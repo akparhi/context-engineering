@@ -18,7 +18,14 @@
 
 - Use one bounded child for a small or noisy task. Use at most three concurrent children for independent tasks; never use recursive fan-out or overlapping writers, and do not duplicate delegated investigations.
 - Give each child a fresh context with `fork_turns: "none"` and a minimal brief containing the goal, owned paths, constraints and completion checks. Pass artifacts by file path. Reuse an existing agent for follow-ups.
-- Require brief reports with conclusions, changed paths, check results and unresolved risks.
+- Bundle related small edits into one assignment. The worker runs its own relevant tests; add a separate reviewer only for consequential work.
+- Require brief reports with conclusions, changed paths, check results and unresolved risks; never return whole files.
+
+**CRITICAL efficient waiting**
+
+- Do useful independent work before waiting. Then use an event wait instead of repeated short polls; prefer a 600,000 ms timeout when the tool and runtime permit, and obey stricter runtime caps such as a 60-second blocking-wait limit.
+- Do not call `list_agents` or send status messages after every timeout. A timeout alone is not a failure: do not interrupt or replace the worker, and do not start a redundant investigation.
+- Reuse the assigned worker for follow-ups rather than spawning another child.
 
 **Routing**
 
@@ -29,7 +36,7 @@
 | `worker` | Unpinned role; Sol / low default; Luna / medium for simpler tasks; Astra / low for 3D or games | Implementation and testing |
 | `reviewer` | Sol / medium | Consequential correctness, architecture and final review |
 
-The orchestrator sets model and effort explicitly on every isolated spawn. Raise effort selectively for high-fidelity work when needed; do not inflate every task. The `worker` role stays unpinned so routing choices remain explicit.
+The orchestrator sets model and effort explicitly on every isolated worker spawn. Fixed model/effort settings in custom roles take precedence over spawn overrides; the `worker` role stays unpinned so its model and effort remain explicit. Raise effort selectively for high-fidelity work when needed; these choices improve routing but do not guarantee quota savings.
 
 **Compaction**
 

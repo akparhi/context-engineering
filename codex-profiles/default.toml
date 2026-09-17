@@ -33,6 +33,15 @@ computer_use = true
 # Keep the machine awake while a turn is running.
 prevent_idle_sleep = true
 
+# Prefer long event waits and expose explicit worker model/effort selection.
+# Keep a 60-second floor for runtimes that cap blocking waits; instructions still take precedence.
+[features.multi_agent_v2]
+enabled = true
+expose_spawn_agent_model_overrides = true
+min_wait_timeout_ms = 60000
+default_wait_timeout_ms = 600000
+max_wait_timeout_ms = 3600000
+
 # Disable ChatGPT connector tools by default; explicit per-app settings can override this.
 [apps._default]
 enabled = false
