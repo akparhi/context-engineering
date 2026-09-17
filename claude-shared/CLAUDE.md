@@ -21,7 +21,8 @@
   - **Large/multi-phase goals:** always delegate self-contained chunks (implementers per task, reviewers, research fan-out); main session stays coordinator — preserves its context for orchestration/judgment, keeps each chunk focused.
   - **Delegate to save orchestrator context window:** noisy-process/small-conclusion tasks (multi-search research, browser/Playwright exploration, log-heavy debugging) go to a subagent even as single tasks — orchestrator gets the report, not the trail.
   - **Subagent type:** Least-powerful model that fits: transcription/normal exploration → haiku, implementation/integration/testing/judgment/research/deep exploration → sonnet, architecture/final-review → opus.
-    - **Exception — high fidelity tasks (initial planning, complex architecture/features, 3d work/game development)**: use fable for planning/architecture, opus for implementation/integration. Never fable for routine subagents.
+    - **Exception — high fidelity tasks (initial planning, complex architecture/features, 3d work/game development)**: use fable for planning/architecture, opus for implementation/integration (3D/game implementation → `use-codex`). Never fable for routine subagents.
+    - **Forward to Codex (`subagent_type: "use-codex"`)** when: 3D/graphics/game implementation (Codex model beats Claude here), on-demand. Prompt = brief file path + acceptance criteria; append `--background` for long work, `--resume` to continue same Codex thread. Background job → same agent with `status <job-id>` then `result <job-id>`.
   - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
   - Spawn in background; keep working on independent parts while they run. Wait only when next step needs the result.
   - **Do NOT fan out** for small targeted tasks or one-off debugging asks.

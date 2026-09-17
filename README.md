@@ -13,6 +13,7 @@ claude-profiles/    one settings.json per machine
 claude-shared/      config every profile links to
   CLAUDE.md         how the agent behaves
   output-styles/    terse and reminder
+  agents/           custom subagents (use-codex forwards tasks to Codex)
 codex-profiles/     full Codex config.toml profiles
   default.toml      personal defaults + this machine’s desktop/trust settings
 codex-shared/       AGENTS.md, agent roles and macOS sound hooks
@@ -35,7 +36,7 @@ It asks which profile (`default` unless you say otherwise), where to put the con
 bun run setup darkforest ~/.darkforest/claude
 ```
 
-Setup links `settings.json` to the chosen profile and `output-styles/`, `CLAUDE.md` to `claude-shared/`, plus `skills/` to `shared/skills/`, then registers this repo as a plugin marketplace and installs whichever plugins you pick — including their dependencies, without which a plugin's MCP server will not start and its tools will not exist.
+Setup links `settings.json` to the chosen profile and `output-styles/`, `agents/`, `CLAUDE.md` to `claude-shared/`, plus `skills/` to `shared/skills/`, then registers this repo as a plugin marketplace and installs whichever plugins you pick — including their dependencies, without which a plugin's MCP server will not start and its tools will not exist.
 
 Re-running is safe: an existing symlink is repointed, and a real file is moved to `<name>.bak.<timestamp>` rather than overwritten — on a machine that already has config, that file is the only copy.
 
