@@ -94,7 +94,7 @@ For a custom destination, setup links each shared skill under `<destination>/ski
 
 Codex 0.154.0 does not inherit parent-directory trust across nested Git repositories (verified with a fresh nested repository and config/read). Both requested roots, `/Users/akparhi/Projects` and `/Users/akparhi/Documents/Codex`, have entries; existing discovered Git roots beneath them are listed explicitly. New repositories still need an explicit trust entry.
 
-The default profile includes this machine's existing desktop preferences, trusted paths, bundled-marketplace paths and disabled legacy PDF-skill path. Copy it to `codex-profiles/<machine>.toml` and adjust those paths on another machine. Credentials, sessions, caches and plugin downloads remain outside git. App settings changes may write through the config symlink; review `git diff` afterward. Re-run setup if an app replaces the symlink.
+The default profile includes this machine's existing desktop preferences, trusted paths, bundled-marketplace paths and local PDF-skill path. Copy it to `codex-profiles/<machine>.toml` and adjust those paths on another machine. Credentials, sessions, caches and plugin downloads remain outside git. App settings changes may write through the config symlink; review `git diff` afterward. Re-run setup if an app replaces the symlink.
 
 | Area | Default |
 |---|---|
@@ -104,12 +104,12 @@ The default profile includes this machine's existing desktop preferences, truste
 | Integrations | Superpowers; Context7 via the existing stdio MCP configuration |
 | Web research | Native live web search; independent of ChatGPT connectors |
 | Apps | App tools disabled, default app enablement false |
-| Plugins | Remote catalog and recommendations off; known bundled plugins disabled; installed Superpowers enabled |
-| Skills | Shared local skills + Superpowers + Codex system skills; legacy local PDF skill disabled |
+| Plugins | Remote catalog and recommendations off; Superpowers, browser and unified computer use enabled; other listed bundled plugins disabled |
+| Skills | Shared local skills + Superpowers + Codex system skills; local PDF skill enabled |
 | Analytics | Analytics and feedback disabled |
 | Sounds | macOS Funk for attention; Submarine for completion |
 
-Codex has no documented one-for-one equivalent of Claude's `syncClaudeAiSkills` / `syncClaudeAiPlugins`. This profile disables apps, the remote catalog, and the known bundled plugins explicitly. It does not disconnect accounts or change ChatGPT web settings. New app/runtime releases may introduce new plugins: inspect the active skill catalog after upgrades. `codex plugin list` omits remote catalog rows when that catalog is disabled; `codex debug prompt-input` confirms cached Superpowers skills still load.
+Codex has no documented one-for-one equivalent of Claude's `syncClaudeAiSkills` / `syncClaudeAiPlugins`. This profile disables apps, the remote catalog, and unwanted bundled plugins explicitly; browser and unified computer use are enabled. It does not disconnect accounts or change ChatGPT web settings. New app/runtime releases may introduce new plugins: inspect the active skill catalog after upgrades. `codex plugin list` omits remote catalog rows when that catalog is disabled; `codex debug prompt-input` confirms cached Superpowers skills still load.
 
 ### Subagents
 

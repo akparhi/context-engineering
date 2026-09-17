@@ -17,7 +17,7 @@ model_auto_compact_token_limit_scope = "total"
 # Use fresh native web results, independently of ChatGPT connectors.
 web_search = "live"
 
-# Enable local hooks, agents and plugins; disable app, catalog and computer-use integrations.
+# Enable hooks, agents, plugins and UI automation; disable app connectors and remote catalog discovery.
 [features]
 hooks = true
 multi_agent = true
@@ -28,8 +28,8 @@ remote_plugin = false
 recommended_plugins = false
 # Do not auto-install MCP dependencies requested by a skill.
 skill_mcp_dependency_install = false
-browser_use = false
-computer_use = false
+browser_use = true
+computer_use = true
 # Keep the machine awake while a turn is running.
 prevent_idle_sleep = true
 
@@ -77,19 +77,19 @@ enabled = false
 
 # Disable bundled website building and hosting workflows.
 [plugins."sites@openai-bundled"]
-enabled = false
+enabled = true
 
-# Disable the bundled browser automation plugin.
+# Enable the bundled browser automation plugin.
 [plugins."browser@openai-bundled"]
-enabled = false
+enabled = true
 
-# Disable unified browser/computer automation tools.
+# Enable unified browser/computer automation tools.
 [plugins."unified-computer-use@openai-bundled"]
-enabled = false
+enabled = true
 
 # Disable bundled interactive visualization workflows.
 [plugins."visualize@openai-bundled"]
-enabled = false
+enabled = true
 
 # Keep the separate computer-use plugin disabled.
 [plugins."computer-use@openai-bundled"]
@@ -99,9 +99,9 @@ enabled = false
 [plugins."documents@openai-primary-runtime"]
 enabled = false
 
-# Disable bundled PDF artifact workflows; the standalone PDF skill is disabled below.
+# Disable bundled PDF artifact workflows; the standalone PDF skill is enabled below.
 [plugins."pdf@openai-primary-runtime"]
-enabled = false
+enabled = true
 
 # Disable bundled spreadsheet and live Excel workflows.
 [plugins."spreadsheets@openai-primary-runtime"]
@@ -119,10 +119,10 @@ enabled = false
 [plugins."plugin-management@openai-curated-remote"]
 enabled = false
 
-# Keep the existing local PDF skill installed but out of the active skill catalog.
+# Enable the standalone local PDF skill.
 [[skills.config]]
 path = "/Users/akparhi/.codex/skills/pdf/SKILL.md"
-enabled = false
+enabled = true
 
 # Trust this directory itself; nested Git repositories need explicit entries below.
 [projects."/Users/akparhi/Projects"]

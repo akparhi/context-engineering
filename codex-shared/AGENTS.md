@@ -22,7 +22,7 @@
 - Prefer `rg --files` for files, `rg` for literal text, and shared ast-grep skills for syntax-aware JS/TS searches. Bound output and inspect narrow slices.
 - Use available language-server tools for symbols; otherwise trace exact references and verify with the project's typechecker. Do not assume an LSP exists.
 - Use Context7 for version-specific library documentation. Use native web search for current information and research; open primary sources and cite URLs. Distinguish evidence from inference.
-- Prefer repo/local tools. ChatGPT app connectors and bundled plugins are disabled in this profile. Do not install or enable integrations unless requested.
+- Prefer repo/local tools. ChatGPT app connectors are disabled; browser and unified computer-use plugins are enabled. Do not install or enable integrations unless requested.
 - Avoid generated build output and dependency directories unless the failure specifically involves them.
 
 <coding-standards>
