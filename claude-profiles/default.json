@@ -44,7 +44,6 @@
     ],
     "defaultMode": "bypassPermissions"
   },
-  "disableClaudeAiConnectors": true,
   "hooks": {
     "Notification": [],
     "PermissionRequest": [
@@ -143,7 +142,7 @@
   "outputStyle": "terse",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
-  "effortLevel": "high",
+  "effortLevel": "medium",
   "promptSuggestionEnabled": false,
   "autoUpdatesChannel": "latest",
   "plansDirectory": "./.claude/plans",
@@ -160,5 +159,8 @@
     "context-mode:ctx-stats": "off",
     "superpowers:using-git-worktrees": "off",
     "context-mode:ctx-upgrade": "off"
-  }
+  },
+  "disableClaudeAiConnectors": true,
+  "syncClaudeAiSkills": false,
+  "syncClaudeAiPlugins": false
 }
