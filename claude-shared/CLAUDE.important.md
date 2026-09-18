@@ -30,6 +30,7 @@
 - **Large/multi-phase goals:** always delegate self-contained chunks (implementers per task, reviewers, research fan-out); main session stays coordinator.
 - **Noisy-process tasks:** go to a subagent even as single tasks.
 - **Subagent model:** least-powerful that fits: transcription/normal exploration → haiku, implementation/integration/testing/judgment/research/deep exploration → sonnet, architecture/final-review → opus.
+  - **CRITICAL**: pass `model` explicitly on every Agent call, and tell workers to do the same for their helpers.
   - **Exception — high fidelity (initial planning, complex architecture/features, 3D/game work)**: fable for planning/architecture, opus for implementation/integration (3D/game implementation → `use-codex`). Never fable for routine subagents.
   - **Forward to Codex (`subagent_type: "use-codex"`)** for 3D/graphics/game implementation, or on demand. Prompt = brief file path + acceptance criteria; append `--background` for long work, `--resume` to continue same Codex thread. Background job → same agent with `status <job-id>` then `result <job-id>`.
 - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
