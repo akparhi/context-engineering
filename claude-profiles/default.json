@@ -162,5 +162,6 @@
   },
   "disableClaudeAiConnectors": true,
   "syncClaudeAiSkills": false,
-  "syncClaudeAiPlugins": false
+  "syncClaudeAiPlugins": false,
+  "model": "claude-fable-5-1[1m]"
 }

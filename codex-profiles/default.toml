@@ -18,6 +18,8 @@ model_auto_compact_token_limit_scope = "total"
 web_search = "live"
 
 # Enable hooks, agents, plugins and UI automation; disable app connectors and remote catalog discovery.
+notify = ["/Users/akparhi/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
+
 [features]
 hooks = true
 multi_agent = true
