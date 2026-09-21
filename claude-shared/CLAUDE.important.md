@@ -38,13 +38,6 @@
 - **Do NOT fan out** for small targeted tasks or one-off debugging asks.
 </important>
 
-<important if="you are searching code or finding files">
-- TS/TSX/JS code search → `ast-grep` by default: `ast-grep run -p '<pattern>' src`, not grep. Non-trivial pattern → `ast-grep` skill; mapping a file/dir's shape → `ast-grep-outline` skill.
-- Finding files → `fd`, not `find`/`ls -R`. Dotfiles `-H`, gitignored `-I`.
-- Grep only for non-syntax targets: strings, comments, non-JS files, logs.
-- Symbol types, definitions, usages → `LSP` tool.
-</important>
-
 <important if="you are compacting or summarizing the conversation">
 Preserve exactly: what I asked, decided, ruled out, or set as constraint (near my words); approaches tried or set aside + why; problems hit + how resolved; where things stand; open items / next steps; hard-to-reconstruct details (paths, names, numbers, exact wording, links). Condense your own reasoning to conclusions.
 </important>

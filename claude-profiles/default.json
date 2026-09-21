@@ -7,7 +7,10 @@
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "256000",
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
-    "ENABLE_LSP_TOOL": "1"
+    "ENABLE_LSP_TOOL": "1",
+    "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
+    "DISABLE_AUTOUPDATER": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
   },
   "attribution": {
     "sessionUrl": false
@@ -144,7 +147,6 @@
   "alwaysThinkingEnabled": false,
   "effortLevel": "medium",
   "promptSuggestionEnabled": false,
-  "autoUpdatesChannel": "latest",
   "plansDirectory": "./.claude/plans",
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
@@ -160,8 +162,7 @@
     "superpowers:using-git-worktrees": "off",
     "context-mode:ctx-upgrade": "off"
   },
-  "disableClaudeAiConnectors": true,
+  "disableClaudeAiConnectors": false,
   "syncClaudeAiSkills": false,
-  "syncClaudeAiPlugins": false,
-  "model": "claude-fable-5-1[1m]"
+  "syncClaudeAiPlugins": false
 }
