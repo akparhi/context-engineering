@@ -6,13 +6,15 @@
 - **CRITICAL**: Directive scope = that request only. Commit/push/merge on master/main, PR/sends/deploys need explicit ask, every time. "Commit and push" earlier ≠ permission for later changes. (**Checkpoint commits** are an exception.)
 - Always kill processes you started (dev servers etc.) once no longer needed.
 
+# Working Principles
+
 <important if="you are planning, writing a spec, or writing an implementation plan">
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
 - If available, use codex for adversarial review of research, specs and implementation plans.
 </important>
 
 <important if="the task involves a browser: opening pages, clicking, filling forms, screenshots, or web scraping">
-- You MUST use t3-code browser tools for all browser tasks — via the `t3-browser` skill. Multi-step flow → Jev element selection always.
+- If available, you MUST use t3-code browser tools for all browser tasks.
 </important>
 
 <important if="you are executing a phased implementation plan">
@@ -38,11 +40,11 @@
 - **Do NOT fan out** for small targeted tasks or one-off debugging asks.
 </important>
 
-<important if="you are compacting or summarizing the conversation">
-Preserve exactly: what I asked, decided, ruled out, or set as constraint (near my words); approaches tried or set aside + why; problems hit + how resolved; where things stand; open items / next steps; hard-to-reconstruct details (paths, names, numbers, exact wording, links). Condense your own reasoning to conclusions.
-</important>
+# Compact instructions
 
-<important if="you are writing or changing code">
+Preserve exactly: what I asked, decided, ruled out, or set as constraint (near my words); approaches tried or set aside + why; problems hit + how resolved; where things stand; open items / next steps; hard-to-reconstruct details (paths, names, numbers, exact wording, links). Condense your own reasoning to conclusions.
+
+# Global Coding Standards
 
 **Write for the next reader** — they lack your context. Readability wins over any rule below.
 
@@ -58,7 +60,6 @@ Preserve exactly: what I asked, decided, ruled out, or set as constraint (near m
 - **IMPORTANT**: Fix root cause, not every caller. **Fewest files, shortest diff.**
 - Mark deliberate shortcuts with ceiling + upgrade path: `// yagni: global lock, per-account if throughput matters`.
 - **CRITICAL**: Never simplify away anything I explicitly asked for. Ladder governs implementation, not requirements.
-</important>
 
 <important if="you are making a non-trivial structural change: new module, abstraction, layer, or service boundary">
 - Happy path reads top-to-bottom without chasing callers; errors, invalid states, cleanup explicit.

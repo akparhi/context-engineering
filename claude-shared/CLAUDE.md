@@ -13,7 +13,7 @@
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
 - **IMPORTANT RULES**:
   - If available, use codex for adversarial review of research, specs and implementation plans.
-  - If available, you MUST use t3-code browser tools for all browser tasks — via the `t3-browser` skill. Multi-step flow → Jev element selection always.
+  - If available, you MUST use t3-code browser tools for all browser tasks.
 - **Checkpoint commits**: during phased development, commit at checkpoints with task ID from implementation plan — `<phase>-<task-id>: <description>`.
 - Always kill process (e.g., dev server) you started if no longer needed.
 - For repeated tests, write reusable scripts and reuse them.
