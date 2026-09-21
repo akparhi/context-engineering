@@ -1,5 +1,7 @@
 {
   "cleanupPeriodDays": 14,
+  "syncClaudeAiSkills": false,
+  "syncClaudeAiPlugins": false,
   "env": {
     "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-1[1m]",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5",
@@ -8,9 +10,7 @@
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
     "ENABLE_LSP_TOOL": "1",
-    "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
-    "DISABLE_AUTOUPDATER": "1",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
+    "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1"
   },
   "attribution": {
     "sessionUrl": false
@@ -46,6 +46,13 @@
       "ScheduleWakeup"
     ],
     "defaultMode": "bypassPermissions"
+  },
+  "disableClaudeAiConnectors": false,
+  "skillOverrides": {
+    "context-mode:ctx-insight": "off",
+    "context-mode:ctx-stats": "off",
+    "superpowers:using-git-worktrees": "off",
+    "context-mode:ctx-upgrade": "off"
   },
   "hooks": {
     "Notification": [],
@@ -140,6 +147,12 @@
         "source": "github",
         "repo": "openai/codex-plugin-cc"
       }
+    },
+    "cc-multi-cli-plugin": {
+      "source": {
+        "source": "github",
+        "repo": "greenpolo/cc-multi-cli-plugin"
+      }
     }
   },
   "outputStyle": "terse",
@@ -155,14 +168,5 @@
   "switchModelsOnFlag": false,
   "fileCheckpointingEnabled": true,
   "terminalProgressBarEnabled": false,
-  "tipsEnabled": false,
-  "skillOverrides": {
-    "context-mode:ctx-insight": "off",
-    "context-mode:ctx-stats": "off",
-    "superpowers:using-git-worktrees": "off",
-    "context-mode:ctx-upgrade": "off"
-  },
-  "disableClaudeAiConnectors": false,
-  "syncClaudeAiSkills": false,
-  "syncClaudeAiPlugins": false
+  "tipsEnabled": false
 }

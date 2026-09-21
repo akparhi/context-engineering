@@ -74,9 +74,8 @@ startup_timeout_sec = 30
 notifications = false
 status_line = ["model-with-reasoning", "context-remaining", "context-window-size", "five-hour-limit", "weekly-limit"]
 
-# CLI-managed model-availability notice state; does not select the model or reasoning effort.
 [tui.model_availability_nux]
-gpt-6-astra = 1
+gpt-6-astra = 4
 
 # Load installed Superpowers engineering skills, even with remote catalog browsing disabled.
 [plugins."superpowers@openai-curated-remote"]
@@ -433,6 +432,12 @@ trust_level = "trusted"
 
 # Trust this repository explicitly; parent-directory entries do not cover nested Git roots.
 [projects."/Users/akparhi/Projects/Home/t3code"]
+trust_level = "trusted"
+
+[projects."/Users/akparhi/Projects/Alaan/web-qa"]
+trust_level = "trusted"
+
+[projects."/private/tmp/fefeedback"]
 trust_level = "trusted"
 
 # Preserve desktop UI, composer, notifications, Git and worktree preferences for this machine.
