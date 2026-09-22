@@ -443,15 +443,10 @@ async function discoverOpenAI(authFile: string) {
 
 export function workerDefinitions(
   codexSignedIn: boolean,
-  // yagni: extra provider params accepted for forward-compatibility; cursor/antigravity were stripped
-  // Old callers pass (codex, cursor, zen, antigravity?, grok?, selected?); new callers pass (codex, zen, selected?)
-  ...rest: readonly unknown[]
+  zenSignedIn: boolean,
+  selectedModels?: readonly string[],
 ) {
-  // The zen flag was the 2nd param for new callers and 3rd for old callers that passed cursor 2nd.
-  // Detect old callers by checking if 2nd rest arg is boolean (zen position in old callers was index 2).
-  const zenRaw = rest.length >= 2 && typeof rest[1] === 'boolean' ? rest[1] : rest[0];
-  const zen = Boolean(zenRaw);
-  const selectedModels = Array.isArray(rest.at(-1)) ? (rest.at(-1) as readonly string[]) : undefined;
+  const zen = zenSignedIn;
   const agents: Record<string, AgentDefinition> = Object.fromEntries(
     Object.entries(codexSignedIn ? OPENAI_WORKERS : {}).map(([name, { model, effort }]) => [
       name,

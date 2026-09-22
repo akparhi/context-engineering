@@ -141,12 +141,6 @@ function plugins(root: string, zen = true) {
       scope: 'user',
       installPath: path.join(root, 'zen'),
     },
-    {
-      id: `multi-cursor@${marketplace}`,
-      enabled: false,
-      scope: 'user',
-      installPath: path.join(root, 'cursor'),
-    },
   ];
 }
 
@@ -237,11 +231,11 @@ test('setup renames the launch command, persists picker models, and keeps them a
   // or not the tag is on, and must not persist twice alongside its own plain spelling.
   await f.install([
     '--models',
-    'multi/antigravity/gemini-3.8-flash[1m],multi/antigravity/gemini-3.8-flash',
+    'multi/zen/glm-5.2[1m],multi/zen/glm-5.2',
   ]);
   assert.equal(
     JSON.parse(await readFile(stateFile, 'utf8')).models,
-    'multi/antigravity/gemini-3.8-flash',
+    'multi/zen/glm-5.2',
   );
   await f.invoke('multi', ['uninstall']);
   if (f.windows) {

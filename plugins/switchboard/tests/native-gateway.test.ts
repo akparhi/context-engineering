@@ -1231,7 +1231,6 @@ test('oversized uploads receive HTTP 413 while the client is still streaming', a
   });
   const address = server.address();
   assert(address && typeof address === 'object');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const init: any = {
     method: 'POST',
     headers: { 'x-multi-gateway-token': 'test' },
@@ -1248,17 +1247,18 @@ test('oversized uploads receive HTTP 413 while the client is still streaming', a
   assert.equal(await response.text(), 'Request too large');
 });
 
+const anthropicOrOpenAiUpstream: GatewayFetch = async (url) =>
+  url.includes('api.anthropic.com')
+    ? new Response('{}', { headers: { 'content-type': 'application/json' } })
+    : new Response(sse(textEvents));
+
 test('OpenAI has no implicit request deadline while explicit limits and Claude passthrough remain bounded', async (t) => {
   const durations: number[] = [];
   t.mock.method(AbortSignal, 'timeout', (ms: number) => {
     durations.push(ms);
     return new AbortController().signal;
   });
-  // eslint-disable-next-line unicorn/consistent-function-scoping
-  const upstream: GatewayFetch = async (url) =>
-    url.includes('api.anthropic.com')
-      ? new Response('{}', { headers: { 'content-type': 'application/json' } })
-      : new Response(sse(textEvents));
+  const upstream = anthropicOrOpenAiUpstream;
   const ordinary = await gateway(t, upstream);
   assert.equal((await ordinary(body)).status, 200);
   assert.deepEqual(durations, [], 'Astra must not inherit an absolute three-minute timer');

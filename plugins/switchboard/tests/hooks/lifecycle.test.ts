@@ -59,14 +59,13 @@ test('Claude completion does not wait on Multi accounting or clear another provi
     };
   });
   on('turn.complete', (_$, event) => ({ text: event.answer }));
-  // eslint-disable-next-line no-underscore-dangle
-  for await (const _chunk of $.turn.step({
+  for await (const chunk of $.turn.step({
     turnId: 'native-turn',
     index: 0,
     model: 'claude-sonnet-5',
     messageCount: 1,
   })) {
-    // Observe the same completed inference step as the engine.
+    void chunk; // drain the stream; the hook observes each step event
   }
   const result = await $.turn.complete({
     turnId: 'native-turn',
@@ -101,15 +100,14 @@ test('a completed harness child retains its provider for compaction between turn
   });
   on('turn.complete', (_$, event) => ({ text: event.answer }));
   on('session.compact', () => ({ skip: 'core compaction' }));
-  // eslint-disable-next-line no-underscore-dangle
-  for await (const _chunk of $.turn.step({
+  for await (const chunk of $.turn.step({
     turnId: 't',
     agentId: 'child',
     index: 0,
     model: 'multi/cursor/auto',
     messageCount: 1,
   })) {
-    // Retain the model observed during inference.
+    void chunk; // drain the stream; the hook retains the model observed during inference
   }
   await $.turn.complete({
     turnId: 't',

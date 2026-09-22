@@ -6,15 +6,10 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { AgentCatalog } from '../src/gateway/agent-catalog.ts';
 import {
   checkLauncherArgumentLimit,
   workerDefinitions,
 } from '../src/launcher.ts';
-// multi-cursor was stripped in Task 3; tests remain for future reintegration
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { cursorModelOptions, cursorPickerOptions } from '../../plugins/multi-cursor/src/models.ts';
 import { ZEN_MODELS } from '../src/providers/opencode/models.ts';
 import { removeTemporary } from '../temporary.ts';
 
@@ -62,7 +57,7 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
 `,
   );
   const launcher = fileURLToPath(
-    new URL('../../plugins/multi-core/src/launcher.ts', import.meta.url),
+    new URL('../src/launcher.ts', import.meta.url),
   );
   for (const auth of ['no', 'yes', 'api']) {
     const { stdout } = await promisify(execFile)(
@@ -71,7 +66,7 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
         launcher,
         '--',
         '--model',
-        'multi/cursor/auto',
+        'multi/zen/gpt-5.6-luna',
         '--settings',
         JSON.stringify({
           disableAgentView: false,
@@ -148,7 +143,7 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
   assert.equal(supplied.args.filter((arg: string) => arg === '--plugin-dir').length, 1);
   for (const auth of ['malformed', 'error', 'missing']) {
     await assert.rejects(
-      promisify(execFile)(process.execPath, [launcher, '--', '--model', 'multi/cursor/auto'], {
+      promisify(execFile)(process.execPath, [launcher, '--', '--model', 'multi/zen/gpt-5.6-luna'], {
         cwd,
         timeout: 20000,
         env: {
@@ -181,7 +176,7 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
   await mkdir(path.join(cwd, 'claude'));
   await writeFile(
     path.join(cwd, 'claude', 'settings.json'),
-    JSON.stringify({ model: 'multi/cursor/auto' }),
+    JSON.stringify({ model: 'multi/zen/gpt-5.6-luna' }),
   );
   const { stdout } = await promisify(execFile)(process.execPath, [launcher], {
     cwd,
@@ -224,7 +219,7 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
 `,
   );
   const launcher = fileURLToPath(
-    new URL('../../plugins/multi-core/src/launcher.ts', import.meta.url),
+    new URL('../src/launcher.ts', import.meta.url),
   );
   const { stdout } = await promisify(execFile)(
     process.execPath,
@@ -376,7 +371,7 @@ result(JSON.stringify({settings,models:args.filter(x=>x.startsWith('multi/')),ze
 `,
   );
   const launcher = fileURLToPath(
-    new URL('../../plugins/multi-core/src/launcher.ts', import.meta.url),
+    new URL('../src/launcher.ts', import.meta.url),
   );
   const { stdout } = await promisify(execFile)(process.execPath, [launcher], {
     cwd,
@@ -400,260 +395,14 @@ result(JSON.stringify({settings,models:args.filter(x=>x.startsWith('multi/')),ze
   );
 });
 
-test('Antigravity launcher groups picker families, keeps workers and enables function hooks', async (t) => {
-  const cwd = await mkdtemp(path.join(os.tmpdir(), 'launcher-agy-picker-'));
-  t.after(() => removeTemporary(cwd));
-  const bin = path.join(cwd, 'bin');
-  await mkdir(bin);
-  if (process.platform === 'win32') {
-    await writeFile(
-      path.join(bin, 'agy-fixture.js'),
-      `if(process.argv[2] !== 'models') process.exit(9);
-const rows=[['gemini-low','Gemini Low'],['gemini-medium','Gemini Medium'],['gemini-high','Gemini High'],['sonnet-thinking','Sonnet Thinking']];
-console.log(rows.map(row=>row.join(String.fromCharCode(9))).join(String.fromCharCode(10)));
-`,
-    );
-    await writeFile(
-      path.join(bin, 'agy.cmd'),
-      // npm's global shim layout, so the launcher runs the fixture through Node directly.
-      `endLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & "%_prog%"  "%dp0%\\agy-fixture.js" %*\r\n`,
-    );
-  } else {
-    await writeFile(
-      path.join(bin, 'agy'),
-      `#!/usr/bin/env node
-if(process.argv[2] !== 'models') process.exit(9);
-const rows=[['gemini-low','Gemini Low'],['gemini-medium','Gemini Medium'],['gemini-high','Gemini High'],['sonnet-thinking','Sonnet Thinking']];
-console.log(rows.map(row=>row.join(String.fromCharCode(9))).join(String.fromCharCode(10)));
-`,
-      { mode: 0o755 },
-    );
-  }
-  await writeClaudeFixture(
-    bin,
-    `#!/usr/bin/env node
-const fs=require('node:fs'); const {execFileSync}=require('node:child_process'); const args=process.argv.slice(2);
-if(args.includes('plugin')&&args.includes('list')){console.log(process.env.TEST_PLUGIN==='enabled'?JSON.stringify([{id:'multi-core@cc-multi-cli-plugin',enabled:true,installPath:process.cwd()}]):'[]');process.exit(0)}
-if(args[0]==='--version'){console.log(process.env.TEST_CLAUDE_VERSION??'2.1.272');process.exit(0)}
-const result=(value)=>{const base=process.env.MULTI_MOD_GATEWAY_URL;if(!base){console.log(value);return}const url=new URL(base+'/multi/mod/session');const req=require('node:http').request(url,{method:'POST',headers:{'content-type':'application/json','x-multi-gateway-token':process.env.MULTI_GATEWAY_TOKEN}},()=>console.log(value));req.on('error',()=>console.log(value));req.end(JSON.stringify({sessionId:'fixture',event:'start'}));};
-if(args[0]==='auth'){console.log('{"loggedIn":false}');process.exit(1)}
-if(args.includes('plugin')){console.log('[]');process.exit(0)}
-const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'utf8'));
-const agents=JSON.parse(args[args.indexOf('--agents')+1]);
-if(process.env.CLAUDE_CODE_ENABLE_FUNCTION_HOOKS !== '1') throw new Error('function hooks missing');
-result(JSON.stringify({settings,agents,args,models:args.filter(x=>x.startsWith('multi/'))}));
-`,
-  );
-  const launcher = fileURLToPath(
-    new URL('../../plugins/multi-core/src/launcher.ts', import.meta.url),
-  );
-  const custom = {
-    model: 'custom/model',
-    label: 'Keep me',
-    description: 'Unchanged',
-    behavesAs: 'claude-opus-4-6',
-  };
-  const { stdout } = await promisify(execFile)(
-    process.execPath,
-    [
-      launcher,
-      '--settings',
-      JSON.stringify({ modelPicker: { options: [custom] }, hooks: { Stop: [] } }),
-    ],
-    {
-      cwd,
-      timeout: 20000,
-      env: {
-        PATH: `${bin}${path.delimiter}${process.env.PATH}`,
-        HOME: cwd,
-        ...windowsHome(cwd),
-        CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
-        CODEX_HOME: cwd,
-        MULTI_ANTIGRAVITY: '1',
-        // The ambient PATH still holds this machine's real provider CLIs; name the
-        // provider under test so a locally installed one cannot add picker rows.
-        MULTI_ENABLED_PROVIDERS: 'antigravity',
-      },
-    },
-  );
-  const { settings, agents } = JSON.parse(stdout);
-  const rows: { model: string; behavesAs: string }[] = settings.modelPicker.options;
-  // Only a family with a verified ~1M native window carries the context tag. The native
-  // ID stays the untagged spelling, and the effort profile is unchanged either way.
-  assert.deepEqual(
-    rows.map(({ model }) => model),
-    ['multi/antigravity/gemini[1m]', 'multi/antigravity/sonnet-thinking', custom.model],
-  );
-  assert.equal(rows[0].behavesAs, 'claude-sonnet-4-6');
-  assert.deepEqual(rows[2], custom);
-  assert.deepEqual(settings.hooks.Stop, []);
-  for (const effort of ['low', 'medium', 'high']) {
-    assert.equal(agents[`antigravity-gemini-${effort}`].effort, effort);
-    assert.equal(
-      agents[`antigravity-gemini-${effort}`].model,
-      `multi/antigravity/gemini-${effort}[1m]`,
-    );
-  }
-  assert.doesNotMatch(agents['antigravity-sonnet-thinking'].model, /\[1m\]/);
-  assert.equal(agents['antigravity-gemini'].model, rows[0].model);
-  const catalog = new AgentCatalog(
-    agents,
-    rows.map(({ model }) => model),
-  );
-  const listing = Object.entries(agents)
-    .map(([name, value]) => {
-      const worker = value as { description: string; tools: string[] };
-      return `- ${name}: ${worker.description} (Tools: ${worker.tools.join(', ')})`;
-    })
-    .join('\n');
-  const compacted = JSON.stringify(
-    catalog.compact({
-      messages: [
-        {
-          role: 'user',
-          content: `<system-reminder>\nAvailable agent types for the Agent tool:\n${listing}\n</system-reminder>`,
-        },
-      ],
-    }),
-  );
-  assert.match(compacted, /- antigravity-gemini:/);
-  assert.match(compacted, /- antigravity-sonnet-thinking:/);
-  assert.doesNotMatch(compacted, /antigravity-gemini-(low|medium|high):/);
-
-  // The opt-out has to stay reversible. A selection saved while rows were tagged is the
-  // spelling the user copied out of the picker, so it must still name a row once the tag
-  // is switched off - and the launcher must hand Claude the spelling that row now carries.
-  const optedOut = await promisify(execFile)(
-    process.execPath,
-    [launcher, '--model', 'sonnet', '--model', 'multi/antigravity/gemini[1m]'],
-    {
-      cwd,
-      timeout: 20000,
-      env: {
-        PATH: `${bin}${path.delimiter}${process.env.PATH}`,
-        HOME: cwd,
-        ...windowsHome(cwd),
-        CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
-        CODEX_HOME: cwd,
-        MULTI_ANTIGRAVITY: '1',
-        MULTI_DISABLE_1M_CONTEXT: '1',
-        MULTI_MODELS: 'multi/antigravity/gemini[1m]',
-      },
-    },
-  );
-  const untagged = JSON.parse(optedOut.stdout);
-  assert.deepEqual(
-    untagged.settings.modelPicker.options.map((option: { model: string }) => option.model),
-    ['multi/antigravity/gemini'],
-  );
-  // The caller's last --model is the one Claude resolves, so that is the one rewritten.
-  // Rewriting the first would leave the tagged spelling as the argument Claude actually reads.
-  // An advertised effort variant is collapsed into one picker row, so a launch that names
-  // the variant itself matches no row. It is the same provider and the same window, and it
-  // must keep its own effort rather than fall back to the synthesized base.
-  const variant = await promisify(execFile)(
-    process.execPath,
-    [launcher, '--model', 'multi/antigravity/gemini-high'],
-    {
-      cwd,
-      timeout: 20000,
-      env: {
-        PATH: `${bin}${path.delimiter}${process.env.PATH}`,
-        HOME: cwd,
-        ...windowsHome(cwd),
-        CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
-        CODEX_HOME: cwd,
-        MULTI_ANTIGRAVITY: '1',
-      },
-    },
-  );
-  assert.deepEqual(JSON.parse(variant.stdout).models, ['multi/antigravity/gemini-high[1m]']);
-
-  const flags: string[] = untagged.args;
-  const last = flags.lastIndexOf('--model');
-  assert.equal(flags[last + 1], 'multi/antigravity/gemini');
-  assert.equal(flags.filter((flag: string) => flag === '--model').length, 2);
-  assert.deepEqual(untagged.models, ['multi/antigravity/gemini']);
-});
-
-test('launcher registers only Cursor picker workers and keeps the representative catalog under 30 KB', () => {
-  const cursor = cursorModelOptions(
-    ['default', 'grok-4.6', 'composer-2.5', 'catalog-only'].map((id) => ({
-      id,
-      displayName: id,
-      variants: [{ displayName: 'Default', isDefault: true, params: [] }],
-    })),
-  );
-  const picker = cursorPickerOptions(cursor);
-  const antigravity = [
-    'gemini',
-    'claude',
-    'gpt',
-    'sonnet',
-    'opus',
-    'flash',
-    'thinking',
-    'gemini-low',
-    'gemini-medium',
-    'gemini-high',
-  ].map((id) => ({
-    id,
-    model: `multi/antigravity/${id}`,
-    label: `Antigravity · ${id}`,
-    worker: `antigravity-${id}`,
-  }));
-  const agents = workerDefinitions(true, picker, true, antigravity, []);
-  const definitions = JSON.stringify(agents);
-  const definitionBytes = Buffer.byteLength(definitions);
-  assert.equal(Object.keys(agents).filter((name) => name.startsWith('cursor-')).length, 3);
-  assert(!Object.keys(agents).some((name) => name.includes('catalog-only')));
-  assert(definitionBytes < 30000, `representative worker JSON was ${definitionBytes} bytes`);
-  assert.equal(ZEN_MODELS.length, 19);
-});
-
 test('worker registration follows selected models and retains their effort aliases', () => {
   const selected = ['multi/openai/gpt-5.6-luna', 'multi/zen/gpt-5.6-sol'];
-  const agents = workerDefinitions(true, [], true, [], [], selected);
+  const agents = workerDefinitions(true, true, selected);
   assert.deepEqual(new Set(Object.values(agents).map((worker) => worker.model)), new Set(selected));
   assert.equal(Object.keys(agents).length, 12);
   assert.equal(agents['openai-luna-high'].effort, 'high');
   assert.equal(agents['zen-gpt-5.6-sol-max'].effort, 'max');
-  assert.deepEqual(workerDefinitions(true, [], true, [], [], []), {});
-});
-
-test('selected synthesized Antigravity rows retain variants without selecting independent rows', () => {
-  const models = ['gemini-low', 'gemini-high', 'claude', 'claude-high'].map((id) => ({
-    id,
-    model: `multi/antigravity/${id}`,
-    worker: `antigravity-${id}`,
-    label: id,
-  }));
-  const agents = workerDefinitions(
-    false,
-    [],
-    false,
-    models,
-    [],
-    ['multi/antigravity/gemini', 'multi/antigravity/claude'],
-  );
-  assert.deepEqual(Object.keys(agents).toSorted(), [
-    'antigravity-claude',
-    'antigravity-gemini',
-    'antigravity-gemini-high',
-    'antigravity-gemini-low',
-  ]);
-  assert.deepEqual(
-    Object.keys(workerDefinitions(false, [], false, models, [], ['multi/antigravity/claude-high'])),
-    ['antigravity-claude-high'],
-  );
-  // Picker rows carry the context tag while native IDs never do; selection compares
-  // the untagged spelling, so a tagged row keeps its own effort workers.
-  assert.deepEqual(
-    Object.keys(
-      workerDefinitions(false, [], false, models, [], ['multi/antigravity/gemini[1m]']),
-    ).toSorted(),
-    ['antigravity-gemini', 'antigravity-gemini-high', 'antigravity-gemini-low'],
-  );
+  assert.deepEqual(workerDefinitions(true, true, []), {});
 });
 
 test('launcher argument limits are platform-aware and identify largest providers', () => {
@@ -664,9 +413,9 @@ test('launcher argument limits are platform-aware and identify largest providers
       prompt: 'Complete the delegated task.',
       tools: ['Read'],
     },
-    'cursor-worker': {
-      model: 'multi/cursor/model',
-      description: 'Cursor',
+    'zen-worker': {
+      model: 'multi/zen/model',
+      description: 'Zen',
       prompt: 'Complete the delegated task.',
       tools: ['Read'],
     },
@@ -701,7 +450,7 @@ test('launcher argument limits are platform-aware and identify largest providers
 
 test('the Zen model listing is available without authentication', async () => {
   const launcher = fileURLToPath(
-    new URL('../../plugins/multi-core/src/launcher.ts', import.meta.url),
+    new URL('../src/launcher.ts', import.meta.url),
   );
   const { stdout } = await promisify(execFile)(process.execPath, [launcher, '--zen-models'], {
     timeout: 20000,

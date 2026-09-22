@@ -8,10 +8,6 @@ import {
   loadWorkerPermissions,
   pluginPermissions,
 } from '../src/gateway/agent-definitions.ts';
-// multi-cursor was stripped in Task 3; tests remain for future reintegration
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { cursorPermissionPolicy } from '../../plugins/multi-cursor/src/permissions.ts';
 
 async function writeAgent(directory: string, name: string, source: string) {
   const agents = path.join(directory, '.claude', 'agents');
@@ -164,7 +160,4 @@ test('worker hooks do not restrict the native worker', async () => {
   assert.equal(definitions.ordinary.nativePermissionError, undefined);
   assert.deepEqual(definitions.ordinary.tools, ['Read']);
   assert.equal(definitions['general-purpose'].nativePermissionError, undefined);
-  for (const definition of [definitions.guarded, definitions.ordinary]) {
-    assert.doesNotThrow(() => cursorPermissionPolicy({ ...definition, permissionMode: 'auto' }));
-  }
 });

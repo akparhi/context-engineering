@@ -3,6 +3,13 @@ import test from 'node:test';
 
 // Load the actual Mod modules without requiring Claude's host-only type package
 // in the offline TypeScript project. All runtime imports in these modules are erased types.
+const emptyNext = async () => ({});
+const permissionNext = async (event: Record<string, unknown>) => ({
+  ...event,
+  additionalContext: ['existing context'],
+  ask: 'Existing permission review',
+});
+
 const hooksUrl = new URL('../hooks/usage.ts', import.meta.url);
 const viewUrl = new URL('../hooks/usage-view.ts', import.meta.url);
 const dashboard = {
@@ -58,22 +65,20 @@ test('usage client messages refresh props and receipts without losing providers 
   const command = hooks.get('command.run');
   const message = hooks.get('ui.message');
   assert(command && message);
-  // eslint-disable-next-line unicorn/consistent-function-scoping
-  const next = async () => ({});
-  await command(engine, { args: '' }, next);
+  await command(engine, { args: '' }, emptyNext);
   const event = {
     requestId: 'multi-usage',
     element: 'usage',
     module: 'hooks/usage-view.ts',
     data: { action: 'refresh' },
   };
-  const refreshed = await message(engine, event, next);
+  const refreshed = await message(engine, event, emptyNext);
   assert.deepEqual(refreshed.props?.providers, dashboard.providers);
   assert(requests[1].includes('refresh=true&sessionId=session%2Fone'));
-  const receipts = await message(engine, { ...event, data: { action: 'receipts' } }, next);
+  const receipts = await message(engine, { ...event, data: { action: 'receipts' } }, emptyNext);
   assert.deepEqual(receipts.props?.providers, dashboard.providers);
   assert.match(receipts.props?.receiptLines?.[0] ?? '', /worker/);
-  await message(engine, { ...event, requestId: 'another-pane' }, next);
+  await message(engine, { ...event, requestId: 'another-pane' }, emptyNext);
   assert.equal(requests.length, 3);
 });
 
@@ -157,12 +162,7 @@ test('quota advice is opt-in, session scoped, advisory and removed on detach', a
   const command = hooks.get('command.run');
   const message = hooks.get('ui.message');
   assert(submit && command && message);
-  // eslint-disable-next-line unicorn/consistent-function-scoping
-  const next = async (event: Record<string, unknown>) => ({
-    ...event,
-    additionalContext: ['existing context'],
-    ask: 'Existing permission review',
-  });
+  const next = permissionNext;
   const prompt = {
     tool: 'Agent',
     tool_use_id: 'call-1',
@@ -172,13 +172,13 @@ test('quota advice is opt-in, session scoped, advisory and removed on detach', a
   };
   assert.deepEqual(await submit(engine, prompt, next), await next(prompt));
   assert.equal(reads, 0);
-  await command(engine, { args: '' }, next);
+  await command(engine, { args: '' }, emptyNext);
   const toggle = {
     requestId: 'multi-usage',
     element: 'usage',
     data: { action: 'toggle-quota-advice' },
   };
-  const enabled = await message(engine, toggle, next);
+  const enabled = await message(engine, toggle, emptyNext);
   assert.equal((enabled.props as { quotaAdviceEnabled: boolean }).quotaAdviceEnabled, true);
   const readsBeforeSpawn = reads;
   const informed = await submit(engine, prompt, async (event) => {
@@ -216,11 +216,11 @@ test('quota advice is opt-in, session scoped, advisory and removed on detach', a
     ((await submit(engine, prompt, next)).additionalContext as string[])[1],
     /could not be retrieved/,
   );
-  await message(engine, toggle, next);
+  await message(engine, toggle, emptyNext);
   const beforeDisabled = reads;
   assert.deepEqual(await submit(engine, prompt, next), await next(prompt));
   assert.equal(reads, beforeDisabled);
-  await message(engine, toggle, next);
+  await message(engine, toggle, emptyNext);
   module.forgetUsageSession(session);
   assert.deepEqual(await submit(engine, prompt, next), await next(prompt));
   assert.equal(reads, beforeDisabled);
