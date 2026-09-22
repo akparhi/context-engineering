@@ -103,8 +103,7 @@ export async function codexRequest(
 }
 
 async function waitForAuth(pending: Promise<CodexAuthHeaders>, signal: AbortSignal) {
-  // eslint-disable-next-line unicorn/consistent-function-scoping
-  let onAbort = () => {};
+  let onAbort: (() => void) | undefined;
   const aborted = new Promise<never>((_, reject) => {
     onAbort = () => reject(signal.reason);
     signal.addEventListener('abort', onAbort, { once: true });
@@ -115,7 +114,7 @@ async function waitForAuth(pending: Promise<CodexAuthHeaders>, signal: AbortSign
   try {
     return await Promise.race([pending, aborted]);
   } finally {
-    signal.removeEventListener('abort', onAbort);
+    if (onAbort) signal.removeEventListener('abort', onAbort);
   }
 }
 

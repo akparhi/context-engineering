@@ -152,12 +152,36 @@ interface ProviderRequest {
   startStream: () => void;
 }
 
+function matchesBashAction(
+  candidate: { tool: PendingApprovalTool; context: ApprovalContext },
+  action: unknown,
+): boolean {
+  if (
+    !isRecord(candidate.tool.input) ||
+    typeof candidate.tool.input.command !== 'string' ||
+    typeof action !== 'string'
+  ) {
+    return false;
+  }
+  if (candidate.tool.input.command === action) {
+    return true;
+  }
+  // Claude's classifier omits its redundant current-workspace `cd` prefix.
+  const cwd =
+    typeof candidate.context.cwd === 'string'
+      ? approvalCwdForComparison(candidate.context.cwd)
+      : undefined;
+  return (
+    cwd !== undefined &&
+    candidate.tool.input.command.replaceAll('\\', '/') === `cd ${cwd} && ${action}`
+  );
+}
+
 export function createNativeGateway({
   token,
   enabledProviders,
   authFile,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  fetchImpl = fetch as any,
+  fetchImpl = fetch as GatewayFetch,
   onEvent: observer = () => {},
   timeoutMs,
   zen,
@@ -219,31 +243,6 @@ export function createNativeGateway({
     // carry no correlatable tool action.
     return contexts.length > 0 && contexts.every((context) => !providerOwnedReview(context.model));
   }
-  // eslint-disable-next-line unicorn/consistent-function-scoping
-  const matchesBashAction = (
-    candidate: { tool: PendingApprovalTool; context: ApprovalContext },
-    action: unknown,
-  ) => {
-    if (
-      !isRecord(candidate.tool.input) ||
-      typeof candidate.tool.input.command !== 'string' ||
-      typeof action !== 'string'
-    ) {
-      return false;
-    }
-    if (candidate.tool.input.command === action) {
-      return true;
-    }
-    // Claude's classifier omits its redundant current-workspace `cd` prefix.
-    const cwd =
-      typeof candidate.context.cwd === 'string'
-        ? approvalCwdForComparison(candidate.context.cwd)
-        : undefined;
-    return (
-      cwd !== undefined &&
-      candidate.tool.input.command.replaceAll('\\', '/') === `cd ${cwd} && ${action}`
-    );
-  };
   function permissionHook(parsed: Record<string, unknown>) {
     const id = typeof parsed.tool_use_id === 'string' ? parsed.tool_use_id : '';
     const pending = pendingTools.get(id);
@@ -460,7 +459,6 @@ export function createNativeGateway({
     if (guardAuto && upstream.ok && body.tools?.length) {
       await forwardObservedTools(upstream, res, exchange.remember, signal);
     } else if (upstream.body) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await pipeline(Readable.fromWeb(upstream.body as unknown as import('node:stream/web').ReadableStream<any>), res);
     } else {
       res.end();

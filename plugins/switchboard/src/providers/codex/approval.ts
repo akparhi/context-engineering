@@ -25,8 +25,7 @@ const record = (value: unknown): value is Record<string, unknown> =>
 /** Discover the subscription reviewer; never substitute the working model. */
 export async function discoverOpenAIReviewer(
   authFile: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  fetchImpl: GatewayFetch = fetch as any,
+  fetchImpl: GatewayFetch = fetch as GatewayFetch,
 ): Promise<boolean> {
   const signal = AbortSignal.timeout(10000);
   const response = await codexRequest(authFile, signal, (headers) =>
@@ -109,8 +108,7 @@ export async function inspectApprovalPath(
 export async function createOpenAIApproval(
   authFile: string,
   cwd: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  fetchImpl: GatewayFetch = fetch as any,
+  fetchImpl: GatewayFetch = fetch as GatewayFetch,
 ) {
   const [policy, template] = await Promise.all([
     readFile(new URL('./guardian/policy.md', import.meta.url), 'utf8'),
