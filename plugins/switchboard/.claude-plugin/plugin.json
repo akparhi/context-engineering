@@ -1,0 +1,5 @@
+{
+  "name": "switchboard",
+  "version": "0.1.0",
+  "description": "Codex and opencode-go models in the Claude Code model picker and as named subagents."
+}
