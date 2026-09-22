@@ -144,8 +144,7 @@ function normalizeModels(value: string | undefined, previous?: string): string |
   // /model and pastes here. Accept it and store the untagged ID, which is the stable one:
   // it still names the row whether or not the tag is switched on later. The strip is
   // spelled out rather than imported because this file is installed on its own, with no
-  // sibling plugin sources beside it; `nativeSpelling()` in multi-antigravity is the
-  // canonical definition.
+  // sibling plugin sources beside it.
   const persisted = models.map((model) => model.replace(/\[1m\]$/i, ''));
   for (const model of persisted) {
     if (!/^multi\/[a-z]+\/[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(model)) {

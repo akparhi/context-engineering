@@ -4,20 +4,6 @@ import http from 'node:http';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import {
-  type AntigravityHarness,
-  AntigravityProviderError,
-} from '../../../multi-antigravity/src/harness.ts';
-import {
-  formatAntigravityQuota,
-  readAntigravityAccountStatus,
-} from '../../../multi-antigravity/src/quota.ts';
-import { CursorProviderError } from '../../../multi-cursor/src/errors.ts';
-import type { CursorHarness } from '../../../multi-cursor/src/harness.ts';
-import { formatCursorQuota, readCursorQuota } from '../../../multi-cursor/src/quota.ts';
-import { readCursorAccountUsage } from '../../../multi-cursor/src/usage.ts';
-import { type GrokHarness, GrokProviderError } from '../../../multi-grok/src/harness.ts';
-import { formatGrokQuota, readGrokAuth } from '../../../multi-grok/src/usage.ts';
 import { CodexAuthError, codexRequest } from '../../../multi-openai/src/auth.ts';
 import { openaiInstructions } from '../../../multi-openai/src/instructions.ts';
 import { MODELS } from '../../../multi-openai/src/models.ts';
@@ -68,9 +54,6 @@ export interface GatewayEvent {
     | 'anthropic'
     | 'openai'
     | 'openai-request'
-    | 'cursor'
-    | 'antigravity'
-    | 'grok'
     | 'approval'
     | 'zen'
     | 'zen-request';
@@ -103,14 +86,10 @@ export interface GatewayOptions {
   fetchImpl?: GatewayFetch;
   onEvent?: (event: GatewayEvent) => void;
   timeoutMs?: number;
-  cursor?: Pick<CursorHarness, 'validate' | 'handle'> &
-    Partial<Pick<CursorHarness, 'billedUsageForSession'>>;
-  antigravity?: Pick<AntigravityHarness, 'validate' | 'handle'>;
-  grok?: Pick<GrokHarness, 'validate' | 'handle'>;
   zen?: { apiKey: string };
   /** OpenAI review for GPT-originated actions, independent of Claude authentication. */
   approvalBridge?: Pick<NativeApprovalBridge, 'respond'>;
-  approvalProviders?: readonly ('openai' | 'cursor')[];
+  approvalProviders?: readonly ('openai')[];
   /** No Anthropic credentials: also block passthrough if no reviewer is available. */
   blockAnthropic?: boolean;
   guardAuto?: boolean;
@@ -139,12 +118,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function providerOwnedReview(model: string): boolean {
-  return (
-    model.startsWith('multi/openai/') ||
-    model.startsWith('multi/cursor/') ||
-    model.startsWith('multi/antigravity/') ||
-    model.startsWith('multi/grok/')
-  );
+  return model.startsWith('multi/openai/');
 }
 
 function authenticated(actual: string | string[] | undefined, expected: string): boolean {
@@ -181,9 +155,6 @@ export function createNativeGateway({
   fetchImpl = fetch,
   onEvent: observer = () => {},
   timeoutMs,
-  cursor,
-  antigravity,
-  grok,
   zen,
   approvalBridge,
   approvalProviders: _approvalProviders = approvalBridge ? ['openai'] : [],
@@ -195,41 +166,19 @@ export function createNativeGateway({
   receipts = new ReceiptLedger(),
   usageDashboard,
 }: GatewayOptions): Server {
-  const billedUsage = cursor?.billedUsageForSession?.bind(cursor);
   const dashboard =
     usageDashboard ??
     new ProviderUsageDashboard({
-      enabled: (enabledProviders ?? ['openai', 'cursor', 'zen', 'antigravity', 'grok']).filter(
+      enabled: (enabledProviders ?? ['openai', 'zen']).filter(
         (provider) => {
-          if (provider === 'cursor') {
-            return Boolean(cursor);
-          }
           if (provider === 'zen') {
             return Boolean(zen);
-          }
-          if (provider === 'antigravity') {
-            return Boolean(antigravity);
-          }
-          if (provider === 'grok') {
-            return Boolean(grok);
           }
           return provider === 'openai';
         },
       ),
       openai: async () => codexQuotaView(await readCodexUsage(authFile)),
-      cursor: cursor
-        ? (session) =>
-            readCursorAccountUsage(
-              session,
-              async () => formatCursorQuota(await readCursorQuota()),
-              billedUsage,
-            )
-        : undefined,
       zen: zen ? async () => formatZenQuota(await readZenQuota({ apiKey: zen.apiKey })) : undefined,
-      antigravity: antigravity
-        ? async () => formatAntigravityQuota(await readAntigravityAccountStatus())
-        : undefined,
-      grok: grok ? async () => formatGrokQuota(await readGrokAuth()) : undefined,
     });
   const onEvent = (event: GatewayEvent) => {
     receipts.observe(event);
@@ -353,97 +302,9 @@ export function createNativeGateway({
     }
     return candidates[0].context;
   }
-  const compactions = new ModCompactions(async (request) => {
-    const model = request.context.model;
-    const provider = model?.split('/')[1];
-    const harness = provider === 'cursor' ? cursor : grokOrAntigravity(provider);
-    const native = harness;
-    if (!native || !model) {
-      throw new Error('Precomputed summaries require a native harness model');
-    }
-    assertProviderEnabled(model, enabledProviders);
-    // Use a separate native record. A speculative summary never advances or rewinds
-    // the originating run and never receives native tool capabilities.
-    const result = await native.handle(
-      {
-        model,
-        max_tokens: 3000,
-        messages: [
-          {
-            role: 'user',
-            content: `Summarize this conversation for continuation. Preserve tasks, constraints, decisions and unresolved work. Do not execute tools. Instructions: ${request.instructions ?? ''}\n${JSON.stringify(request.messages)}`,
-          },
-        ],
-      },
-      JSON.stringify([request.session, `compact-${request.id}`]),
-      request.signal,
-      undefined,
-      request.context,
-    );
-    return result.content
-      .filter((block) => block.type === 'text')
-      .map((block) => block.text)
-      .join('\n');
+  const compactions = new ModCompactions(async (_request) => {
+    throw new Error('Precomputed summaries require a native harness model');
   });
-
-  function grokOrAntigravity(provider: string | undefined) {
-    if (provider === 'antigravity') {
-      return antigravity;
-    }
-    return provider === 'grok' ? grok : undefined;
-  }
-
-  async function handleHarness(
-    exchange: ProviderRequest,
-    provider: 'cursor' | 'antigravity' | 'grok',
-  ) {
-    const { res, body, url, signal, agentId, emit, identity } = exchange;
-    const bridge = { cursor, antigravity, grok }[provider];
-    if (!bridge) {
-      const unavailable = {
-        cursor: 'Cursor SDK is not signed in. Run the launcher with --cursor-login first.',
-        antigravity:
-          'Antigravity is unavailable. Install and connect the multi-antigravity plugin.',
-        grok: 'Grok is unavailable. Install Grok Build, run grok login, and relaunch.',
-      };
-      throw new BadRequest(unavailable[provider]);
-    }
-    const scope = identity.scope ?? JSON.stringify([fallbackSession, agentId ?? 'main']);
-    const nativeBody = exchange.body;
-    const inputTokens = validateHarness(exchange, provider, bridge);
-    if (url.pathname === '/v1/messages/count_tokens') {
-      res.writeHead(200, {
-        'content-type': 'application/json',
-        'x-multi-token-count': 'estimate',
-      });
-      return res.end(JSON.stringify({ input_tokens: inputTokens }));
-    }
-    exchange.startStream();
-    const displayRows = provider === 'cursor' && modBridge.available(nativeBody);
-    modBridge.begin(scope, body.model ?? provider);
-    const result = await bridge
-      .handle(
-        nativeBody,
-        scope,
-        signal,
-        body.stream ? emit : undefined,
-        exchange.permissionContext,
-        displayRows ? (observation) => modBridge.observe(scope, observation) : undefined,
-      )
-      .catch((error: unknown) => {
-        modBridge.complete(scope, signal.aborted ? 'cancelled' : 'failed');
-        throw error;
-      });
-    permissionModes?.finishModCompaction(
-      identity.session,
-      agentId,
-      exchange.permissionContext?.compaction,
-    );
-    rememberResult(exchange, result);
-    onEvent(completionEvent(exchange, result, provider, harnessEndpoint(provider)));
-    sendResult(exchange, result);
-    modBridge.complete(scope);
-  }
   async function handleOpenAI(exchange: ProviderRequest, externalModel: string) {
     const { req, res, body, url, signal, abort, agentId, emit } = exchange;
     const request = openaiRequest(exchange, externalModel);
@@ -751,35 +612,14 @@ export function createNativeGateway({
     const { body, agentId, url } = exchange;
     const route = providerRoute(external);
     beginUsage(exchange, external);
-    let permissionContext: PermissionContext | undefined;
-    if (
-      permissionModes &&
-      ['cursor', 'antigravity', 'grok'].includes(route) &&
-      url.pathname === '/v1/messages'
-    ) {
-      try {
-        permissionContext = permissionModes.resolveHarness(
-          exchange.identity.session,
-          agentId,
-          body.model,
-        );
-        exchange.permissionContext = permissionContext;
-      } catch (error) {
-        throw new BadRequest(reason(error));
-      }
-    }
     onEvent({
       route,
       model: body.model,
       agentId: agentId ?? null,
       path: url.pathname,
-      permissionContext,
     });
     if (!external) {
       return handleAnthropic(exchange);
-    }
-    if (route === 'cursor' || route === 'antigravity' || route === 'grok') {
-      return handleHarness(exchange, route);
     }
     if (external.startsWith('multi/zen/')) {
       return handleZen(exchange);
@@ -849,7 +689,7 @@ export function createNativeGateway({
           permissionModes,
           compactions,
           receipts,
-          billedUsage,
+          undefined,
           dashboard,
         );
       }
@@ -903,14 +743,6 @@ export function createNativeGateway({
 class RequestTooLarge extends Error {}
 
 function providerSignal(disconnected: AbortSignal, model: string | null, timeoutMs?: number) {
-  // Native harness runs follow the client connection rather than an HTTP deadline.
-  if (
-    model?.startsWith('multi/cursor/') ||
-    model?.startsWith('multi/antigravity/') ||
-    model?.startsWith('multi/grok/')
-  ) {
-    return disconnected;
-  }
   if (
     (model?.startsWith('multi/openai/') || model?.startsWith('multi/zen/')) &&
     timeoutMs === undefined
@@ -948,23 +780,11 @@ async function readRequest(req: http.IncomingMessage, catalog?: AgentCatalog) {
 
 function providerRoute(
   model: string | null,
-): 'cursor' | 'antigravity' | 'grok' | 'openai' | 'anthropic' | 'zen' {
-  if (model?.startsWith('multi/cursor/')) {
-    return 'cursor';
-  }
-  if (model?.startsWith('multi/antigravity/')) {
-    return 'antigravity';
-  }
-  if (model?.startsWith('multi/grok/')) {
-    return 'grok';
-  }
+): 'openai' | 'anthropic' | 'zen' {
   if (model?.startsWith('multi/zen/')) {
     return 'zen';
   }
   return model ? 'openai' : 'anthropic';
-}
-function harnessEndpoint(provider: 'cursor' | 'antigravity' | 'grok'): string {
-  return { cursor: '@cursor/sdk', antigravity: 'agy', grok: 'grok' }[provider];
 }
 
 function errorStatus(error: unknown): number {
@@ -976,13 +796,6 @@ function errorStatus(error: unknown): number {
   }
   if (error instanceof UpstreamFailure) {
     return error.status;
-  }
-  if (
-    error instanceof CursorProviderError ||
-    error instanceof AntigravityProviderError ||
-    error instanceof GrokProviderError
-  ) {
-    return error.failure.status;
   }
   return 502;
 }
@@ -1193,21 +1006,4 @@ function assertProviderEnabled(model: string | null, enabled: readonly string[] 
 
 function externalModel(model: unknown) {
   return typeof model === 'string' && model.startsWith('multi/') ? model : null;
-}
-function validateHarness(
-  exchange: ProviderRequest,
-  provider: string,
-  bridge: NonNullable<GatewayOptions['cursor'] | GatewayOptions['antigravity']>,
-) {
-  try {
-    if (
-      !['/v1/messages', '/v1/messages/count_tokens'].includes(exchange.url.pathname) ||
-      exchange.req.method !== 'POST'
-    ) {
-      throw new Error(`${provider} requires POST /v1/messages or /v1/messages/count_tokens`);
-    }
-    return bridge.validate(exchange.body, exchange.permissionContext);
-  } catch (error) {
-    throw new BadRequest(reason(error));
-  }
 }

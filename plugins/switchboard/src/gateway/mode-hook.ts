@@ -1,6 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { nativeSpelling } from '../../../multi-antigravity/src/models.ts';
-import { mergeCursorPermissions } from '../../../multi-cursor/src/permissions.ts';
 import type { WorkerPermissions } from './agent-definitions.ts';
 import { ModPolicies } from './mod-policy.ts';
 
@@ -28,15 +26,27 @@ function requiredString(value: unknown, name: string): string {
   return value;
 }
 
-function executionForModel(model: unknown): WorkerExecution {
-  if (typeof model !== 'string') {
-    return 'claude';
+function nativeSpelling(model: string | undefined): string | undefined {
+  return model?.replace(/\[1m\]$/i, '');
+}
+
+function mergePermissions(
+  context: PermissionContext,
+  rules: WorkerPermissions = {},
+): PermissionContext {
+  let tools = context.tools;
+  if (rules.tools !== undefined) {
+    tools = tools === undefined ? rules.tools : tools.filter((tool) => rules.tools?.includes(tool));
   }
-  return model.startsWith('multi/cursor/') ||
-    model.startsWith('multi/antigravity/') ||
-    model.startsWith('multi/grok/')
-    ? 'harness'
-    : 'claude';
+  return {
+    ...context,
+    tools,
+    disallowedTools: [...(context.disallowedTools ?? []), ...(rules.disallowedTools ?? [])],
+  };
+}
+
+function executionForModel(_model: unknown): WorkerExecution {
+  return 'claude';
 }
 
 /** Prompt-time snapshots: the existing selector takes effect at the next prompt. */
@@ -87,7 +97,7 @@ export class PermissionModes {
     const policy = this.policies.consume(session, generation, requiredString(context.cwd, 'cwd'));
     remember(this.catalogs, policy.cwd, policy.workers);
     this.recordModSession(session, {
-      ...mergeCursorPermissions(context, policy.restrictions),
+      ...mergePermissions(context, policy.restrictions),
       nativePermissionError: policy.restrictions.nativePermissionError,
     });
   }
@@ -167,7 +177,7 @@ export class PermissionModes {
     }
     this.prunePendingWorkers();
     const token = randomUUID();
-    const inherited = input.parentAgentId ? mergeCursorPermissions(parent, definition) : definition;
+    const inherited = input.parentAgentId ? mergePermissions(parent, definition) : definition;
     remember(this.pendingWorkers, JSON.stringify([session, token]), {
       ...inherited,
       cwd,
@@ -344,7 +354,7 @@ export class PermissionModes {
       throw new Error('Claude worker permission context is unavailable');
     }
     const inherited = ['auto', 'acceptEdits', 'bypassPermissions'].includes(parent.permissionMode);
-    return mergeCursorPermissions(
+    return mergePermissions(
       {
         ...worker,
         nativePermissionError: worker.nativePermissionError ?? parent.nativePermissionError,

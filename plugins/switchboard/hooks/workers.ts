@@ -5,7 +5,6 @@ import {
   type PolicyResponse,
   type PolicyState,
 } from './policy.ts';
-import { isHarnessModel } from './provider.ts';
 
 const maxBody = 32000;
 const issues =
@@ -143,7 +142,8 @@ function harnessSpawn(
   selection: GatewayResponse | undefined,
 ): boolean {
   const inferred = event.fork ? event.parentModel : (event.model ?? event.parentModel);
-  return selection?.execution === 'harness' || (!selection?.known && isHarnessModel(inferred));
+  void inferred;
+  return selection?.execution === 'harness';
 }
 
 async function active($: EngineInterface): Promise<boolean> {

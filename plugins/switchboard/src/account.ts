@@ -72,7 +72,7 @@ async function main() {
   }
   if (command !== 'login') {
     throw new Error(
-      'Usage: multi status | login openai [--device-auth] | login cursor | connect zen | login antigravity | login grok | uninstall',
+      'Usage: multi status | login openai [--device-auth] | connect zen | uninstall',
     );
   }
   if (provider === 'openai' && args.every((arg) => arg === '--device-auth')) {
@@ -80,22 +80,6 @@ async function main() {
   }
   if (args.length) {
     throw new Error('Unsupported login arguments');
-  }
-  if (provider === 'cursor') {
-    return run(process.execPath, [
-      fileURLToPath(new URL('./launcher.ts', import.meta.url)),
-      '--cursor-login',
-    ]);
-  }
-  if (provider === 'grok') {
-    // Grok Build owns its own browser and device-code flows; never proxy them.
-    return run('grok', ['login']);
-  }
-  if (provider === 'antigravity') {
-    return run(process.execPath, [
-      fileURLToPath(new URL('./launcher.ts', import.meta.url)),
-      '--antigravity-setup',
-    ]);
   }
   throw new Error('Zen uses multi connect zen, not OAuth login.');
 }

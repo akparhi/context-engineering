@@ -62,11 +62,8 @@ export class ModBridge {
     return this.snapshots.get(key);
   }
 
-  available(body: MessagesRequest) {
-    const tools = new Set(body.tools?.map((tool) => tool.name));
-    return ['read', 'search', 'edit', 'shell', 'other', 'note'].every((name) =>
-      tools.has(`mcp__multi-core__cursor_${name}`),
-    );
+  available(_body: MessagesRequest) {
+    return false;
   }
 
   private record(key: string, value: { effective: Effective; cwd?: string; generation?: number }) {
@@ -127,7 +124,7 @@ export class ModBridge {
     const event: ModDisplayEvent = {
       sequence: ++this.sequence,
       toolUseId: observation.id,
-      tool: `mcp__multi-core__cursor_${action.kind}`,
+      tool: `mcp__multi-core__${action.kind}`,
       input: {
         description: action.description,
         output,
