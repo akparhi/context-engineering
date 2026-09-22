@@ -14,7 +14,7 @@
 </important>
 
 <important if="the task involves a browser: opening pages, clicking, filling forms, screenshots, or web scraping">
-- If available, you MUST use t3-code browser tools for all browser tasks.
+- If available, use t3-code browser tools for all browser tasks.
 </important>
 
 <important if="you are executing a phased implementation plan">
