@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { createOpenAIApproval, discoverOpenAIReviewer } from './providers/codex/approval.ts';
 import { readCodexAuth } from './providers/codex/auth.ts';
-import { OPENAI_PICKER, OPENAI_WORKERS } from './providers/codex/models.ts';
+import { LABELS, MODELS, OPENAI_WORKERS } from './providers/codex/models.ts';
 import type { Effort } from './providers/codex/responses.ts';
 import { readZenKey } from './providers/opencode/auth.ts';
 import {
@@ -452,10 +452,9 @@ export function workerDefinitions(
       {
         description: `${model}, ${effort} reasoning. Native coding, investigation, and review.`,
         prompt: WORKER_PROMPT,
-        // Agent `effort` stops at low, so a `none` worker runs on the gateway's pinned id.
-        model: `switchboard/openai/${effort === 'none' ? `${model}-${effort}` : model}`,
+        model: `switchboard/openai/${model}`,
         tools: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
-        ...(effort === 'none' ? {} : { effort }),
+        effort,
       },
     ]),
   );
@@ -786,10 +785,10 @@ function pickerSettings(codexSignedIn: boolean, zen: boolean, fullCatalog = fals
   const settings: LaunchSettings = {
     modelPicker: {
       options: [
-        ...(codexSignedIn ? OPENAI_PICKER : []).map(({ id, label, description }) => ({
-          model: `switchboard/openai/${id}`,
-          label,
-          description,
+        ...Object.values(codexSignedIn ? MODELS : {}).map((model) => ({
+          model: `switchboard/openai/${model}`,
+          label: LABELS[model] ?? model,
+          description: 'OpenAI subscription · native Claude Code harness',
           behavesAs: pickerProfile(true),
         })),
         ...zenOptions.map(({ model, label, efforts }) => ({

@@ -23,7 +23,7 @@ import {
 } from '../src/gateway/tools.ts';
 import { readCodexAuth } from '../src/providers/codex/auth.ts';
 import { openaiInstructions } from '../src/providers/codex/instructions.ts';
-import { OPENAI_WORKERS, PINNED } from '../src/providers/codex/models.ts';
+import { OPENAI_WORKERS } from '../src/providers/codex/models.ts';
 import type {
   ResponsesInputContent,
   ResponsesInputItem,
@@ -792,25 +792,6 @@ test('all registered model and reasoning choices reach OpenAI without substituti
       const result = await readMessage(response);
       assert.equal(result.model, `switchboard/openai/${slug}`);
     }
-  }
-});
-
-test('pinned picker ids reach OpenAI as their base model with the pinned effort', async (t) => {
-  const call = await gateway(t, async (_url, options) => {
-    const [slug, effort] = options.headers.session_id.split(':');
-    const request: ResponsesRequest = JSON.parse(String(options.body));
-    assert.equal(request.model, slug);
-    assert.equal(request.reasoning.effort, effort);
-    return new Response(sse(textEvents));
-  });
-  assert.equal(PINNED.size, 5);
-  for (const [id, { model, effort }] of PINNED) {
-    const response = await call(
-      { ...body, model: `switchboard/openai/${id}`, output_config: { effort: 'high' } },
-      { 'x-claude-code-agent-id': `${model}:${effort}` },
-    );
-    assert.equal(response.status, 200);
-    assert.equal((await readMessage(response)).model, `switchboard/openai/${id}`);
   }
 });
 
