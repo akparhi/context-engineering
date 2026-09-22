@@ -25,7 +25,7 @@ setup. Use the defaults unless the user chooses otherwise:
   `--models +<id,id,...>` to add models to the saved selection; with no saved
   selection, it extends the curated defaults. Existing explicit selections
   remain until changed. If a requested worker is unavailable, find its model ID
-  in the provider docs or with `--opencode-models`, add it to the
+  in the provider docs or with `--zen-models`, add it to the
   displayed models, and relaunch the session. Do not inject model-selection
   advice at every worker spawn.
 

@@ -598,7 +598,7 @@ function filterPicker(
     const option = available.get(model) ?? available.get(`${native}[1m]`) ?? available.get(native);
     if (!option) {
       throw new Error(
-        `SWITCHBOARD_MODELS: model is not available from a connected provider in this launcher's picker: ${model}. Check the full ID with --opencode-models, then add it with /switchboard:setup --models <id>.`,
+        `SWITCHBOARD_MODELS: model is not available from a connected provider in this launcher's picker: ${model}. Check the full ID with --zen-models, then add it with /switchboard:setup --models <id>.`,
       );
     }
     chosen.add(option);

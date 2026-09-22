@@ -5,7 +5,7 @@ import { run } from './install/process.ts';
 async function secretInput(): Promise<string> {
   if (!process.stdin.isTTY) {
     throw new Error(
-      'Run multi connect zen in your own terminal for hidden key entry. Do not paste the key into Claude.',
+      'Run switchboard-ctl connect zen in your own terminal for hidden key entry. Do not paste the key into Claude.',
     );
   }
   process.stderr.write('Zen API key (hidden): ');
@@ -71,7 +71,7 @@ async function main() {
   }
   if (command !== 'login') {
     throw new Error(
-      'Usage: multi status | login openai [--device-auth] | connect zen | uninstall',
+      'Usage: switchboard-ctl status | login openai [--device-auth] | connect zen | uninstall',
     );
   }
   if (provider === 'openai' && args.every((arg) => arg === '--device-auth')) {
@@ -80,7 +80,7 @@ async function main() {
   if (args.length) {
     throw new Error('Unsupported login arguments');
   }
-  throw new Error('Zen uses multi connect zen, not OAuth login.');
+  throw new Error('Zen uses switchboard-ctl connect zen, not OAuth login.');
 }
 
 // Browser links are emitted by the provider-owned login process. Never read tokens.

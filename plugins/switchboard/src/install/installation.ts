@@ -45,7 +45,7 @@ export interface InstallationOptions {
 }
 
 export const DEFAULT_COMMAND = 'switchboard';
-/** The management shim; `switchboard-ctl` and `<command> --switchboard-ctl` reach the same dispatcher. */
+/** The management shim; `switchboard-ctl` and `<command> --multi` reach the same dispatcher. */
 export const MANAGEMENT_COMMAND = 'switchboard-ctl';
 
 type DeferDeletion = (command: string, args: string[], options: SpawnOptions) => void;
