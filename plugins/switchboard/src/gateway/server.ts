@@ -6,7 +6,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { CodexAuthError, codexRequest } from '../providers/codex/auth.ts';
 import { openaiInstructions } from '../providers/codex/instructions.ts';
-import { MODELS } from '../providers/codex/models.ts';
+import { MODELS, PINNED } from '../providers/codex/models.ts';
 import type { ResponsesRequest } from '../providers/codex/responses.ts';
 import { forAnthropic, fromResponses, toResponses } from '../providers/codex/responses.ts';
 import { readCodexUsage } from '../providers/codex/usage.ts';
@@ -886,7 +886,10 @@ function prepareZenRequest(exchange: ProviderRequest, fallbackSession: string) {
 function openaiRequest(exchange: ProviderRequest, externalModel: string): ResponsesRequest {
   const { req, body, url } = exchange;
   try {
-    const model = Object.values(MODELS).find((model) => externalModel === `switchboard/openai/${model}`);
+    const pinned = PINNED.get(externalModel.slice('switchboard/openai/'.length));
+    const model =
+      pinned?.model ??
+      Object.values(MODELS).find((model) => externalModel === `switchboard/openai/${model}`);
     if (!model) {
       throw new Error('Unknown native OpenAI model');
     }
@@ -896,7 +899,10 @@ function openaiRequest(exchange: ProviderRequest, externalModel: string): Respon
     ) {
       throw new Error('External models require POST /v1/messages or /v1/messages/count_tokens');
     }
-    const request = toResponses(body, model);
+    const request = toResponses(
+      pinned ? { ...body, output_config: { ...body.output_config, effort: pinned.effort } } : body,
+      model,
+    );
     return { ...request, instructions: openaiInstructions(request.instructions) };
   } catch (error) {
     throw new BadRequest(reason(error));

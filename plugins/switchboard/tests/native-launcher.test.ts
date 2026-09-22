@@ -10,6 +10,7 @@ import {
   checkLauncherArgumentLimit,
   workerDefinitions,
 } from '../src/launcher.ts';
+import { OPENAI_PICKER } from '../src/providers/codex/models.ts';
 import { ZEN_MODELS } from '../src/providers/opencode/models.ts';
 import { removeTemporary } from './temporary.ts';
 
@@ -411,6 +412,37 @@ test('worker registration follows selected models and retains their effort alias
   assert.equal(agents['openai-luna-high'].effort, 'high');
   assert.equal(agents['zen-gpt-5.6-sol-max'].effort, 'max');
   assert.deepEqual(workerDefinitions(true, true, []), {});
+});
+
+test('OpenAI picker rows use short labels with pinned effort rows after their base model', () => {
+  assert.deepEqual(
+    OPENAI_PICKER.map((row) => row.label),
+    ['Astra', 'Astra Low', 'Sol', 'Sol Low', 'Luna', 'Luna None', 'Luna Low', 'Luna Medium'],
+  );
+  assert.deepEqual(
+    OPENAI_PICKER.map((row) => row.id),
+    [
+      'gpt-6-astra',
+      'gpt-6-astra-low',
+      'gpt-6-sol',
+      'gpt-6-sol-low',
+      'gpt-6-luna',
+      'gpt-6-luna-none',
+      'gpt-6-luna-low',
+      'gpt-6-luna-medium',
+    ],
+  );
+  assert.equal(
+    OPENAI_PICKER[5]?.description,
+    'OpenAI subscription · native Claude Code harness · none reasoning',
+  );
+});
+
+test('the none-effort worker omits agent effort and runs on its pinned model', () => {
+  const agents = workerDefinitions(true, false);
+  assert.equal(agents['openai-luna-none']?.model, 'switchboard/openai/gpt-6-luna-none');
+  assert(!('effort' in (agents['openai-luna-none'] ?? {})));
+  assert.equal(agents['openai-luna-low']?.effort, 'low');
 });
 
 test('launcher argument limits are platform-aware and identify largest providers', () => {
