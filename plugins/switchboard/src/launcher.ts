@@ -48,13 +48,16 @@ const claudeExecutable = process.env.SWITCHBOARD_REAL_CLAUDE;
  * provider profiles and Claude's native subagent prompt govern them.
  */
 const WORKER_PROMPT = 'Complete the delegated task.';
+// WebSearch is an Anthropic server tool that OpenAI and Zen reject; the rest are
+// claude.ai account services a delegated worker has no business calling.
+const WORKER_DISALLOWED_TOOLS = ['WebSearch', 'DesignSync', 'RemoteTrigger', 'ShareOnboardingGuide', 'ReportFindings'];
 
 /** One `--agents` entry: an external worker using Claude Code's native tools. */
 interface AgentDefinition {
   description: string;
   prompt: string;
   model: string;
-  tools: string[];
+  disallowedTools: string[];
   effort?: Effort;
 }
 
@@ -452,8 +455,8 @@ export function workerDefinitions(
       {
         description: `${model}, ${effort} reasoning. Native coding, investigation, and review.`,
         prompt: WORKER_PROMPT,
+        disallowedTools: WORKER_DISALLOWED_TOOLS,
         model: `switchboard/openai/${model}`,
-        tools: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
         effort,
       },
     ]),
@@ -462,8 +465,8 @@ export function workerDefinitions(
     agents[name] = {
       description: `OpenCode Zen ${option.model}${option.effort ? `, ${option.effort} effort` : ''}. Uses native Claude Code tools.`,
       prompt: WORKER_PROMPT,
+      disallowedTools: WORKER_DISALLOWED_TOOLS,
       model: option.model,
-      tools: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
       ...(option.effort ? { effort: option.effort } : {}),
     };
   }

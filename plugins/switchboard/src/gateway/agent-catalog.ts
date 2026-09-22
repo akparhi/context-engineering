@@ -3,7 +3,7 @@ import type { MessagesRequest } from './messages.ts';
 interface Worker {
   model: string;
   description: string;
-  tools: string[];
+  disallowedTools: string[];
 }
 
 const record = (value: unknown): value is Record<string, unknown> =>
@@ -19,7 +19,7 @@ export class AgentCatalog {
       if (remaining.delete(worker.model)) {
         continue;
       }
-      this.hidden.add(`- ${name}: ${worker.description} (Tools: ${worker.tools.join(', ')})`);
+      this.hidden.add(`- ${name}: ${worker.description} (Tools: All tools except ${worker.disallowedTools.join(', ')})`);
     }
   }
 

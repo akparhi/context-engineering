@@ -402,13 +402,13 @@ test('launcher argument limits are platform-aware and identify largest providers
       model: 'switchboard/openai/model',
       description: 'OpenAI',
       prompt: 'Complete the delegated task.',
-      tools: ['Read'],
+      disallowedTools: ['WebSearch'],
     },
     'zen-worker': {
       model: 'switchboard/zen/model',
       description: 'Zen',
       prompt: 'Complete the delegated task.',
-      tools: ['Read'],
+      disallowedTools: ['WebSearch'],
     },
   };
   const invocation = {

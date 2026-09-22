@@ -7,17 +7,17 @@ const workers = {
   'astra': {
     model: 'switchboard/openai/gpt-6-astra',
     description: 'Astra',
-    tools: ['Read', 'Bash'],
+    disallowedTools: ['WebSearch'],
   },
   'astra-high': {
     model: 'switchboard/openai/gpt-6-astra',
     description: 'Astra high',
-    tools: ['Read', 'Bash'],
+    disallowedTools: ['WebSearch'],
   },
-  'zen-other': { model: 'switchboard/zen/other', description: 'Other', tools: ['Read'] },
+  'zen-other': { model: 'switchboard/zen/other', description: 'Other', disallowedTools: ['WebSearch'] },
 };
 const rows = Object.entries(workers).map(
-  ([name, worker]) => `- ${name}: ${worker.description} (Tools: ${worker.tools.join(', ')})`,
+  ([name, worker]) => `- ${name}: ${worker.description} (Tools: All tools except ${worker.disallowedTools.join(', ')})`,
 );
 const custom = '- custom: User-owned worker (Tools: Read)';
 const listing = (heading = 'Available agent types for the Agent tool:') =>

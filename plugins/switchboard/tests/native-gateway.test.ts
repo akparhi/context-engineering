@@ -668,7 +668,7 @@ test('Claude prompts remain unchanged after OpenAI main and worker requests, inc
 });
 
 test('catalog filtering reaches Claude and OpenAI without changing user text or native registration', async (t) => {
-  const row = '- hidden: Hidden worker (Tools: Read)';
+  const row = '- hidden: Hidden worker (Tools: All tools except WebSearch)';
   const text = `<system-reminder>\nAvailable agent types for the Agent tool:\n${row}\n- custom: Keep this (Tools: Read)\n</system-reminder>`;
   const seen: string[] = [];
   const call = await gateway(
@@ -681,7 +681,7 @@ test('catalog filtering reaches Claude and OpenAI without changing user text or 
     },
     {
       agentCatalog: new AgentCatalog(
-        { hidden: { model, description: 'Hidden worker', tools: ['Read'] } },
+        { hidden: { model, description: 'Hidden worker', disallowedTools: ['WebSearch'] } },
         [],
       ),
     },

@@ -44,20 +44,20 @@ const workers = {
     model: 'switchboard/openai/gpt-6-astra',
     description: 'CACHE_VISIBLE_WORKER',
     prompt: 'Follow the task.',
-    tools: ['Read'],
+    disallowedTools: ['WebSearch'],
   },
   'astra-high': {
     model: 'switchboard/openai/gpt-6-astra',
     description: 'CACHE_HIDDEN_EFFORT',
     prompt: 'Follow the task.',
-    tools: ['Read'],
+    disallowedTools: ['WebSearch'],
     effort: 'high',
   },
   'luna': {
     model: 'switchboard/openai/gpt-6-luna',
     description: 'CACHE_HIDDEN_MODEL',
     prompt: 'Follow the task.',
-    tools: ['Read'],
+    disallowedTools: ['WebSearch'],
   },
 };
 const catalog = new AgentCatalog(workers, ['switchboard/openai/gpt-6-astra']);
