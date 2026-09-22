@@ -86,6 +86,8 @@ function events(item: SseEvent, deltas: SseEvent[] = []): SseEvent[] {
 const textEvents = events({ type: 'message', content: [{ type: 'output_text', text: 'Done' }] }, [
   { type: 'response.output_text.delta', delta: 'Done' },
 ]);
+const functionTools = (request: ResponsesRequest) =>
+  request.tools.flatMap((tool) => (tool.type === 'function' ? [tool] : []));
 const callId = (item: ResponsesInputItem): string | undefined =>
   'call_id' in item ? item.call_id : undefined;
 const contentOf = (item: ResponsesInputItem): ResponsesInputContent[] =>
@@ -146,7 +148,7 @@ test('native conversion preserves tool IDs, error results, permissions text and 
   assert.deepEqual(result.tool_choice, { type: 'function', name: 'Read' });
   assert.equal(result.parallel_tool_calls, false);
   assert.equal(result.store, false);
-  assert.equal(result.tools[0].strict, false);
+  assert.equal(functionTools(result)[0].strict, false);
   assert.throws(
     () =>
       toResponses(
@@ -156,9 +158,98 @@ test('native conversion preserves tool IDs, error results, permissions text and 
     /Unsupported/,
   );
   assert.throws(
-    () => toResponses({ ...body, tools: [{ type: 'web_search_20250305' }] }, 'gpt'),
+    () => toResponses({ ...body, tools: [{ type: 'code_execution_20250522' }] }, 'gpt'),
     /Unsupported/,
   );
+});
+
+test("Claude Code's WebSearch request becomes OpenAI hosted web search with its domain filters", () => {
+  const search = {
+    type: 'web_search_20250305',
+    name: 'web_search',
+    allowed_domains: ['bun.sh'],
+    blocked_domains: [],
+    max_uses: 8,
+  };
+  const result = toResponses(
+    { ...body, tools: [search], tool_choice: { type: 'tool', name: 'web_search' } },
+    'gpt-6-luna',
+  );
+  assert.deepEqual(result.tools, [{ type: 'web_search', filters: { allowed_domains: ['bun.sh'] } }]);
+  assert.deepEqual(result.tool_choice, { type: 'web_search' });
+  assert.deepEqual(result.include, ['reasoning.encrypted_content', 'web_search_call.action.sources']);
+  assert.deepEqual(toResponses(body, 'gpt').include, ['reasoning.encrypted_content']);
+  assert.throws(
+    () => toResponses({ ...body, tools: [{ ...search, allowed_domains: 'bun.sh' }] }, 'gpt'),
+    /Invalid web search allowed_domains/,
+  );
+});
+
+test('OpenAI web search calls stream as Claude server tool use, search results and cited text', async () => {
+  const sent: { type: StreamEventName; value: StreamEventBody }[] = [];
+  const call = { type: 'web_search_call', id: 'ws_1' };
+  const searched = {
+    ...call,
+    status: 'completed',
+    action: {
+      type: 'search',
+      query: 'latest Bun release',
+      sources: [
+        { type: 'url', url: 'https://bun.sh/blog' },
+        { type: 'api', name: 'oai-news' },
+        { type: 'url', url: 'https://bun.sh/blog' },
+      ],
+    },
+  };
+  const text = { type: 'message', content: [{ type: 'output_text', text: 'Bun 1.4.2', annotations: [] }] };
+  const [created, , , , completed] = textEvents;
+  const result = await fromResponses(
+    stream([
+      created,
+      { type: 'response.output_item.added', output_index: 0, item: { ...call, status: 'in_progress' } },
+      { type: 'response.web_search_call.searching', output_index: 0, item_id: 'ws_1' },
+      { type: 'response.output_item.done', output_index: 0, item: searched },
+      { type: 'response.output_item.added', output_index: 1, item: { ...text, content: [] } },
+      { type: 'response.output_text.delta', output_index: 1, delta: 'Bun 1.4.2' },
+      { type: 'response.output_item.done', output_index: 1, item: text },
+      completed,
+    ]),
+    model,
+    (type, value) => {
+      sent.push({ type, value });
+    },
+  );
+  const results = {
+    type: 'web_search_tool_result',
+    tool_use_id: 'ws_1',
+    content: [{ type: 'web_search_result', title: 'https://bun.sh/blog', url: 'https://bun.sh/blog' }],
+  };
+  assert.deepEqual(result.content, [
+    { type: 'server_tool_use', id: 'ws_1', name: 'web_search', input: { query: 'latest Bun release' } },
+    results,
+    { type: 'text', text: 'Bun 1.4.2' },
+  ]);
+  assert.equal(result.stop_reason, 'end_turn');
+  const starts = sent.flatMap(({ type, value }) =>
+    type === 'content_block_start' && 'content_block' in value ? [value] : [],
+  );
+  assert.deepEqual(starts.map(({ index }) => index), [0, 1, 2]);
+  assert.deepEqual(starts[0].content_block, { ...result.content[0], input: {} });
+  assert.deepEqual(starts[1].content_block, results);
+  const failed = await fromResponses(
+    stream([
+      created,
+      { type: 'response.output_item.done', output_index: 0, item: { ...call, status: 'failed' } },
+      { type: 'response.output_item.done', output_index: 1, item: text },
+      completed,
+    ]),
+    model,
+  );
+  assert.deepEqual(failed.content[1], {
+    type: 'web_search_tool_result',
+    tool_use_id: 'ws_1',
+    content: { type: 'web_search_tool_result_error', error_code: 'unavailable' },
+  });
 });
 
 test('Responses stream preserves native tool arguments, usage and stop reason', async () => {
@@ -916,15 +1007,15 @@ test('long MCP names round-trip across tool definitions, calls, choices and fres
     tool_choice: { type: 'tool', name },
   };
   const converted = toResponses(request, 'gpt');
-  assert(converted.tools.every((t) => t.name.length <= 64));
-  assert.notEqual(converted.tools[0].name, converted.tools[1].name);
-  assert.deepEqual(converted.tool_choice, { type: 'function', name: converted.tools[0].name });
+  assert(functionTools(converted).every((t) => t.name.length <= 64));
+  assert.notEqual(functionTools(converted)[0].name, functionTools(converted)[1].name);
+  assert.deepEqual(converted.tool_choice, { type: 'function', name: functionTools(converted)[0].name });
   const reply = await fromResponses(
     stream(
       events({
         type: 'function_call',
         call_id: 'call_1',
-        name: converted.tools[0].name,
+        name: functionTools(converted)[0].name,
         arguments: '{}',
       }),
     ),
@@ -946,7 +1037,7 @@ test('long MCP names round-trip across tool definitions, calls, choices and fres
     },
     'gpt',
   );
-  assert.equal((resumed.input[0] as { name: string }).name, converted.tools[0].name);
+  assert.equal((resumed.input[0] as { name: string }).name, functionTools(converted)[0].name);
   const longId = `toolu_${'x'.repeat(150)}`;
   const history = toResponses(
     {

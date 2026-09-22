@@ -42,6 +42,8 @@ interface Tool {
   description?: string;
   input_schema?: unknown;
   defer_loading?: boolean;
+  allowed_domains?: unknown;
+  blocked_domains?: unknown;
 }
 
 interface ToolChoice {
@@ -86,7 +88,15 @@ interface Usage {
 export type ResponseContentBlock =
   | { type: 'text'; text: string }
   | { type: 'tool_use'; id: string; name: string; input: unknown }
-  | { type: 'thinking'; thinking: string; signature: string };
+  | { type: 'thinking'; thinking: string; signature: string }
+  | { type: 'server_tool_use'; id: string; name: 'web_search'; input: unknown }
+  | {
+      type: 'web_search_tool_result';
+      tool_use_id: string;
+      content:
+        | { type: 'web_search_result'; title: string; url: string }[]
+        | { type: 'web_search_tool_result_error'; error_code: 'unavailable' };
+    };
 
 export interface MessagesResponse {
   id: string;

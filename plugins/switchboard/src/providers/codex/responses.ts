@@ -19,6 +19,7 @@ const IMAGE_MEDIA_TYPES: readonly unknown[] = [
   'image/webp',
 ];
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
+const WEB_SEARCH_TOOL = 'web_search_20250305';
 
 export type Effort = (typeof EFFORTS)[number];
 
@@ -37,15 +38,16 @@ export type ResponsesInputItem =
   | { type: 'function_call_output'; call_id: string; output: string | ResponsesInputContent[] }
   | { type: 'reasoning'; id?: string; encrypted_content: string; summary: unknown };
 
-interface ResponsesTool {
-  type: 'function';
-  name: string;
-  description: string;
-  parameters: unknown;
-  strict: boolean;
-}
+type ResponsesTool =
+  | { type: 'function'; name: string; description: string; parameters: unknown; strict: boolean }
+  | { type: 'web_search'; filters?: { allowed_domains?: string[]; blocked_domains?: string[] } };
 
-type ResponsesToolChoice = 'auto' | 'none' | 'required' | { type: 'function'; name?: string };
+type ResponsesToolChoice =
+  | 'auto'
+  | 'none'
+  | 'required'
+  | { type: 'function'; name?: string }
+  | { type: 'web_search' };
 
 export interface ResponsesRequest {
   model: string;
@@ -89,7 +91,16 @@ type ResponsesOutputItem = (
   | { type: 'message'; content?: ResponsesOutputContent[] }
   | { type: 'function_call'; call_id?: string; name?: string; arguments?: string }
   | { type: 'reasoning'; encrypted_content?: string | null; summary?: unknown }
+  | { type: 'web_search_call'; status?: string; action?: WebSearchAction }
 ) & { id?: string };
+
+/** `sources` is present only when requested via `include`; non-URL sources carry no `url`. */
+interface WebSearchAction {
+  type: string;
+  query?: string;
+  url?: string;
+  sources?: { url?: unknown }[];
+}
 
 /** Streamed events the translation acts on. Any other `type` is ignored, exactly
  *  as an unrecognised event was before it had a name here. */
@@ -157,6 +168,18 @@ function isOutputItem(value: unknown, done: boolean): value is ResponsesOutputIt
             (part) =>
               isRecord(part) && part.type === 'summary_text' && typeof part.text === 'string',
           )))
+    );
+  }
+  if (value.type === 'web_search_call') {
+    const action = value.action;
+    return (
+      (value.status === undefined || typeof value.status === 'string') &&
+      (action === undefined ||
+        (isRecord(action) &&
+          typeof action.type === 'string' &&
+          ['query', 'url'].every((key) => action[key] === undefined || typeof action[key] === 'string') &&
+          (action.sources === undefined ||
+            (Array.isArray(action.sources) && action.sources.every(isRecord)))))
     );
   }
   return false;
@@ -433,6 +456,9 @@ function inputTool(tool: unknown): ResponsesTool {
   if (!isRecord(tool)) {
     throw new Error('Invalid tool');
   }
+  if (tool.type === WEB_SEARCH_TOOL) {
+    return webSearchTool(tool);
+  }
   if (tool.type && tool.type !== 'custom') {
     throw new Error(`Unsupported server tool: ${tool.type}`);
   }
@@ -451,6 +477,24 @@ function inputTool(tool: unknown): ResponsesTool {
   };
 }
 
+// Claude's web search server tool runs on OpenAI's hosted search; max_uses has no equivalent.
+function webSearchTool(tool: Record<string, unknown>): ResponsesTool {
+  const filters: { allowed_domains?: string[]; blocked_domains?: string[] } = {};
+  for (const key of ['allowed_domains', 'blocked_domains'] as const) {
+    const domains = tool[key];
+    if (domains == null) {
+      continue;
+    }
+    if (!Array.isArray(domains) || domains.some((domain) => typeof domain !== 'string')) {
+      throw new Error(`Invalid web search ${key}`);
+    }
+    if (domains.length) {
+      filters[key] = domains;
+    }
+  }
+  return { type: 'web_search', ...(Object.keys(filters).length ? { filters } : {}) };
+}
+
 function toolChoice(
   choice: MessagesRequest['tool_choice'],
   tools: ResponsesTool[],
@@ -460,9 +504,13 @@ function toolChoice(
     throw new Error('Unsupported tool choice');
   }
   const name = choice?.name;
+  // Claude Code's WebSearch forces its server tool by the Anthropic name `web_search`.
+  const webSearch = name === 'web_search' && tools.some((tool) => tool.type === 'web_search');
   if (
     wanted === 'tool' &&
-    (typeof name !== 'string' || !tools.some((tool) => tool.name === toolName(name)))
+    !webSearch &&
+    (typeof name !== 'string' ||
+      !tools.some((tool) => tool.type === 'function' && tool.name === toolName(name)))
   ) {
     throw new Error('Named tool choice must reference a declared tool');
   }
@@ -477,7 +525,7 @@ function toolChoice(
       if (typeof name !== 'string') {
         throw new Error('Missing named tool choice');
       }
-      return { type: 'function', name: toolName(name) };
+      return webSearch ? { type: 'web_search' } : { type: 'function', name: toolName(name) };
     case 'any':
       return 'required';
     case 'none':
@@ -656,7 +704,10 @@ export function toResponses(
     tool_choice: choice,
     parallel_tool_calls: !body.tool_choice?.disable_parallel_tool_use,
     reasoning: { effort, summary: 'auto' },
-    include: ['reasoning.encrypted_content'],
+    include: [
+      'reasoning.encrypted_content',
+      ...(tools.some((tool) => tool.type === 'web_search') ? ['web_search_call.action.sources'] : []),
+    ],
     // Codex subscriptions require store:false and streaming; max_tokens is unsupported.
     store: false,
     stream: true,
@@ -771,7 +822,26 @@ function outputValue(item: ResponsesOutputItem): unknown {
       // Already emitted signatures retain the completed item snapshot; opaque
       // ciphertext is not a stable identity field for terminal reconciliation.
       return [item.summary ?? []];
+    case 'web_search_call':
+      return [item.status, item.action];
   }
+}
+
+/** Anthropic's result block for one search; the provider reports sources without titles. */
+function webSearchResult(item: Extract<ResponsesOutputItem, { type: 'web_search_call' }>, id: string) {
+  const action = item.action;
+  const urls = [
+    ...(action?.sources ?? []).map((source) => source.url),
+    ...(action?.type === 'search' ? [] : [action?.url]),
+  ].filter((url): url is string => typeof url === 'string');
+  return {
+    type: 'web_search_tool_result' as const,
+    tool_use_id: id,
+    content:
+      item.status === 'failed'
+        ? { type: 'web_search_tool_result_error' as const, error_code: 'unavailable' as const }
+        : [...new Set(urls)].map((url) => ({ type: 'web_search_result' as const, title: url, url })),
+  };
 }
 
 export interface ResponseOptions {
@@ -999,7 +1069,7 @@ class ResponseStream {
         throw new Error('OpenAI function arguments changed after streaming');
       }
       slot.arguments = final.arguments;
-    } else if (!slot.text && Array.isArray(final.summary)) {
+    } else if (final.type === 'reasoning' && !slot.text && Array.isArray(final.summary)) {
       slot.text = final.summary.map((part) => (part as { text: string }).text).join('\n');
     }
     slot.item = final;
@@ -1013,6 +1083,13 @@ class ResponseStream {
     }
     if (item.type === 'message') {
       return { type: 'text', text: '' };
+    }
+    if (item.type === 'web_search_call') {
+      if (!item.id) {
+        throw new Error('OpenAI web search call has no ID');
+      }
+      const query = item.action?.query ?? item.action?.url ?? '';
+      return { type: 'server_tool_use', id: item.id, name: 'web_search', input: { query } };
     }
     if (!item.call_id || !item.name || typeof item.arguments !== 'string') {
       throw new Error('Incomplete function call');
@@ -1046,7 +1123,10 @@ class ResponseStream {
     this.content.push(block);
     this.emit('content_block_start', {
       index,
-      content_block: block.type === 'tool_use' ? { ...block, input: {} } : { ...block },
+      content_block:
+        block.type === 'tool_use' || block.type === 'server_tool_use'
+          ? { ...block, input: {} }
+          : { ...block },
     });
     return { block, index };
   }
@@ -1070,7 +1150,10 @@ class ResponseStream {
   }
 
   private writeBlock(slot: OutputSlot, block: ResponseContentBlock, index: number) {
-    if (block.type === 'tool_use') {
+    if (block.type === 'web_search_tool_result') {
+      return;
+    }
+    if (block.type === 'tool_use' || block.type === 'server_tool_use') {
       this.emit('content_block_delta', {
         index,
         delta: { type: 'input_json_delta', partial_json: JSON.stringify(block.input) },
@@ -1110,6 +1193,12 @@ class ResponseStream {
       });
     }
     this.emit('content_block_stop', { index });
+    if (slot.item.type === 'web_search_call' && block.type === 'server_tool_use') {
+      const result = webSearchResult(slot.item, block.id);
+      this.content.push(result);
+      this.emit('content_block_start', { index: index + 1, content_block: result });
+      this.emit('content_block_stop', { index: index + 1 });
+    }
   }
 
   private drain() {
@@ -1118,7 +1207,7 @@ class ResponseStream {
       if (!slot) {
         return;
       }
-      if (slot.item.type === 'function_call' && !slot.done) {
+      if ((slot.item.type === 'function_call' || slot.item.type === 'web_search_call') && !slot.done) {
         return;
       }
       const { block, index } = this.beginBlock(slot);

@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import type { ResponsesRequest } from '../src/providers/codex/responses.ts';
 import { toResponses } from '../src/providers/codex/responses.ts';
 import { toChat } from '../src/providers/opencode/chat.ts';
+
+const functionTools = (request: ResponsesRequest) =>
+  request.tools.flatMap((tool) => (tool.type === 'function' ? [tool] : []));
 
 const body = {
   model: 'switchboard/openai/gpt-6-luna',
@@ -38,12 +42,12 @@ test('OpenAI omits deferred declarations and preserves loaded tools and referenc
     body.model,
   );
   assert.deepEqual(
-    initialRequest.tools.map((tool) => tool.name),
+    functionTools(initialRequest).map((tool) => tool.name),
     ['Read'],
   );
   const request = toResponses(body, body.model);
   assert.deepEqual(
-    request.tools.map((tool) => tool.name),
+    functionTools(request).map((tool) => tool.name),
     ['mcp__search', 'Read'],
   );
   const output = request.input.at(-1);
@@ -75,7 +79,7 @@ test('named tool choices retain the requested deferred declaration', () => {
     body.model,
   );
   assert.deepEqual(
-    request.tools.map((tool) => tool.name),
+    functionTools(request).map((tool) => tool.name),
     ['mcp__search', 'Read'],
   );
 });
