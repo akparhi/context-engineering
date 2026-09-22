@@ -38,7 +38,7 @@ const STRIPPED_REQUEST_HEADERS = [
   'connection',
   'content-length',
   'transfer-encoding',
-  'x-multi-gateway-token',
+  'x-switchboard-gateway-token',
   'accept-encoding',
 ];
 const STRIPPED_RESPONSE_HEADERS = [
@@ -71,7 +71,7 @@ export interface GatewayEvent {
   cached?: boolean;
   permissionContext?: PermissionContext;
   usage?: MessagesResponse['usage'];
-  usageMetadata?: MessagesResponse['multi_usage'];
+  usageMetadata?: MessagesResponse['switchboard_usage'];
   requestId?: string;
   /** Upstream API the request was billed through, present on completion events. */
   endpoint?: string;
@@ -122,7 +122,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function providerOwnedReview(model: string): boolean {
-  return model.startsWith('multi/openai/');
+  return model.startsWith('switchboard/openai/');
 }
 
 function authenticated(actual: string | string[] | undefined, expected: string): boolean {
@@ -326,7 +326,7 @@ export function createNativeGateway({
     if (url.pathname === '/v1/messages/count_tokens') {
       res.writeHead(200, {
         'content-type': 'application/json',
-        'x-multi-token-count': 'estimate',
+        'x-switchboard-token-count': 'estimate',
       });
       return res.end(JSON.stringify({ input_tokens: estimateInputTokens(request) }));
     }
@@ -388,7 +388,7 @@ export function createNativeGateway({
     }
     const prepared = prepareZenRequest(exchange, fallbackSession);
     if (url.pathname === '/v1/messages/count_tokens') {
-      res.writeHead(200, { 'content-type': 'application/json', 'x-multi-token-count': 'estimate' });
+      res.writeHead(200, { 'content-type': 'application/json', 'x-switchboard-token-count': 'estimate' });
       return res.end(JSON.stringify({ input_tokens: prepared.inputTokens }));
     }
     onEvent({ route: 'zen-request', agentId, model: body.model });
@@ -399,7 +399,7 @@ export function createNativeGateway({
         'content-type': 'application/json',
         accept: 'text/event-stream',
         'x-opencode-session': prepared.cacheKey,
-        'x-opencode-client': 'cc-multi-cli-plugin',
+        'x-opencode-client': 'switchboard',
       },
       body: JSON.stringify(prepared.body),
       signal,
@@ -528,7 +528,7 @@ export function createNativeGateway({
     }
     if (
       candidates.length > 1 &&
-      candidates.some(({ context }) => context.model.startsWith('multi/openai/'))
+      candidates.some(({ context }) => context.model.startsWith('switchboard/openai/'))
     ) {
       return dispatchReview(exchange, metadata, null);
     }
@@ -567,12 +567,12 @@ export function createNativeGateway({
     if (guardAuto) {
       context = pendingReview(exchange.parsed, metadata.session);
     }
-    const openai = context?.model.startsWith('multi/openai/');
+    const openai = context?.model.startsWith('switchboard/openai/');
     if (approvalBridge && (openai || (!guardAuto && !context))) {
       return handleReview(exchange, context);
     }
     const nativeClaude =
-      context && (!context.model.startsWith('multi/') || context.model.startsWith('multi/zen/'));
+      context && (!context.model.startsWith('switchboard/') || context.model.startsWith('switchboard/zen/'));
     if (openai || external || blockAnthropic || (context && !nativeClaude)) {
       throw new BadRequest(
         'Automatic review cannot use ordinary external inference. No matching provider reviewer is enabled.',
@@ -591,12 +591,12 @@ export function createNativeGateway({
       endpoint,
       session: exchange.identity.session || fallbackSession,
       agentId: exchange.agentId,
-      model: result.multi_usage?.model ?? exchange.body.model,
-      effort: result.multi_usage?.effort ?? exchange.body.output_config?.effort,
+      model: result.switchboard_usage?.model ?? exchange.body.model,
+      effort: result.switchboard_usage?.effort ?? exchange.body.output_config?.effort,
       stopReason: result.stop_reason,
       tools: result.content.filter((block) => block.type === 'tool_use').map((block) => block.name),
       usage: result.usage,
-      usageMetadata: result.multi_usage ?? { source: 'unavailable' },
+      usageMetadata: result.switchboard_usage ?? { source: 'unavailable' },
       requestId: JSON.stringify([
         route,
         exchange.identity.session || fallbackSession,
@@ -626,7 +626,7 @@ export function createNativeGateway({
     if (!external) {
       return handleAnthropic(exchange);
     }
-    if (external.startsWith('multi/zen/')) {
+    if (external.startsWith('switchboard/zen/')) {
       return handleZen(exchange);
     }
     return handleOpenAI(exchange, external);
@@ -684,7 +684,7 @@ export function createNativeGateway({
       }
       const url = new URL(req.url ?? '', 'http://localhost');
       const { raw, parsed, body } = await readRequest(req, agentCatalog);
-      if (url.pathname.startsWith('/multi/mod/')) {
+      if (url.pathname.startsWith('/switchboard/mod/')) {
         return handleModRoute(
           req,
           res,
@@ -732,7 +732,7 @@ export function createNativeGateway({
           heartbeat = setInterval(() => emit('ping', {}), 15000);
         },
       };
-      if (url.pathname === '/multi/permission') {
+      if (url.pathname === '/switchboard/permission') {
         return sendPermissionDecision(exchange);
       }
       await dispatch(exchange, metadata, external);
@@ -749,7 +749,7 @@ class RequestTooLarge extends Error {}
 
 function providerSignal(disconnected: AbortSignal, model: string | null, timeoutMs?: number) {
   if (
-    (model?.startsWith('multi/openai/') || model?.startsWith('multi/zen/')) &&
+    (model?.startsWith('switchboard/openai/') || model?.startsWith('switchboard/zen/')) &&
     timeoutMs === undefined
   ) {
     return disconnected;
@@ -762,7 +762,7 @@ async function readRequest(req: http.IncomingMessage, catalog?: AgentCatalog) {
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > (req.url?.startsWith('/multi/mod/') ? 32 * 1024 : MAX_BODY)) {
+    if (size > (req.url?.startsWith('/switchboard/mod/') ? 32 * 1024 : MAX_BODY)) {
       throw new RequestTooLarge();
     }
     chunks.push(chunk);
@@ -786,7 +786,7 @@ async function readRequest(req: http.IncomingMessage, catalog?: AgentCatalog) {
 function providerRoute(
   model: string | null,
 ): 'openai' | 'anthropic' | 'zen' {
-  if (model?.startsWith('multi/zen/')) {
+  if (model?.startsWith('switchboard/zen/')) {
     return 'zen';
   }
   return model ? 'openai' : 'anthropic';
@@ -891,7 +891,7 @@ function prepareZenRequest(exchange: ProviderRequest, fallbackSession: string) {
 function openaiRequest(exchange: ProviderRequest, extModel: string): ResponsesRequest {
   const { req, body, url } = exchange;
   try {
-    const model = Object.values(MODELS).find((slug) => extModel === `multi/openai/${slug}`);
+    const model = Object.values(MODELS).find((slug) => extModel === `switchboard/openai/${slug}`);
     if (!model) {
       throw new Error('Unknown native OpenAI model');
     }
@@ -926,9 +926,9 @@ function authorizeRequest(
   token: string,
   guardAuto?: boolean,
 ) {
-  if (req.headers.origin || !authenticated(req.headers['x-multi-gateway-token'], token)) {
+  if (req.headers.origin || !authenticated(req.headers['x-switchboard-gateway-token'], token)) {
     const pathName = new URL(req.url ?? '', 'http://localhost').pathname;
-    res.writeHead(pathName.startsWith('/multi/mod/') ? 401 : 403);
+    res.writeHead(pathName.startsWith('/switchboard/mod/') ? 401 : 403);
     res.end('Forbidden');
     return false;
   }
@@ -939,23 +939,23 @@ function authorizeRequest(
       '/v1/messages/count_tokens',
       '/v1/models',
       '/api/hello',
-      '/multi/mod/session',
-      '/multi/mod/worker',
-      '/multi/mod/worker-model',
-      '/multi/mod/mode',
-      '/multi/mod/policy',
-      '/multi/mod/offer',
-      '/multi/mod/telemetry',
-      '/multi/mod/lifecycle',
-      '/multi/mod/usage',
-      '/multi/mod/usage/complete',
-      '/multi/mod/receipts',
-      '/multi/mod/detach',
-      '/multi/mod/compact/precompute',
-      '/multi/mod/compact/run',
-      '/multi/mod/compact/authorize',
-      '/multi/mod/compact/cancel',
-      ...(guardAuto ? ['/multi/permission'] : []),
+      '/switchboard/mod/session',
+      '/switchboard/mod/worker',
+      '/switchboard/mod/worker-model',
+      '/switchboard/mod/mode',
+      '/switchboard/mod/policy',
+      '/switchboard/mod/offer',
+      '/switchboard/mod/telemetry',
+      '/switchboard/mod/lifecycle',
+      '/switchboard/mod/usage',
+      '/switchboard/mod/usage/complete',
+      '/switchboard/mod/receipts',
+      '/switchboard/mod/detach',
+      '/switchboard/mod/compact/precompute',
+      '/switchboard/mod/compact/run',
+      '/switchboard/mod/compact/authorize',
+      '/switchboard/mod/compact/cancel',
+      ...(guardAuto ? ['/switchboard/permission'] : []),
     ].includes(url.pathname) ||
     !['POST', 'GET', 'HEAD'].includes(req.method ?? '')
   ) {
@@ -1010,5 +1010,5 @@ function assertProviderEnabled(model: string | null, enabled: readonly string[] 
 }
 
 function externalModel(model: unknown) {
-  return typeof model === 'string' && model.startsWith('multi/') ? model : null;
+  return typeof model === 'string' && model.startsWith('switchboard/') ? model : null;
 }

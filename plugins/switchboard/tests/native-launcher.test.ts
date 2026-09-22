@@ -48,12 +48,12 @@ test('launcher preserves native auth, disables unavailable auto mode, and merges
     path.join(cwd, 'bin'),
     `#!/usr/bin/env node
 const fs=require('node:fs');const args=process.argv.slice(2);
-if(args.includes('plugin')&&args.includes('list')){console.log(process.env.TEST_PLUGIN==='enabled'?JSON.stringify([{id:'multi-core@cc-multi-cli-plugin',enabled:true,installPath:process.cwd()}]):'[]');process.exit(0)}
+if(args.includes('plugin')&&args.includes('list')){console.log(process.env.TEST_PLUGIN==='enabled'?JSON.stringify([{id:'switchboard@switchboard',enabled:true,installPath:process.cwd()}]):'[]');process.exit(0)}
 if(args[0]==='--version'){console.log(process.env.TEST_CLAUDE_VERSION??'2.1.272');process.exit(0)}
-const result=(value)=>{const base=process.env.MULTI_MOD_GATEWAY_URL;if(!base){console.log(value);return}const url=new URL(base+'/multi/mod/session');const req=require('node:http').request(url,{method:'POST',headers:{'content-type':'application/json','x-multi-gateway-token':process.env.MULTI_GATEWAY_TOKEN}},()=>console.log(value));req.on('error',()=>console.log(value));req.end(JSON.stringify({sessionId:'fixture',event:'start'}));};
+const result=(value)=>{const base=process.env.SWITCHBOARD_MOD_GATEWAY_URL;if(!base){console.log(value);return}const url=new URL(base+'/switchboard/mod/session');const req=require('node:http').request(url,{method:'POST',headers:{'content-type':'application/json','x-switchboard-gateway-token':process.env.SWITCHBOARD_GATEWAY_TOKEN}},()=>console.log(value));req.on('error',()=>console.log(value));req.end(JSON.stringify({sessionId:'fixture',event:'start'}));};
 if(args[0]==='auth'){if(process.env.TEST_AUTH==='malformed'){console.log('not-json');process.exit(0)}if(process.env.TEST_AUTH==='error'){process.exit(2)}if(process.env.TEST_AUTH==='missing'){console.log('{}');process.exit(0)}process.stdout.write(JSON.stringify({loggedIn:process.env.TEST_AUTH==='yes'}));process.exitCode=process.env.TEST_AUTH==='yes'?0:1}else{
 const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'utf8'));
- result(JSON.stringify({agentView:process.env.CLAUDE_CODE_DISABLE_AGENT_VIEW,backgroundTasks:process.env.CLAUDE_CODE_DISABLE_BACKGROUND_TASKS,functionHooks:process.env.CLAUDE_CODE_ENABLE_FUNCTION_HOOKS,settings,models:args.filter(x=>x.startsWith('multi/')),args,settingsCount:args.filter(x=>x==='--settings').length,hasLocalToken:!!process.env.MULTI_GATEWAY_TOKEN,apiTimeout:process.env.API_TIMEOUT_MS,toolSearch:process.env.ENABLE_TOOL_SEARCH,auth:process.env.ANTHROPIC_API_KEY?'api':process.env.ANTHROPIC_AUTH_TOKEN?'local':'native'}));}
+ result(JSON.stringify({agentView:process.env.CLAUDE_CODE_DISABLE_AGENT_VIEW,backgroundTasks:process.env.CLAUDE_CODE_DISABLE_BACKGROUND_TASKS,functionHooks:process.env.CLAUDE_CODE_ENABLE_FUNCTION_HOOKS,settings,models:args.filter(x=>x.startsWith('switchboard/')),args,settingsCount:args.filter(x=>x==='--settings').length,hasLocalToken:!!process.env.SWITCHBOARD_GATEWAY_TOKEN,apiTimeout:process.env.API_TIMEOUT_MS,toolSearch:process.env.ENABLE_TOOL_SEARCH,auth:process.env.ANTHROPIC_API_KEY?'api':process.env.ANTHROPIC_AUTH_TOKEN?'local':'native'}));}
 `,
   );
   const launcher = fileURLToPath(
@@ -66,7 +66,7 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
         launcher,
         '--',
         '--model',
-        'multi/zen/gpt-5.6-luna',
+        'switchboard/zen/gpt-5.6-luna',
         '--settings',
         JSON.stringify({
           disableAgentView: false,
@@ -143,7 +143,7 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
   assert.equal(supplied.args.filter((arg: string) => arg === '--plugin-dir').length, 1);
   for (const auth of ['malformed', 'error', 'missing']) {
     await assert.rejects(
-      promisify(execFile)(process.execPath, [launcher, '--', '--model', 'multi/zen/gpt-5.6-luna'], {
+      promisify(execFile)(process.execPath, [launcher, '--', '--model', 'switchboard/zen/gpt-5.6-luna'], {
         cwd,
         timeout: 20000,
         env: {
@@ -176,7 +176,7 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
   await mkdir(path.join(cwd, 'claude'));
   await writeFile(
     path.join(cwd, 'claude', 'settings.json'),
-    JSON.stringify({ model: 'multi/zen/gpt-5.6-luna' }),
+    JSON.stringify({ model: 'switchboard/zen/gpt-5.6-luna' }),
   );
   const { stdout } = await promisify(execFile)(process.execPath, [launcher], {
     cwd,
@@ -211,11 +211,11 @@ test('Zen credentials add picker models and named workers without leaking the ke
 const fs=require('node:fs');const args=process.argv.slice(2);
 if(args.includes('plugin')&&args.includes('list')){console.log('[]');process.exit(0)}
 if(args[0]==='--version'){console.log(process.env.TEST_CLAUDE_VERSION??'2.1.272');process.exit(0)}
-const result=(value)=>{const base=process.env.MULTI_MOD_GATEWAY_URL;if(!base){console.log(value);return}const url=new URL(base+'/multi/mod/session');const req=require('node:http').request(url,{method:'POST',headers:{'content-type':'application/json','x-multi-gateway-token':process.env.MULTI_GATEWAY_TOKEN}},()=>console.log(value));req.on('error',()=>console.log(value));req.end(JSON.stringify({sessionId:'fixture',event:'start'}));};
+const result=(value)=>{const base=process.env.SWITCHBOARD_MOD_GATEWAY_URL;if(!base){console.log(value);return}const url=new URL(base+'/switchboard/mod/session');const req=require('node:http').request(url,{method:'POST',headers:{'content-type':'application/json','x-switchboard-gateway-token':process.env.SWITCHBOARD_GATEWAY_TOKEN}},()=>console.log(value));req.on('error',()=>console.log(value));req.end(JSON.stringify({sessionId:'fixture',event:'start'}));};
 if(args[0]==='auth'){process.stdout.write(JSON.stringify({loggedIn:false}));process.exitCode=1}else{
 const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'utf8'));
 const agents=JSON.parse(args[args.indexOf('--agents')+1]);
-result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=>x.startsWith('multi/')),zenKeyInChild:process.env.OPENCODE_API_KEY,args}));}
+result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=>x.startsWith('switchboard/')),zenKeyInChild:process.env.OPENCODE_API_KEY,args}));}
 `,
   );
   const launcher = fileURLToPath(
@@ -223,7 +223,7 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
   );
   const { stdout } = await promisify(execFile)(
     process.execPath,
-    [launcher, '--', '--model', 'multi/zen/gpt-5.6-luna', '--dangerously-skip-permissions'],
+    [launcher, '--', '--model', 'switchboard/zen/gpt-5.6-luna', '--dangerously-skip-permissions'],
     {
       cwd,
       timeout: 20000,
@@ -242,28 +242,28 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
   const pickerModels = result.settings.modelPicker.options.map(
     (option: { model: string }) => option.model,
   );
-  assert(pickerModels.includes('multi/zen/deepseek-v4-pro'));
-  assert(pickerModels.includes('multi/zen/muse-spark-1.3'));
+  assert(pickerModels.includes('switchboard/zen/deepseek-v4-pro'));
+  assert(pickerModels.includes('switchboard/zen/muse-spark-1.3'));
   assert.equal(
     result.settings.modelPicker.options.find(
-      (row: { model: string }) => row.model === 'multi/zen/muse-spark-1.3',
+      (row: { model: string }) => row.model === 'switchboard/zen/muse-spark-1.3',
     ).behavesAs,
     'claude-sonnet-4-6',
   );
   assert.equal(
     result.settings.modelPicker.options.find(
-      (row: { model: string }) => row.model === 'multi/zen/deepseek-v4-pro',
+      (row: { model: string }) => row.model === 'switchboard/zen/deepseek-v4-pro',
     ).behavesAs,
     'claude-haiku-4-5',
   );
   assert.match(
     result.settings.modelPicker.options.find(
-      (row: { model: string }) => row.model === 'multi/zen/deepseek-v4-pro',
+      (row: { model: string }) => row.model === 'switchboard/zen/deepseek-v4-pro',
     ).description,
     /effort not applicable/,
   );
-  assert(!pickerModels.includes('multi/zen/gpt-5.6-luna'));
-  assert(!pickerModels.includes('multi/zen/big-pickle'));
+  assert(!pickerModels.includes('switchboard/zen/gpt-5.6-luna'));
+  assert(!pickerModels.includes('switchboard/zen/big-pickle'));
   assert(!result.agents.includes('zen-gpt-5.6-luna'));
   assert(!result.agents.includes('zen-gpt-5.6-luna-high'));
   assert(!result.agents.includes('zen-big-pickle'));
@@ -271,7 +271,7 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
   assert.equal(result.zenKeyInChild, undefined);
   assert.equal(result.settings.permissions.disableAutoMode, 'disable');
   assert(result.args.includes('--dangerously-skip-permissions'));
-  assert.deepEqual(result.models, ['multi/zen/gpt-5.6-luna']);
+  assert.deepEqual(result.models, ['switchboard/zen/gpt-5.6-luna']);
   const disabled = await promisify(execFile)(process.execPath, [launcher], {
     cwd,
     timeout: 20000,
@@ -283,7 +283,7 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
       CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
       CODEX_HOME: cwd,
       OPENCODE_API_KEY: 'invalid key must not be read',
-      MULTI_ENABLED_PROVIDERS: '',
+      SWITCHBOARD_ENABLED_PROVIDERS: '',
     },
   });
   const withoutProviders = JSON.parse(disabled.stdout);
@@ -302,47 +302,47 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
         CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
         CODEX_HOME: cwd,
         OPENCODE_API_KEY: 'zen-fixture-key',
-        MULTI_MODELS: selection,
-        MULTI_ZEN_MODELS: 'big-pickle,glm-5.2',
+        SWITCHBOARD_MODELS: selection,
+        SWITCHBOARD_ZEN_MODELS: 'big-pickle,glm-5.2',
       },
     });
   const filtered = JSON.parse(
-    (await launchFiltered(' multi/zen/big-pickle, multi/zen/glm-5.2,multi/zen/big-pickle ')).stdout,
+    (await launchFiltered(' switchboard/zen/big-pickle, switchboard/zen/glm-5.2,switchboard/zen/big-pickle ')).stdout,
   );
   assert.deepEqual(
     filtered.settings.modelPicker.options.map((option: { model: string }) => option.model),
-    ['multi/zen/big-pickle', 'multi/zen/glm-5.2'],
+    ['switchboard/zen/big-pickle', 'switchboard/zen/glm-5.2'],
   );
-  assert.deepEqual(filtered.models, ['multi/zen/big-pickle']);
+  assert.deepEqual(filtered.models, ['switchboard/zen/big-pickle']);
   assert.deepEqual(filtered.agents.toSorted(), ['zen-big-pickle', 'zen-glm-5.2']);
-  const outsideDefaults = JSON.parse((await launchFiltered('multi/zen/kimi-k2.7-code')).stdout);
+  const outsideDefaults = JSON.parse((await launchFiltered('switchboard/zen/kimi-k2.7-code')).stdout);
   assert.deepEqual(
     outsideDefaults.settings.modelPicker.options.map((option: { model: string }) => option.model),
-    ['multi/zen/kimi-k2.7-code'],
+    ['switchboard/zen/kimi-k2.7-code'],
   );
   assert.deepEqual(outsideDefaults.agents, ['zen-kimi-k2.7-code']);
   const all = JSON.parse((await launchFiltered('all')).stdout);
   assert(all.settings.modelPicker.options.length >= ZEN_MODELS.length);
   assert(all.agents.includes('zen-kimi-k2.7-code'));
-  const plus = JSON.parse((await launchFiltered('+multi/zen/kimi-k2.7-code')).stdout);
+  const plus = JSON.parse((await launchFiltered('+switchboard/zen/kimi-k2.7-code')).stdout);
   assert(
     plus.settings.modelPicker.options.some(
-      (option: { model: string }) => option.model === 'multi/zen/kimi-k2.7-code',
+      (option: { model: string }) => option.model === 'switchboard/zen/kimi-k2.7-code',
     ),
   );
   assert(
     plus.settings.modelPicker.options.some(
-      (option: { model: string }) => option.model === 'multi/zen/big-pickle',
+      (option: { model: string }) => option.model === 'switchboard/zen/big-pickle',
     ),
   );
   assert(plus.agents.includes('zen-kimi-k2.7-code'));
   const hidden = JSON.parse(
-    (await launchFiltered('', ['--model', 'multi/zen/gpt-5.6-luna'])).stdout,
+    (await launchFiltered('', ['--model', 'switchboard/zen/gpt-5.6-luna'])).stdout,
   );
   assert.deepEqual(hidden.settings.modelPicker.options, []);
   assert.deepEqual(hidden.agents, []);
-  assert.deepEqual(hidden.models, ['multi/zen/gpt-5.6-luna']);
-  await assert.rejects(launchFiltered('multi/zen/typo'), /MULTI_MODELS: model is not available/);
+  assert.deepEqual(hidden.models, ['switchboard/zen/gpt-5.6-luna']);
+  await assert.rejects(launchFiltered('switchboard/zen/typo'), /SWITCHBOARD_MODELS: model is not available/);
 });
 
 test('Zen saved auth supplies the no-login fallback without exposing credentials', {
@@ -364,10 +364,10 @@ test('Zen saved auth supplies the no-login fallback without exposing credentials
 const fs=require('node:fs');const args=process.argv.slice(2);
 if(args.includes('plugin')&&args.includes('list')){console.log('[]');process.exit(0)}
 if(args[0]==='--version'){console.log(process.env.TEST_CLAUDE_VERSION??'2.1.272');process.exit(0)}
-const result=(value)=>{const base=process.env.MULTI_MOD_GATEWAY_URL;if(!base){console.log(value);return}const url=new URL(base+'/multi/mod/session');const req=require('node:http').request(url,{method:'POST',headers:{'content-type':'application/json','x-multi-gateway-token':process.env.MULTI_GATEWAY_TOKEN}},()=>console.log(value));req.on('error',()=>console.log(value));req.end(JSON.stringify({sessionId:'fixture',event:'start'}));};
+const result=(value)=>{const base=process.env.SWITCHBOARD_MOD_GATEWAY_URL;if(!base){console.log(value);return}const url=new URL(base+'/switchboard/mod/session');const req=require('node:http').request(url,{method:'POST',headers:{'content-type':'application/json','x-switchboard-gateway-token':process.env.SWITCHBOARD_GATEWAY_TOKEN}},()=>console.log(value));req.on('error',()=>console.log(value));req.end(JSON.stringify({sessionId:'fixture',event:'start'}));};
 if(args[0]==='auth'){process.stdout.write(JSON.stringify({loggedIn:false}));process.exitCode=1}else{
 const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'utf8'));
-result(JSON.stringify({settings,models:args.filter(x=>x.startsWith('multi/')),zenKeyInChild:process.env.OPENCODE_API_KEY}));}
+result(JSON.stringify({settings,models:args.filter(x=>x.startsWith('switchboard/')),zenKeyInChild:process.env.OPENCODE_API_KEY}));}
 `,
   );
   const launcher = fileURLToPath(
@@ -383,20 +383,20 @@ result(JSON.stringify({settings,models:args.filter(x=>x.startsWith('multi/')),ze
       XDG_DATA_HOME: path.join(cwd, 'data'),
       CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
       CODEX_HOME: cwd,
-      MULTI_ZEN_MODELS: 'mimo-v2.5-free,big-pickle',
+      SWITCHBOARD_ZEN_MODELS: 'mimo-v2.5-free,big-pickle',
     },
   });
   const result = JSON.parse(stdout);
-  assert.deepEqual(result.models, ['multi/zen/mimo-v2.5-free']);
+  assert.deepEqual(result.models, ['switchboard/zen/mimo-v2.5-free']);
   assert.equal(result.zenKeyInChild, undefined);
   assert.deepEqual(
     result.settings.modelPicker.options.map((option: { model: string }) => option.model),
-    ['multi/zen/mimo-v2.5-free', 'multi/zen/big-pickle'],
+    ['switchboard/zen/mimo-v2.5-free', 'switchboard/zen/big-pickle'],
   );
 });
 
 test('worker registration follows selected models and retains their effort aliases', () => {
-  const selected = ['multi/openai/gpt-5.6-luna', 'multi/zen/gpt-5.6-sol'];
+  const selected = ['switchboard/openai/gpt-5.6-luna', 'switchboard/zen/gpt-5.6-sol'];
   const agents = workerDefinitions(true, true, selected);
   assert.deepEqual(new Set(Object.values(agents).map((worker) => worker.model)), new Set(selected));
   assert.equal(Object.keys(agents).length, 12);
@@ -408,13 +408,13 @@ test('worker registration follows selected models and retains their effort alias
 test('launcher argument limits are platform-aware and identify largest providers', () => {
   const agents = {
     'openai-worker': {
-      model: 'multi/openai/model',
+      model: 'switchboard/openai/model',
       description: 'OpenAI',
       prompt: 'Complete the delegated task.',
       tools: ['Read'],
     },
     'zen-worker': {
-      model: 'multi/zen/model',
+      model: 'switchboard/zen/model',
       description: 'Zen',
       prompt: 'Complete the delegated task.',
       tools: ['Read'],

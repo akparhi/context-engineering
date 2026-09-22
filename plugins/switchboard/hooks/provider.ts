@@ -3,5 +3,5 @@
  * false for external multi/ provider models routed through the gateway.
  */
 export function isHarnessModel(model: string | undefined): boolean {
-  return typeof model === 'string' && !model.startsWith('multi/');
+  return typeof model === 'string' && !model.startsWith('switchboard/');
 }

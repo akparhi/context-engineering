@@ -4,8 +4,8 @@ import { promisify } from 'node:util';
 
 import { executableInvocation } from '../gateway/executable.ts';
 
-const MARKETPLACE = 'cc-multi-cli-plugin';
-const PROVIDERS = ['openai', 'zen'] as const;
+const MARKETPLACE = 'switchboard';
+const PROVIDERS = ['codex', 'opencode'] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
 interface Plugin {
@@ -23,7 +23,7 @@ export function providerSelection(value: string | undefined): Provider[] | undef
   return [...new Set(value.split(',').filter(Boolean))].map((id) => {
     const provider = PROVIDERS.find((name) => name === id);
     if (!provider) {
-      throw new Error(`Unknown Multi provider: ${id}`);
+      throw new Error(`Unknown Switchboard provider: ${id}`);
     }
     return provider;
   });
@@ -70,23 +70,22 @@ export async function installedPlugins(
       plugin.errors.length
     ) {
       throw new Error(
-        `Claude reports errors for ${plugin.id}. Repair the plugin installation before launching Multi.`,
+        `Claude reports errors for ${plugin.id}. Repair the plugin installation before launching Switchboard.`,
       );
     }
   }
-  const core = plugins.filter(
-    (plugin) => plugin.id === `multi-core@${MARKETPLACE}` && plugin.enabled,
-  );
+  const self = plugins.filter((plugin) => plugin.id.startsWith(`switchboard@`) && plugin.enabled);
   // Startup executes before the workspace trust prompt. Only a user-installed
-  // core may supply executable code here; project providers are fixed opt-ins.
-  const personalCore = core.filter((plugin) => plugin.scope === 'user');
-  if (core.length && personalCore.length !== 1) {
-    throw new Error('Install multi-core at user scope before running Multi setup.');
+  // plugin may supply executable code here; project plugins are fixed opt-ins.
+  const personalSelf = self.filter((plugin) => plugin.scope === 'user');
+  if (self.length && personalSelf.length !== 1) {
+    throw new Error('Install the switchboard plugin at user scope before running setup.');
   }
-  const providers = PROVIDERS.filter((name) =>
-    plugins.some((plugin) => plugin.id === `multi-${name}@${MARKETPLACE}` && plugin.enabled),
-  );
-  return { root: personalCore[0]?.installPath, providers };
+  if (personalSelf.length === 0) {
+    return { root: undefined, providers: [] as Provider[] };
+  }
+  // Both providers ship inside this plugin; there is nothing further to discover.
+  return { root: personalSelf[0]?.installPath, providers: ['codex', 'opencode'] as Provider[] };
 }
 
 export function settingsArguments(args: string[]): string[] {

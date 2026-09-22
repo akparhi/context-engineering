@@ -7,7 +7,7 @@ test('registers the compaction boundary hook', () => {
 
 test('compaction with an unknown generation skips without calling core', async ($, on) => {
   on('env.get', () => ({ value: 'configured' }));
-  on('session.model', () => ({ value: 'multi/cursor/auto' }));
+  on('session.model', () => ({ value: 'switchboard/cursor/auto' }));
   on('session.id', () => ({ value: 's' }));
   on('http.fetch', () => ({ value: { ok: false, status: 409, headers: {}, text: '{}' } }));
   let core = false;
@@ -16,13 +16,13 @@ test('compaction with an unknown generation skips without calling core', async (
     return { skip: 'core' };
   });
   const result = await $.session.compact({});
-  expect(result.skip).toBe('Multi compaction policy generation is unavailable.');
+  expect(result.skip).toBe('Switchboard compaction policy generation is unavailable.');
   expect(core).toBe(false);
 });
 
 test('a stale digest falls through to core compaction', async ($, on) => {
   on('env.get', () => ({ value: 'configured' }));
-  on('session.model', () => ({ value: 'multi/cursor/auto' }));
+  on('session.model', () => ({ value: 'switchboard/cursor/auto' }));
   on('session.id', () => ({ value: 's' }));
   on('http.fetch', (_$, event) => ({
     value: {
@@ -39,7 +39,7 @@ test('a stale digest falls through to core compaction', async ($, on) => {
 
 test('failed fallback authorization skips instead of running core with ordinary tools', async ($, on) => {
   on('env.get', () => ({ value: 'configured' }));
-  on('session.model', () => ({ value: 'multi/cursor/auto' }));
+  on('session.model', () => ({ value: 'switchboard/cursor/auto' }));
   on('session.id', () => ({ value: 's' }));
   on('http.fetch', (_$, event) => ({
     value: { ok: event.url.includes('/mode?'), status: 200, headers: {}, text: '{"generation":1}' },
@@ -50,13 +50,13 @@ test('failed fallback authorization skips instead of running core with ordinary 
     return { skip: 'core' };
   });
   const result = await $.session.compact({});
-  expect(result.skip).toBe('Multi tool-free compaction authorization was not acknowledged.');
+  expect(result.skip).toBe('Switchboard tool-free compaction authorization was not acknowledged.');
   expect(core).toBe(false);
 });
 
 test('ready authenticated summary replaces the transcript without calling core', async ($, on) => {
   on('env.get', () => ({ value: 'configured' }));
-  on('session.model', () => ({ value: 'multi/cursor/auto' }));
+  on('session.model', () => ({ value: 'switchboard/cursor/auto' }));
   on('session.id', () => ({ value: 's' }));
   on('http.fetch', (_$, event) => ({
     value: {
@@ -83,8 +83,8 @@ for (const model of [
   'claude-sonnet-5',
   'opus',
   'sonnet',
-  'multi/openai/gpt-6-astra',
-  'multi/zen/glm-5',
+  'switchboard/openai/gpt-6-astra',
+  'switchboard/zen/glm-5',
 ]) {
   test(`native ${model} compacts without consulting the gateway`, async ($, on) => {
     on('session.model', () => ({ value: model }));
@@ -102,12 +102,12 @@ for (const model of [
 }
 
 test('compaction uses the child model without borrowing its parent model', async ($, on) => {
-  on('session.model', () => ({ value: 'multi/cursor/auto' }));
+  on('session.model', () => ({ value: 'switchboard/cursor/auto' }));
   const models = new Map([
     ['claude-child', 'claude-sonnet-5'],
-    ['external-child', 'multi/cursor/auto'],
+    ['external-child', 'switchboard/cursor/auto'],
   ]);
   expect(await compactionModel($, 'claude-child', models)).toBe('claude-sonnet-5');
-  expect(await compactionModel($, 'external-child', models)).toBe('multi/cursor/auto');
+  expect(await compactionModel($, 'external-child', models)).toBe('switchboard/cursor/auto');
   expect(await compactionModel($, 'unknown-child', models)).toBe(undefined);
 });

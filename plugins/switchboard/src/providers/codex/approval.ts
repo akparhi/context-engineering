@@ -349,7 +349,7 @@ function reviewerVerdict(output: Record<string, unknown>[]): ApprovalVerdict {
 }
 
 function reviewEvidence(action: ApprovalAction, cwd: string, context?: ApprovalContext) {
-  if (!context?.model.startsWith('multi/openai/')) {
+  if (!context?.model.startsWith('switchboard/openai/')) {
     throw new Error('Automatic approval is unavailable for this provider');
   }
   if (context.worker && !context.rootRequest) {

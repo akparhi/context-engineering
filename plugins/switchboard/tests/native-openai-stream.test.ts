@@ -3,7 +3,7 @@ import test from 'node:test';
 import type { Emit, StreamEventBody } from '../src/gateway/messages.ts';
 import { fromResponses, toResponses } from '../src/providers/codex/responses.ts';
 
-const model = 'multi/openai/gpt-6-astra';
+const model = 'switchboard/openai/gpt-6-astra';
 const created = { type: 'response.created', response: { id: 'resp' } };
 const tool = {
   type: 'function_call',

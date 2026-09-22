@@ -43,7 +43,7 @@ interface SseEvent {
   [field: string]: unknown;
 }
 
-const model = 'multi/openai/gpt-6-astra';
+const model = 'switchboard/openai/gpt-6-astra';
 const messages: RequestMessage[] = [{ role: 'user', content: 'Read the fixture' }];
 const body: MessagesRequest = {
   model,
@@ -377,7 +377,7 @@ test('switching back to Claude removes OpenAI reasoning while preserving message
   assert.deepEqual(cleaned[0], stored[0]);
   assert.deepEqual(cleaned[1].content, [tool]);
   assert.deepEqual(cleaned[2], stored[3]);
-  assert(!JSON.stringify(cleaned).includes('multi-openai:'));
+  assert(!JSON.stringify(cleaned).includes('switchboard-openai:'));
   const untouched = stored[2].content;
   assert.equal(
     Array.isArray(untouched) && untouched.length,
@@ -461,7 +461,7 @@ async function gateway(
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-multi-gateway-token': 'local-test-secret',
+        'x-switchboard-gateway-token': 'local-test-secret',
         ...headers,
       },
       body: typeof payload === 'string' ? payload : JSON.stringify(payload),
@@ -489,7 +489,7 @@ test('gateway receipts aggregate provider responses until the owning worker fini
   const response = await call(
     { sessionId: 's', agentId: 'a', turnId: 't', outcome: 'answer' },
     {},
-    '/multi/mod/usage/complete',
+    '/switchboard/mod/usage/complete',
   );
   assert.equal(response.status, 200);
   await receipts.drain();
@@ -505,7 +505,7 @@ test('gateway receipts aggregate provider responses until the owning worker fini
       await call(
         { sessionId: 's', agentId: 'a', turnId: 't', outcome: 'invalid' },
         {},
-        '/multi/mod/usage/complete',
+        '/switchboard/mod/usage/complete',
       )
     ).status,
     400,
@@ -519,7 +519,7 @@ test('Claude subscription requests retain their raw body, OAuth and beta headers
     assert.equal(String(options.body), raw);
     assert.equal(options.headers.authorization, 'Bearer claude-secret');
     assert.equal(options.headers['anthropic-beta'], 'oauth-test,tools-test');
-    assert.equal(options.headers['x-multi-gateway-token'], undefined);
+    assert.equal(options.headers['x-switchboard-gateway-token'], undefined);
     assert(!JSON.stringify(options.headers).includes('openai-secret'));
     return new Response('original stream', {
       status: 200,
@@ -591,7 +591,7 @@ test('OpenAI cache keys survive history changes and restart, isolating sessions,
     await call({ ...body, metadata: { user_id: JSON.stringify({ session_id: 'session-b' }) } })
   ).text();
   await (await call(payload, { 'x-claude-code-agent-id': 'worker-a' })).text();
-  await (await call({ ...payload, model: 'multi/openai/gpt-5.6-luna' })).text();
+  await (await call({ ...payload, model: 'switchboard/openai/gpt-5.6-luna' })).text();
   await (await call(body)).text();
   await (await call(body)).text();
   await (await restarted(body)).text();
@@ -611,7 +611,7 @@ test('OpenAI main and worker requests adapt instructions without losing runtime 
     return new Response(sse(textEvents));
   });
   for (const name of ['gpt-6-astra', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna']) {
-    await (await call({ ...payload, model: `multi/openai/${name}` })).text();
+    await (await call({ ...payload, model: `switchboard/openai/${name}` })).text();
   }
   await (await call(payload, { 'x-claude-code-agent-id': 'worker-a' })).text();
   assert.equal(seen.length, 5);
@@ -721,14 +721,14 @@ test('external route isolates provider credentials and handles simultaneous work
   const responses = await Promise.all(
     slugs.map((slug, i) =>
       call(
-        { ...body, model: `multi/openai/${slug}` },
+        { ...body, model: `switchboard/openai/${slug}` },
         { authorization: 'Bearer claude-secret', 'x-claude-code-agent-id': ['a', 'b'][i] },
       ),
     ),
   );
   for (const [i, response] of responses.entries()) {
     const result = await readMessage(response);
-    assert.equal(result.model, `multi/openai/${slugs[i]}`);
+    assert.equal(result.model, `switchboard/openai/${slugs[i]}`);
     assert.equal(textOf(result), 'Done');
     assert.equal(result.stop_reason, 'end_turn');
   }
@@ -739,8 +739,8 @@ test('external route isolates provider credentials and handles simultaneous work
 test('browser, unauthenticated and unregistered external requests never reach a provider', async (t) => {
   const call = await gateway(t, () => assert.fail('Unexpected provider request'));
   assert.equal((await call(body, { origin: 'https://example.com' })).status, 403);
-  assert.equal((await call(body, { 'x-multi-gateway-token': 'wrong' })).status, 403);
-  for (const unknownModel of ['multi/openai/unknown', 'multi/cursor/gpt-5.6-luna']) {
+  assert.equal((await call(body, { 'x-switchboard-gateway-token': 'wrong' })).status, 403);
+  for (const unknownModel of ['switchboard/openai/unknown', 'switchboard/cursor/gpt-5.6-luna']) {
     assert.equal(
       (await call({ ...body, model: unknownModel }, { 'x-claude-code-agent-id': 'a' })).status,
       400,
@@ -786,12 +786,12 @@ test('all registered model and reasoning choices reach OpenAI without substituti
     for (const effort of ['low', 'medium', 'high', 'xhigh', 'max']) {
       assert.deepEqual(OPENAI_WORKERS[`${name}-${effort}`], { model: slug, effort });
       const response = await call(
-        { ...body, model: `multi/openai/${slug}`, output_config: { effort } },
+        { ...body, model: `switchboard/openai/${slug}`, output_config: { effort } },
         { 'x-claude-code-agent-id': `${slug}:${effort}` },
       );
       assert.equal(response.status, 200);
       const result = await readMessage(response);
-      assert.equal(result.model, `multi/openai/${slug}`);
+      assert.equal(result.model, `switchboard/openai/${slug}`);
     }
   }
 });
@@ -1123,7 +1123,7 @@ test('count_tokens is local, includes schemas, and labels its estimate', async (
   const call = await gateway(t, () => assert.fail('Token counting must not call either provider'));
   const response = await call(body, {}, '/v1/messages/count_tokens');
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get('x-multi-token-count'), 'estimate');
+  assert.equal(response.headers.get('x-switchboard-token-count'), 'estimate');
   const count = (await response.json()) as { input_tokens: number };
   assert(Number.isSafeInteger(count.input_tokens) && count.input_tokens > 0);
   const plain = estimateInputTokens(toResponses({ messages }, 'gpt'));
@@ -1233,7 +1233,7 @@ test('oversized uploads receive HTTP 413 while the client is still streaming', a
   assert(address && typeof address === 'object');
   const init: any = {
     method: 'POST',
-    headers: { 'x-multi-gateway-token': 'test' },
+    headers: { 'x-switchboard-gateway-token': 'test' },
     duplex: 'half',
     signal: AbortSignal.timeout(5000),
     body: new ReadableStream<Uint8Array>({

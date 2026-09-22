@@ -8,7 +8,7 @@ allowed-tools: Bash
 Run:
 
 ```sh
-"$HOME/.local/share/multi-cli/bin/multi" login openai
+"$HOME/.local/share/switchboard/bin/switchboard-ctl" login codex
 ```
 
 Tell the user to complete the displayed browser or device login, then report

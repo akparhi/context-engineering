@@ -227,7 +227,7 @@ function workerName(id: string): string {
 }
 
 function route(id: string): string {
-  return `multi/zen/${id}`;
+  return `switchboard/zen/${id}`;
 }
 
 /** Build picker rows, optionally intersected with a discovered Zen catalog. */
@@ -279,7 +279,7 @@ export function zenPickerOptions(selection: string | undefined): ZenModelOption[
   ].map((id) => {
     const option = zenModelOptions([id])[0];
     if (!option) {
-      throw new Error(`MULTI_ZEN_MODELS: unknown Zen model: ${id}`);
+      throw new Error(`SWITCHBOARD_ZEN_MODELS: unknown Zen model: ${id}`);
     }
     return option;
   });

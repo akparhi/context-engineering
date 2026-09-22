@@ -2,18 +2,18 @@ import { expect, mock, test } from 'claude-code/testing';
 
 test('usage command reads only the current session without model dispatch', async ($, on) => {
   mock.env(on, {
-    MULTI_GATEWAY_TOKEN: 'secret',
-    MULTI_MOD_GATEWAY_URL: 'http://127.0.0.1:4000',
+    SWITCHBOARD_GATEWAY_TOKEN: 'secret',
+    SWITCHBOARD_MOD_GATEWAY_URL: 'http://127.0.0.1:4000',
   });
   on('session.id', () => ({ value: 'session/one' }));
   on('ui.open', () => ({ value: undefined }));
   on('ui.invalidate', () => ({ value: undefined }));
   on('http.fetch', (_$, event) => {
     expect(event.url).toBe(
-      'http://127.0.0.1:4000/multi/mod/usage?sessionId=session%2Fone&view=providers',
+      'http://127.0.0.1:4000/switchboard/mod/usage?sessionId=session%2Fone&view=providers',
     );
     expect(event.init?.method).toBe('GET');
-    expect(event.init?.headers?.['x-multi-gateway-token']).toBe('secret');
+    expect(event.init?.headers?.['x-switchboard-gateway-token']).toBe('secret');
     return {
       value: {
         ok: true,
@@ -49,13 +49,13 @@ test('usage command reads only the current session without model dispatch', asyn
       },
     };
   });
-  const result = await $.command.run({ command: 'multi-usage', args: '' });
+  const result = await $.command.run({ command: 'switchboard-usage', args: '' });
   expect(result.text).toBeUndefined();
   const rendered = await $.ui.render({
     surface: 'terminal',
     component: 'Pane',
-    requestId: 'multi-usage',
-    props: { title: 'Multi usage', isFocused: true, bodyColumns: 80 },
+    requestId: 'switchboard-usage',
+    props: { title: 'Switchboard usage', isFocused: true, bodyColumns: 80 },
   });
   expect(JSON.stringify(rendered)).toContain('usage-view.ts');
   expect(JSON.stringify(rendered)).toContain('OpenAI');
@@ -63,16 +63,16 @@ test('usage command reads only the current session without model dispatch', asyn
 
 test('worker completion awaits accounting and preserves the engine answer', async ($, on) => {
   mock.env(on, {
-    MULTI_GATEWAY_TOKEN: 'secret',
-    MULTI_MOD_GATEWAY_URL: 'http://127.0.0.1:4000',
+    SWITCHBOARD_GATEWAY_TOKEN: 'secret',
+    SWITCHBOARD_MOD_GATEWAY_URL: 'http://127.0.0.1:4000',
   });
   on('session.id', () => ({ value: 'session' }));
   let recorded = false;
   on('http.fetch', (_$, event) => {
-    if (event.url.endsWith('/multi/mod/telemetry')) {
+    if (event.url.endsWith('/switchboard/mod/telemetry')) {
       return { value: { ok: true, status: 200, headers: {}, text: '{}' } };
     }
-    expect(event.url).toBe('http://127.0.0.1:4000/multi/mod/usage/complete');
+    expect(event.url).toBe('http://127.0.0.1:4000/switchboard/mod/usage/complete');
     expect(JSON.parse(event.init?.body ?? '{}')).toEqual({
       sessionId: 'session',
       agentId: 'worker',
@@ -102,7 +102,7 @@ test('worker completion awaits accounting and preserves the engine answer', asyn
     turnId: 'turn',
     index: 0,
     agentId: 'worker',
-    model: 'multi/openai/gpt-6-astra',
+    model: 'switchboard/openai/gpt-6-astra',
     messageCount: 1,
   })) {
     void chunk; // drain the stream; let the model step complete before turn.complete fires
@@ -121,7 +121,7 @@ test('worker completion awaits accounting and preserves the engine answer', asyn
 test('usage without a gateway reports unavailable without opening a pane', async ($, on) => {
   mock.env(on, {});
   on('session.id', () => ({ value: 'session' }));
-  const result = await $.command.run({ command: 'multi-usage', args: '' });
+  const result = await $.command.run({ command: 'switchboard-usage', args: '' });
   expect(result.text).toContain('unavailable');
 });
 

@@ -4,7 +4,7 @@ import { toResponses } from '../src/providers/codex/responses.ts';
 import { toChat } from '../src/providers/opencode/chat.ts';
 
 const body = {
-  model: 'multi/openai/gpt-5.6-luna',
+  model: 'switchboard/openai/gpt-5.6-luna',
   messages: [
     {
       role: 'user',
@@ -53,14 +53,14 @@ test('OpenAI omits deferred declarations and preserves loaded tools and referenc
 
 test('Zen omits deferred declarations and preserves loaded tools and references', () => {
   const initialRequest = toChat(
-    { ...body, model: 'multi/zen/glm-5.2', messages: [{ role: 'user', content: 'find a file' }] },
-    'multi/zen/glm-5.2',
+    { ...body, model: 'switchboard/zen/glm-5.2', messages: [{ role: 'user', content: 'find a file' }] },
+    'switchboard/zen/glm-5.2',
   );
   assert.deepEqual(
     initialRequest.tools?.map((tool) => tool.function.name),
     ['Read'],
   );
-  const request = toChat({ ...body, model: 'multi/zen/glm-5.2' }, 'multi/zen/glm-5.2');
+  const request = toChat({ ...body, model: 'switchboard/zen/glm-5.2' }, 'switchboard/zen/glm-5.2');
   assert.deepEqual(
     request.tools?.map((tool) => tool.function.name),
     ['mcp__search', 'Read'],

@@ -98,7 +98,7 @@ export interface MessagesResponse {
   stop_sequence: string | null;
   usage: Usage;
   /** Provider accounting metadata; estimates are never presented as billed usage. */
-  multi_usage?: {
+  switchboard_usage?: {
     source: 'provider' | 'estimate' | 'mixed' | 'unavailable';
     reasoning_tokens?: number;
     total_tokens?: number;

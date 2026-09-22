@@ -44,7 +44,7 @@ export async function admitPrompt(
   if (!prepared) {
     return undefined;
   }
-  const response = await client.request('/multi/mod/session', {
+  const response = await client.request('/switchboard/mod/session', {
     policyGeneration: prepared.policyGeneration,
     sessionId: snapshot.sessionId,
     cwd: snapshot.cwd,
@@ -66,7 +66,7 @@ export async function recordPrompt(
   _generation: number | undefined,
 ): Promise<number | undefined> {
   const model = client.model;
-  const response = await client.request('/multi/mod/session', {
+  const response = await client.request('/switchboard/mod/session', {
     ...snapshot,
     model,
     event: 'prompt',
@@ -86,7 +86,7 @@ export async function preparePolicy(
   sourceGeneration: number | undefined,
 ): Promise<PolicyHandoff | undefined> {
   let generation = sourceGeneration;
-  let started = await client.request('/multi/mod/policy', { sessionId, cwd, sourceGeneration });
+  let started = await client.request('/switchboard/mod/policy', { sessionId, cwd, sourceGeneration });
   if (started?.refused) {
     // A reloaded hooks module keeps a mode generation the gateway no longer agrees
     // with, and `/clear` detaches the session so the gateway holds none at all;
@@ -97,7 +97,7 @@ export async function preparePolicy(
       return undefined;
     }
     generation = resynced.generation;
-    started = await client.request('/multi/mod/policy', {
+    started = await client.request('/switchboard/mod/policy', {
       sessionId,
       cwd,
       sourceGeneration: generation,
@@ -115,7 +115,7 @@ async function awaitPolicy(client: PolicyClient, sessionId: string, generation: 
   // cold Windows start that takes several seconds. Stay under the 10 s hook budget.
   const deadline = Date.now() + 8000;
   while (Date.now() < deadline) {
-    const result = await client.request('/multi/mod/policy', { sessionId, generation });
+    const result = await client.request('/switchboard/mod/policy', { sessionId, generation });
     if (result?.status === 'ready') {
       return generation;
     }
@@ -130,7 +130,7 @@ async function awaitPolicy(client: PolicyClient, sessionId: string, generation: 
 /** The gateway's own mode generation, or `{ generation: undefined }` when it holds none. */
 async function modeGeneration(client: PolicyClient, sessionId: string) {
   const mode = await client.request(
-    `/multi/mod/mode?sessionId=${encodeURIComponent(sessionId)}`,
+    `/switchboard/mod/mode?sessionId=${encodeURIComponent(sessionId)}`,
     {},
   );
   if (typeof mode?.generation === 'number') {

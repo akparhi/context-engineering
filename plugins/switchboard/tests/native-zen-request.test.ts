@@ -6,17 +6,17 @@ import { fromResponses } from '../src/providers/codex/responses.ts';
 import { toChat } from '../src/providers/opencode/chat.ts';
 import { zenRequest } from '../src/providers/opencode/request.ts';
 
-const responsesModel = 'multi/zen/gpt-5.6-luna';
-const chatModel = 'multi/zen/kimi-k2.7-code';
+const responsesModel = 'switchboard/zen/gpt-5.6-luna';
+const chatModel = 'switchboard/zen/kimi-k2.7-code';
 const textMessage = { role: 'user' as const, content: 'hello' };
 
 test('free Muse models use isolated Responses requests and only supported effort', () => {
-  const model = 'multi/zen/muse-spark-1.3-contributor-free';
+  const model = 'switchboard/zen/muse-spark-1.3-contributor-free';
   const translated = zenRequest({ ...request(model), output_config: { effort: 'high' } }, 'cache');
   assert.equal(translated.endpoint, 'responses');
   assert.equal(translated.body.model, 'muse-spark-1.3-contributor-free');
   assert.equal(responsesBody(translated).reasoning.effort, 'high');
-  assert.equal(translated.signaturePrefix, 'multi-zen-responses:muse-spark-1.3-contributor-free:');
+  assert.equal(translated.signaturePrefix, 'switchboard-zen-responses:muse-spark-1.3-contributor-free:');
   assert.throws(
     () => zenRequest({ ...request(model), output_config: { effort: 'max' } }, 'cache'),
     /does not support effort max/,
@@ -104,11 +104,11 @@ test('Zen request enforces capabilities, output limits, and protocol-specific ef
   const image = { ...request(chatModel), messages: [imageMessage()] };
   assert.doesNotThrow(() => zenRequest(image, 'cache-key'));
   assert.throws(
-    () => zenRequest({ ...image, model: 'multi/zen/glm-5.2' }, 'cache-key'),
+    () => zenRequest({ ...image, model: 'switchboard/zen/glm-5.2' }, 'cache-key'),
     /does not support images/,
   );
   assert.throws(
-    () => zenRequest({ ...request('multi/zen/big-pickle'), messages: [pdfMessage()] }, 'cache-key'),
+    () => zenRequest({ ...request('switchboard/zen/big-pickle'), messages: [pdfMessage()] }, 'cache-key'),
     /does not support PDF/,
   );
   assert.doesNotThrow(() => zenRequest({ ...request(), messages: [pdfMessage()] }, 'cache-key'));
@@ -160,11 +160,11 @@ test('Zen Responses prompt prefixes are stable when later turns append', () => {
 
 test('Zen reasoning signatures stay isolated across providers, models, and compaction summaries', async () => {
   const result = await fromResponses(sse(reasoningResponse()), 'gpt-5.6-luna', undefined, {
-    signaturePrefix: 'multi-zen-responses:gpt-5.6-luna:',
+    signaturePrefix: 'switchboard-zen-responses:gpt-5.6-luna:',
   });
   const thinking = result.content.find((block) => block.type === 'thinking');
   assert(thinking?.type === 'thinking');
-  assert(thinking.signature.startsWith('multi-zen-responses:gpt-5.6-luna:'));
+  assert(thinking.signature.startsWith('switchboard-zen-responses:gpt-5.6-luna:'));
   const continued: MessagesRequest = {
     ...request(),
     messages: [
@@ -179,7 +179,7 @@ test('Zen reasoning signatures stay isolated across providers, models, and compa
   assert.deepEqual(reasoning.summary, [{ type: 'summary_text', text: 'Compaction summary' }]);
 
   const switched = responsesBody(
-    zenRequest({ ...continued, model: 'multi/zen/gpt-5.6-terra' }, 'cache-key'),
+    zenRequest({ ...continued, model: 'switchboard/zen/gpt-5.6-terra' }, 'cache-key'),
   );
   assert.equal(switched.input.some(isReasoning), false);
   const foreign = responsesBody(
@@ -189,7 +189,7 @@ test('Zen reasoning signatures stay isolated across providers, models, and compa
         messages: [
           {
             role: 'assistant',
-            content: [{ type: 'thinking', thinking: '', signature: 'multi-openai:foreign' }],
+            content: [{ type: 'thinking', thinking: '', signature: 'switchboard-openai:foreign' }],
           },
           { role: 'user', content: 'after provider switch' },
         ],

@@ -20,7 +20,7 @@ export const register: Register = (on) => {
       return next(event);
     }
     const snapshot = dashboard(
-      await request($, `/multi/mod/usage?sessionId=${encodeURIComponent(session)}&view=providers`),
+      await request($, `/switchboard/mod/usage?sessionId=${encodeURIComponent(session)}&view=providers`),
     );
     const result = await next(event);
     // Preserve all permission decisions and tool arguments, including on lookup failure.
@@ -32,16 +32,16 @@ export const register: Register = (on) => {
       additionalContext: [...(result.additionalContext ?? []), quotaAdvice(snapshot)],
     };
   });
-  on('command.run', { command: 'multi-usage' }, async ($, event) => {
+  on('command.run', { command: 'switchboard-usage' }, async ($, event) => {
     if (event.args.trim()) {
-      return { text: 'Use /multi-usage without arguments.' };
+      return { text: 'Use /switchboard-usage without arguments.' };
     }
     const session = await $.session.id();
     const response = dashboard(
-      await request($, `/multi/mod/usage?sessionId=${encodeURIComponent(session)}&view=providers`),
+      await request($, `/switchboard/mod/usage?sessionId=${encodeURIComponent(session)}&view=providers`),
     );
     if (!response) {
-      return { text: 'Multi usage is unavailable. Launch this session with claude-multi.' };
+      return { text: 'Switchboard usage is unavailable. Launch this session with switchboard.' };
     }
     if (panes.size >= 16) {
       panes.clear();
@@ -49,8 +49,8 @@ export const register: Register = (on) => {
     panes.set(session, { ...response, quotaAdviceEnabled: advisorySessions.has(session) });
     try {
       await $.ui.open({
-        id: 'multi-usage',
-        title: 'Multi usage',
+        id: 'switchboard-usage',
+        title: 'Switchboard usage',
         focus: true,
         closeOnEscape: true,
         rows: 20,
@@ -66,7 +66,7 @@ export const register: Register = (on) => {
     }
   });
   on('ui.render', { component: 'Pane' }, async ($, event, next) => {
-    if (event.requestId !== 'multi-usage' || event.surface !== 'terminal') {
+    if (event.requestId !== 'switchboard-usage' || event.surface !== 'terminal') {
       return next(event);
     }
     const props = panes.get(await $.session.id());
@@ -77,7 +77,7 @@ export const register: Register = (on) => {
     return Client({ key: 'usage', module: './usage-view.ts', props, width: '100%', flexGrow: 1 });
   });
   on('ui.message', { source: 'client' }, async ($, event, next) => {
-    if (event.requestId !== 'multi-usage' || event.element !== 'usage' || !record(event.data)) {
+    if (event.requestId !== 'switchboard-usage' || event.element !== 'usage' || !record(event.data)) {
       return next(event);
     }
     const action = event.data.action;
@@ -102,8 +102,8 @@ export const register: Register = (on) => {
     }
     const route =
       action === 'refresh'
-        ? `/multi/mod/usage?view=providers&refresh=true&sessionId=${encodeURIComponent(session)}`
-        : `/multi/mod/receipts?sessionId=${encodeURIComponent(session)}`;
+        ? `/switchboard/mod/usage?view=providers&refresh=true&sessionId=${encodeURIComponent(session)}`
+        : `/switchboard/mod/receipts?sessionId=${encodeURIComponent(session)}`;
     const response = await request($, route);
     const props = updatePane(previous, action, response);
     panes.set(session, props);
@@ -175,8 +175,8 @@ function receiptEntry(value: unknown): string[] {
 }
 
 async function request($: EngineInterface, route: string): Promise<unknown> {
-  const base = await $.env.get('MULTI_MOD_GATEWAY_URL');
-  const token = await $.env.get('MULTI_GATEWAY_TOKEN');
+  const base = await $.env.get('SWITCHBOARD_MOD_GATEWAY_URL');
+  const token = await $.env.get('SWITCHBOARD_GATEWAY_TOKEN');
   if (!base || !token) {
     return undefined;
   }
@@ -185,7 +185,7 @@ async function request($: EngineInterface, route: string): Promise<unknown> {
     const result = await Promise.race([
       $.http.fetch(`${base}${route}`, {
         method: 'GET',
-        headers: { 'x-multi-gateway-token': token },
+        headers: { 'x-switchboard-gateway-token': token },
       }),
       new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error('Usage timeout')), 8500);

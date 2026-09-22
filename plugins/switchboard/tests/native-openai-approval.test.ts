@@ -29,7 +29,7 @@ const request = (model = 'claude-sonnet-5') => ({
   ],
 });
 const context = {
-  model: 'multi/openai/gpt-5.6-luna',
+  model: 'switchboard/openai/gpt-5.6-luna',
   scope: 'worker-one',
   request: { messages: [{ role: 'user', content: 'Run the workspace script.' }] },
 };
@@ -146,7 +146,7 @@ test('reviewer errors, invalid output, foreign providers, and exhausted investig
   await assert.rejects(
     bridge.respond(request(), new AbortController().signal, {
       ...context,
-      model: 'multi/cursor/auto',
+      model: 'switchboard/cursor/auto',
     }),
   );
   await assert.rejects(bridge.respond(request(), new AbortController().signal));

@@ -29,10 +29,10 @@ function windowsInvocation(pathname: string, args: string[], env: NodeJS.Process
   };
 }
 const setup = fileURLToPath(new URL('../src/setup.ts', import.meta.url));
-const marketplace = 'cc-multi-cli-plugin';
+const marketplace = 'switchboard';
 
 async function fixture(t: test.TestContext) {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'multi-install-'));
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'switchboard-install-'));
   t.after(() => removeTemporary(directory));
   const platform = process.platform;
   const windows = platform === 'win32';
@@ -84,7 +84,7 @@ if (args.includes('plugin') && args.includes('list')) {
       };
   const install = (flags: string[] = []) =>
     execute(process.execPath, [setup, '--claude', real, ...flags], { env });
-  const bin = path.join(home, '.local/share/multi-cli/bin');
+  const bin = path.join(home, '.local/share/switchboard/bin');
   const invoke = (name: string, args: string[], extra: Record<string, string> = {}) => {
     const executable = path.join(bin, windows ? `${name}.cmd` : name);
     const invocation = windows
@@ -121,26 +121,23 @@ async function core(directory: string, name: string) {
   await mkdir(path.join(root, '.claude-plugin'), { recursive: true });
   await writeFile(
     path.join(root, '.claude-plugin/plugin.json'),
-    JSON.stringify({ name: 'multi-core' }),
+    JSON.stringify({ name: 'switchboard' }),
   );
-  const src = path.join(root, 'plugins/multi-core/src');
+  const src = path.join(root, 'src');
   await mkdir(src, { recursive: true });
   await writeFile(
     path.join(src, 'launcher.ts'),
-    `console.log(JSON.stringify({root:import.meta.url,args:process.argv.slice(2),providers:process.env.MULTI_ENABLED_PROVIDERS,claude:process.env.MULTI_REAL_CLAUDE,models:process.env.MULTI_MODELS ?? null}));`,
+    `console.log(JSON.stringify({root:import.meta.url,args:process.argv.slice(2),providers:process.env.SWITCHBOARD_ENABLED_PROVIDERS,claude:process.env.SWITCHBOARD_REAL_CLAUDE,models:process.env.SWITCHBOARD_MODELS ?? null}));`,
   );
   return root;
 }
 
-function plugins(root: string, zen = true) {
+function plugins(root: string) {
   return [
-    { id: `multi-core@${marketplace}`, enabled: true, scope: 'user', installPath: root },
-    {
-      id: `multi-zen@${marketplace}`,
-      enabled: zen,
-      scope: 'user',
-      installPath: path.join(root, 'zen'),
-    },
+    // The single switchboard plugin contains both providers; there are no per-provider entries.
+    { id: `switchboard@${marketplace}`, enabled: true, scope: 'user', installPath: root },
+    // An entry for an unknown/disabled plugin to prove discovery ignores it.
+    { id: `other-plugin@${marketplace}`, enabled: false, scope: 'user', installPath: path.join(root, 'other') },
   ];
 }
 
@@ -152,20 +149,20 @@ test('setup preserves shell content, is repeatable, and uninstall survives plugi
   assert.equal(await readFile(f.shell, 'utf8'), once);
   const laterEdit = f.windows ? '# later user edit\r\n' : '# later user edit\n';
   await writeFile(f.shell, `${once}${laterEdit}`);
-  const reply = JSON.parse((await f.invoke('claude-multi', ['hello world'])).stdout);
+  const reply = JSON.parse((await f.invoke('switchboard', ['hello world'])).stdout);
   assert.deepEqual(reply, { native: true, args: ['hello world'] });
-  await f.invoke('multi', ['uninstall']);
+  await f.invoke('switchboard-ctl', ['uninstall']);
   const original = f.windows
     ? '# user settings\r\n'
     : '# user settings\nexport EXISTING=retained\n';
   assert.equal(await readFile(f.shell, 'utf8'), `${original}${laterEdit}`);
   if (f.windows) {
-    await waitForMissing(path.join(f.home, '.local/share/multi-cli/bin/claude-multi.cmd'));
+    await waitForMissing(path.join(f.home, '.local/share/switchboard/bin/switchboard.cmd'));
   } else {
-    await assert.rejects(f.invoke('claude-multi', []), /ENOENT/);
+    await assert.rejects(f.invoke('switchboard', []), /ENOENT/);
   }
   await f.install();
-  assert.equal(JSON.parse((await f.invoke('claude-multi', [])).stdout).native, true);
+  assert.equal(JSON.parse((await f.invoke('switchboard', [])).stdout).native, true);
 });
 
 test('wrapper follows installed core updates and enables only selected providers', async (t) => {
@@ -174,44 +171,42 @@ test('wrapper follows installed core updates and enables only selected providers
   const old = await core(f.directory, 'core-v1');
   await writeFile(f.listing, JSON.stringify(plugins(old)));
   const args = ['--settings', '{"model":"sonnet"}', '--', 'literal $() and spaces'];
-  const first = JSON.parse((await f.invoke('claude-multi', args)).stdout);
+  const first = JSON.parse((await f.invoke('switchboard', args)).stdout);
   assert.deepEqual(first.args, args);
-  assert.equal(first.providers, 'zen');
+  assert.equal(first.providers, 'codex,opencode');
   assert.equal(first.claude, f.real);
   const next = path.join(f.directory, 'core-v2');
   await cp(old, next, { recursive: true });
   await rm(old, { recursive: true });
   await writeFile(f.listing, JSON.stringify(plugins(next)));
-  assert.match(JSON.parse((await f.invoke('claude-multi', [])).stdout).root, /core-v2/);
-  await writeFile(f.listing, JSON.stringify(plugins(next, false)));
-  assert.equal(JSON.parse((await f.invoke('claude-multi', [])).stdout).native, true);
+  assert.match(JSON.parse((await f.invoke('switchboard', [])).stdout).root, /core-v2/);
 });
 
 test('setup renames the launch command, persists picker models, and keeps them across reruns', async (t) => {
   const f = await fixture(t);
   const root = await core(f.directory, 'core');
   await writeFile(f.listing, JSON.stringify(plugins(root)));
-  const stateFile = path.join(f.home, '.local/share/multi-cli/state.json');
+  const stateFile = path.join(f.home, '.local/share/switchboard/state.json');
   const shim = (name: string) =>
-    path.join(f.home, '.local/share/multi-cli/bin', f.windows ? `${name}.cmd` : name);
-  const first = await f.install(['--command', 'mc', '--models', 'multi/zen/kimi-k2.5']);
+    path.join(f.home, '.local/share/switchboard/bin', f.windows ? `${name}.cmd` : name);
+  const first = await f.install(['--command', 'mc', '--models', 'switchboard/openai/gpt-6-astra']);
   assert.match(first.stdout, /start mc\./);
-  assert.match(first.stdout, /shows only: multi\/zen\/kimi-k2\.5/);
-  await assert.rejects(access(shim('claude-multi')), /ENOENT/);
+  assert.match(first.stdout, /shows only: switchboard\/openai\/gpt-6-astra/);
+  await assert.rejects(access(shim('switchboard')), /ENOENT/);
   const custom = JSON.parse((await f.invoke('mc', [])).stdout);
-  assert.equal(custom.models, 'multi/zen/kimi-k2.5');
-  assert.equal(custom.providers, 'zen');
+  assert.equal(custom.models, 'switchboard/openai/gpt-6-astra');
+  assert.equal(custom.providers, 'codex,opencode');
   // An explicit environment selection still wins for one launch.
-  const explicit = JSON.parse((await f.invoke('mc', [], { MULTI_MODELS: '' })).stdout);
+  const explicit = JSON.parse((await f.invoke('mc', [], { SWITCHBOARD_MODELS: '' })).stdout);
   assert.equal(explicit.models, '');
   // Re-running setup without flags keeps the customization.
   await f.install();
   assert.equal(JSON.parse(await readFile(stateFile, 'utf8')).command, 'mc');
-  assert.equal(JSON.parse((await f.invoke('mc', [])).stdout).models, 'multi/zen/kimi-k2.5');
-  await f.install(['--models', '+multi/zen/glm-5.2']);
+  assert.equal(JSON.parse((await f.invoke('mc', [])).stdout).models, 'switchboard/openai/gpt-6-astra');
+  await f.install(['--models', '+switchboard/openai/gpt-5.6-luna']);
   assert.equal(
     JSON.parse((await f.invoke('mc', [])).stdout).models,
-    'multi/zen/kimi-k2.5,multi/zen/glm-5.2',
+    'switchboard/openai/gpt-6-astra,switchboard/openai/gpt-5.6-luna',
   );
   // `none` hides external rows; `all` requests the full connected catalog.
   await f.install(['--models', 'none']);
@@ -220,10 +215,10 @@ test('setup renames the launch command, persists picker models, and keeps them a
   assert.equal(JSON.parse((await f.invoke('mc', [])).stdout).models, 'all');
   assert.equal(JSON.parse(await readFile(stateFile, 'utf8')).models, 'all');
   // Renaming removes the previous shim and uninstall removes the current one.
-  await f.install(['--command', 'claude-multi']);
+  await f.install(['--command', 'switchboard']);
   await assert.rejects(access(shim('mc')), /ENOENT/);
-  assert.equal(JSON.parse((await f.invoke('claude-multi', [])).stdout).providers, 'zen');
-  await assert.rejects(f.install(['--command', 'multi']), /reserved/);
+  assert.equal(JSON.parse((await f.invoke('switchboard', [])).stdout).providers, 'codex,opencode');
+  await assert.rejects(f.install(['--command', 'switchboard-ctl']), /reserved/);
   await assert.rejects(f.install(['--command', 'bad name']), /Invalid launch command/);
   await assert.rejects(f.install(['--models', 'gpt-6-astra']), /Invalid picker model/);
   // A picker row can display a context tag, so that is the spelling a user copies out of
@@ -231,17 +226,17 @@ test('setup renames the launch command, persists picker models, and keeps them a
   // or not the tag is on, and must not persist twice alongside its own plain spelling.
   await f.install([
     '--models',
-    'multi/zen/glm-5.2[1m],multi/zen/glm-5.2',
+    'switchboard/openai/gpt-5.6-luna[1m],switchboard/openai/gpt-5.6-luna',
   ]);
   assert.equal(
     JSON.parse(await readFile(stateFile, 'utf8')).models,
-    'multi/zen/glm-5.2',
+    'switchboard/openai/gpt-5.6-luna',
   );
-  await f.invoke('multi', ['uninstall']);
+  await f.invoke('switchboard-ctl', ['uninstall']);
   if (f.windows) {
-    await waitForMissing(shim('claude-multi'));
+    await waitForMissing(shim('switchboard'));
   } else {
-    await assert.rejects(access(shim('claude-multi')), /ENOENT/);
+    await assert.rejects(access(shim('switchboard')), /ENOENT/);
   }
 });
 
@@ -251,9 +246,9 @@ test('a launch command named claude passes nested runs through to the real execu
   await writeFile(f.listing, JSON.stringify(plugins(root)));
   const install = await f.install(['--command', 'claude']);
   assert.match(install.stderr, /shadows the plain claude command/);
-  assert.equal(JSON.parse((await f.invoke('claude', [])).stdout).providers, 'zen');
+  assert.equal(JSON.parse((await f.invoke('claude', [])).stdout).providers, 'codex,opencode');
   const nested = JSON.parse(
-    (await f.invoke('claude', ['-p', 'hi'], { MULTI_GATEWAY_TOKEN: 'token' })).stdout,
+    (await f.invoke('claude', ['-p', 'hi'], { SWITCHBOARD_GATEWAY_TOKEN: 'token' })).stdout,
   );
   assert.deepEqual(nested, { native: true, args: ['-p', 'hi'] });
 });
@@ -263,18 +258,18 @@ test('edited shell blocks and project-only executable cores fail explicitly', as
   await f.install();
   const current = await readFile(f.shell, 'utf8');
   const pathMarker = f.windows ? '$env:Path = ' : 'export PATH=';
-  assert(current.includes(pathMarker), 'fixture must contain the recorded Multi PATH block');
+  assert(current.includes(pathMarker), 'fixture must contain the recorded Switchboard PATH block');
   await writeFile(f.shell, current.replace(pathMarker, '# changed PATH='));
-  await assert.rejects(f.invoke('multi', ['uninstall']), /was edited/);
+  await assert.rejects(f.invoke('switchboard-ctl', ['uninstall']), /was edited/);
   await assert.rejects(f.install(), /was edited/);
   const entries = plugins(await core(f.directory, 'project-core'));
   entries[0].scope = 'project';
   await writeFile(f.listing, JSON.stringify(entries));
-  await assert.rejects(f.invoke('claude-multi', []), /user scope/);
+  await assert.rejects(f.invoke('switchboard', []), /user scope/);
 });
 
 test('Windows installation writes quoted PowerShell and cmd shims and uninstalls exactly', async (t) => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'multi-win-install-'));
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'switchboard-win-install-'));
   t.after(() => removeTemporary(directory));
   const home = path.join(directory, "home with spaces and 'quotes'");
   await mkdir(home, { recursive: true });
@@ -285,9 +280,9 @@ test('Windows installation writes quoted PowerShell and cmd shims and uninstalls
     homedir: home,
     env: { PATH: '', PATHEXT: '.COM;.EXE;.BAT;.CMD', PROFILE: profile },
   });
-  const bin = path.join(home, '.local', 'share', 'multi-cli', 'bin');
-  const cmd = await readFile(path.join(bin, 'claude-multi.cmd'), 'utf8');
-  const ps = await readFile(path.join(bin, 'claude-multi.ps1'), 'utf8');
+  const bin = path.join(home, '.local', 'share', 'switchboard', 'bin');
+  const cmd = await readFile(path.join(bin, 'switchboard.cmd'), 'utf8');
+  const ps = await readFile(path.join(bin, 'switchboard.ps1'), 'utf8');
   assert.match(cmd, /".*" ".*bootstrap\.ts"(?: --multi)? %\*/);
   assert.equal(cmd.split('\r\n').filter(Boolean).length, 1, 'single-line shim survives uninstall');
   assert.match(cmd, /^@goto #_undefined_# 2>NUL \|\| ".*" ".*bootstrap\.ts" %\*\r\n$/);
@@ -310,7 +305,7 @@ test('Windows installation writes quoted PowerShell and cmd shims and uninstalls
     '/d',
     '/s',
     '/c',
-    `"ping -n 2 127.0.0.1 >nul & del /f /q "${path.join(bin, 'claude-multi.cmd')}" "${path.join(bin, 'multi.cmd')}" & rmdir "${bin}" & rmdir "${path.dirname(bin)}""`,
+    `"ping -n 2 127.0.0.1 >nul & del /f /q "${path.join(bin, 'switchboard.cmd')}" "${path.join(bin, 'switchboard-ctl.cmd')}" & rmdir "${bin}" & rmdir "${path.dirname(bin)}""`,
   ]);
   assert.equal(deferredCommand, 'C:\\Windows\\System32\\cmd.exe');
   assert.deepEqual(deferredOptions, {
@@ -323,7 +318,7 @@ test('Windows installation writes quoted PowerShell and cmd shims and uninstalls
 });
 
 test('Windows executable discovery uses PATHEXT and does not require mode bits', async (t) => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'multi-win-resolution-'));
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'switchboard-win-resolution-'));
   t.after(() => removeTemporary(directory));
   const home = path.join(directory, 'home');
   const bin = path.join(home, 'npm global bin');
@@ -341,8 +336,8 @@ test('Windows executable discovery uses PATHEXT and does not require mode bits',
 test('provider selection and native settings arguments preserve explicit disablement', () => {
   assert.equal(providerSelection(undefined), undefined);
   assert.deepEqual(providerSelection(''), []);
-  assert.deepEqual(providerSelection('zen,zen,openai'), ['zen', 'openai']);
-  assert.throws(() => providerSelection('typo'), /Unknown Multi provider/);
+  assert.deepEqual(providerSelection('codex,codex,opencode'), ['codex', 'opencode']);
+  assert.throws(() => providerSelection('typo'), /Unknown Switchboard provider/);
   assert.deepEqual(
     settingsArguments([
       '--model',

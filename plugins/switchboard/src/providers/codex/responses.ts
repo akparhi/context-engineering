@@ -11,7 +11,7 @@ import type {
 import { callId, toolName } from '../../gateway/tools.ts';
 
 // Anthropic Messages <-> OpenAI Responses, for native Claude Code workers.
-const SIGNATURE_PREFIX = 'multi-openai:';
+const SIGNATURE_PREFIX = 'switchboard-openai:';
 const IMAGE_MEDIA_TYPES: readonly unknown[] = [
   'image/png',
   'image/jpeg',
@@ -265,7 +265,7 @@ export function forAnthropic(body: MessagesRequest): MessagesRequest {
       const content = message.content.filter((block) => {
         const foreign =
           block.type === 'thinking' &&
-          [SIGNATURE_PREFIX, 'multi-zen-responses:', 'multi-zen-chat:'].some((prefix) =>
+          [SIGNATURE_PREFIX, 'switchboard-zen-responses:', 'switchboard-zen-chat:'].some((prefix) =>
             block.signature?.startsWith(prefix),
           );
         changed ||= Boolean(foreign);
@@ -867,7 +867,7 @@ class ResponseStream {
       cache_read_input_tokens: cached,
       cache_creation_input_tokens: written,
     };
-    message.multi_usage = {
+    message.switchboard_usage = {
       source: usage ? 'provider' : 'unavailable',
       ...(usage ? { total_tokens: (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0) } : {}),
       model: this.model,

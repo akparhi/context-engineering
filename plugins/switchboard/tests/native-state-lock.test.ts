@@ -75,7 +75,7 @@ test('takes over a lock whose recorded owner is no longer alive', async (t) => {
 test('releases after the holder process is killed', { timeout: 10000 }, async (t) => {
   const directory = await temporaryDirectory(t, 'multi-crash-lock-');
   const file = path.join(directory, 'session.lock');
-  const module = new URL('../../plugins/multi-core/src/gateway/state-lock.ts', import.meta.url);
+  const module = new URL('../../src/gateway/state-lock.ts', import.meta.url);
   const child = spawn(
     process.execPath,
     [

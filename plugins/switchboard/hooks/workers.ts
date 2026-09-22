@@ -8,7 +8,7 @@ import {
 
 const maxBody = 32000;
 const issues =
-  'https://github.com/greenpolo/cc-multi-cli-plugin/issues/new?template=bug_report.yml';
+  'https://github.com/greenpolo/switchboard/issues/new?template=bug_report.yml';
 
 /**
  * A refusal the agent reads, with the invitation to report it.
@@ -18,7 +18,7 @@ const issues =
  * does not become an issue, and it never files anything on the user's behalf.
  */
 function reportable(reason: string) {
-  return `${reason}\n\nIf this reads like a defect in the multi-cli plugin rather than a permission the user chose, tell them so and offer to open an issue at ${issues}, quoting the reason above.`;
+  return `${reason}\n\nIf this reads like a defect in the switchboard plugin rather than a permission the user chose, tell them so and offer to open an issue at ${issues}, quoting the reason above.`;
 }
 
 type GatewayResponse = PolicyResponse & {
@@ -69,10 +69,10 @@ export const register = (
         agent: event.agent,
         parentModel: await $.session.model(),
       },
-      '/multi/mod/offer',
+      '/switchboard/mod/offer',
     );
     // Claude owns its own catalog. Only a positively identified harness worker
-    // is subject to Multi's settings-translation compatibility filter.
+    // is subject to Switchboard's settings-translation compatibility filter.
     return response?.execution === 'harness' && response.isOffered === false
       ? { isOffered: false }
       : next(event);
@@ -109,24 +109,24 @@ export const register = (
       fork: event.fork,
       background: event.background,
     };
-    const selection = await request($, payload, '/multi/mod/worker-model');
+    const selection = await request($, payload, '/switchboard/mod/worker-model');
     const harness = harnessSpawn(event, selection);
     if (harness) {
       await prepareHarness($, policyState);
       const mode = await request(
         $,
         {},
-        `/multi/mod/mode?sessionId=${encodeURIComponent(payload.sessionId)}`,
+        `/switchboard/mod/mode?sessionId=${encodeURIComponent(payload.sessionId)}`,
       );
       const response = await request($, { ...payload, generation: mode?.generation });
       if (!response?.accepted) {
         return {
-          deny: reportable(response?.error ?? 'Multi harness worker policy was not acknowledged.'),
+          deny: reportable(response?.error ?? 'Switchboard harness worker policy was not acknowledged.'),
         };
       }
     } else {
       // Keep context for a possible later harness child, but never veto the
-      // engine's native worker because Multi could not reconstruct its policy.
+      // engine's native worker because Switchboard could not reconstruct its policy.
       await request($, payload);
     }
     const result = await next(event);
@@ -147,18 +147,18 @@ function harnessSpawn(
 }
 
 async function active($: EngineInterface): Promise<boolean> {
-  const base = await $.env.get('MULTI_MOD_GATEWAY_URL');
-  const token = await $.env.get('MULTI_GATEWAY_TOKEN');
+  const base = await $.env.get('SWITCHBOARD_MOD_GATEWAY_URL');
+  const token = await $.env.get('SWITCHBOARD_GATEWAY_TOKEN');
   return Boolean(base && token);
 }
 
 async function request(
   $: EngineInterface,
   payload: Record<string, unknown>,
-  route = '/multi/mod/worker',
+  route = '/switchboard/mod/worker',
 ) {
-  const base = await $.env.get('MULTI_MOD_GATEWAY_URL');
-  const token = await $.env.get('MULTI_GATEWAY_TOKEN');
+  const base = await $.env.get('SWITCHBOARD_MOD_GATEWAY_URL');
+  const token = await $.env.get('SWITCHBOARD_GATEWAY_TOKEN');
   if (!base || !token) {
     return undefined;
   }
@@ -170,7 +170,7 @@ async function request(
   try {
     const response = $.http.fetch(`${base}${route}`, {
       method: route.includes('?') ? 'GET' : 'POST',
-      headers: { 'content-type': 'application/json', 'x-multi-gateway-token': token },
+      headers: { 'content-type': 'application/json', 'x-switchboard-gateway-token': token },
       ...(route.includes('?') ? {} : { body }),
     });
     const timeout = new Promise<never>((_, reject) => {

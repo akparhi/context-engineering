@@ -31,9 +31,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       }
     }
     // Permission mode is enforced by Claude; only classifier requests invoke review.
-    const response = await fetch(new URL('/multi/permission', process.env.ANTHROPIC_BASE_URL), {
+    const response = await fetch(new URL('/switchboard/permission', process.env.ANTHROPIC_BASE_URL), {
       method: 'POST',
-      headers: { 'x-multi-gateway-token': process.env.MULTI_GATEWAY_TOKEN ?? '' },
+      headers: { 'x-switchboard-gateway-token': process.env.SWITCHBOARD_GATEWAY_TOKEN ?? '' },
       body: raw,
       signal: AbortSignal.timeout(5000),
     });

@@ -108,10 +108,10 @@ test('provider menu route is authenticated, session scoped and read-only', async
   });
   const address = server.address();
   assert(address && typeof address !== 'string');
-  const url = `http://127.0.0.1:${address.port}/multi/mod/usage?sessionId=owned&view=providers`;
+  const url = `http://127.0.0.1:${address.port}/switchboard/mod/usage?sessionId=owned&view=providers`;
   assert.equal((await fetch(url)).status, 401);
   assert.equal(reads, 0);
-  const response = await fetch(url, { headers: { 'x-multi-gateway-token': 'secret' } });
+  const response = await fetch(url, { headers: { 'x-switchboard-gateway-token': 'secret' } });
   assert.equal(response.status, 200);
   const body = (await response.json()) as ProviderUsageView;
   assert.equal(body.providers[1].summary, 'owned');

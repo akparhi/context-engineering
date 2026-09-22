@@ -62,9 +62,9 @@ async function connectZen() {
 
 async function main() {
   const [command, provider, ...args] = process.argv.slice(2);
-  const enabled = providerSelection(process.env.MULTI_ENABLED_PROVIDERS) ?? [];
+  const enabled = providerSelection(process.env.SWITCHBOARD_ENABLED_PROVIDERS) ?? [];
   if (!enabled.some((name) => name === provider)) {
-    throw new Error('Install and enable the requested Multi provider plugin first.');
+    throw new Error('Install and enable the requested Switchboard provider plugin first.');
   }
   if (command === 'connect' && provider === 'zen' && args.length === 0) {
     return connectZen();

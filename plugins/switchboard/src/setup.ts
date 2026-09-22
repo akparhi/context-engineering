@@ -61,11 +61,11 @@ async function main() {
   const command = state.command ?? DEFAULT_COMMAND;
   if (command === 'claude') {
     console.warn(
-      'Warning: the launch command is named claude, so Multi now shadows the plain claude command on PATH. Every launch, including scripts, editors and agents that run claude, starts the Multi gateway first. Nested runs inside a Multi session pass through to plain Claude. Re-run setup with --command claude-multi to restore the default.',
+      'Warning: the launch command is named claude, so Switchboard now shadows the plain claude command on PATH. Every launch, including scripts, editors and agents that run claude, starts the Switchboard gateway first. Nested runs inside a Switchboard session pass through to plain Claude. Re-run setup with --command switchboard to restore the default.',
     );
   }
   console.log(
-    `Multi startup installed in ${state.shellFile}. Open a new terminal, run multi status, then start ${command}. ${describeModels(state.models)}`,
+    `Switchboard startup installed in ${state.shellFile}. Open a new terminal, run switchboard-ctl status, then start ${command}. ${describeModels(state.models)}`,
   );
 }
 

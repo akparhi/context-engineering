@@ -46,11 +46,11 @@ export const register: Register = (on, options) => {
       return next(event);
     }
     await $.command.register({
-      name: 'multi-usage',
+      name: 'switchboard-usage',
       description: 'Open provider quotas, spend, and session receipts.',
       immediate: true,
     });
-    const response = await request($, '/multi/mod/session', {
+    const response = await request($, '/switchboard/mod/session', {
       sessionId: await $.session.id(),
       cwd: await $.session.cwd(),
       model: await $.session.model(),
@@ -91,14 +91,14 @@ export const register: Register = (on, options) => {
 };
 
 async function active($: EngineInterface): Promise<boolean> {
-  const base = await $.env.get('MULTI_MOD_GATEWAY_URL');
-  const token = await $.env.get('MULTI_GATEWAY_TOKEN');
+  const base = await $.env.get('SWITCHBOARD_MOD_GATEWAY_URL');
+  const token = await $.env.get('SWITCHBOARD_GATEWAY_TOKEN');
   return Boolean(base && token);
 }
 
 async function request($: EngineInterface, route: string, payload: Record<string, unknown>) {
-  const base = await $.env.get('MULTI_MOD_GATEWAY_URL');
-  const token = await $.env.get('MULTI_GATEWAY_TOKEN');
+  const base = await $.env.get('SWITCHBOARD_MOD_GATEWAY_URL');
+  const token = await $.env.get('SWITCHBOARD_GATEWAY_TOKEN');
   if (!base || !token) {
     return undefined;
   }
@@ -106,12 +106,12 @@ async function request($: EngineInterface, route: string, payload: Record<string
   if (encodeURIComponent(body).replace(/%[A-F\d]{2}/gi, 'x').length > maxBody) {
     return undefined;
   }
-  const isGet = route.startsWith('/multi/mod/display?') || route.startsWith('/multi/mod/mode?');
+  const isGet = route.startsWith('/switchboard/mod/display?') || route.startsWith('/switchboard/mod/mode?');
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const response = $.http.fetch(`${base}${route}`, {
       method: isGet ? 'GET' : 'POST',
-      headers: { 'content-type': 'application/json', 'x-multi-gateway-token': token },
+      headers: { 'content-type': 'application/json', 'x-switchboard-gateway-token': token },
       ...(isGet ? {} : { body }),
     });
     const timeout = new Promise<never>((_, reject) => {

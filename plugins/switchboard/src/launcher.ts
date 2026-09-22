@@ -38,10 +38,10 @@ function nativeSpelling(model: string | undefined): string | undefined {
   return model?.replace(/\[1m\]$/i, '');
 }
 
-const enabledProviders = providerSelection(process.env.MULTI_ENABLED_PROVIDERS);
+const enabledProviders = providerSelection(process.env.SWITCHBOARD_ENABLED_PROVIDERS);
 const providerEnabled = (provider: string) =>
   enabledProviders?.some((name) => name === provider) ?? true;
-const claudeExecutable = process.env.MULTI_REAL_CLAUDE;
+const claudeExecutable = process.env.SWITCHBOARD_REAL_CLAUDE;
 
 /**
  * Claude Code requires a non-empty subagent prompt. Workers get no behavioral rules here;
@@ -83,7 +83,7 @@ async function main() {
   const pluginRoot = await findPluginRoot(fileURLToPath(import.meta.url));
   await assertFunctionHooksSupported();
   const anthropic = await anthropicSignedIn();
-  const fullCatalog = process.env.MULTI_MODELS !== undefined;
+  const fullCatalog = process.env.SWITCHBOARD_MODELS !== undefined;
   const authFile = path.join(
     process.env.CODEX_HOME || path.join(os.homedir(), '.codex'),
     'auth.json',
@@ -102,7 +102,7 @@ async function main() {
   // and can outlive the child whose exit releases settingsDir and the gateway.
   // Keep ordinary background subagent tasks available within this owned session.
   settings.disableAgentView = true;
-  filterPicker(settings, process.env.MULTI_MODELS, defaultModels);
+  filterPicker(settings, process.env.SWITCHBOARD_MODELS, defaultModels);
   const callerSettings = structuredClone(settings);
   const agents = workerDefinitions(
     codexSignedIn,
@@ -126,8 +126,8 @@ async function main() {
   await permissionModes.precompute(process.cwd());
   const { approvalBridge, approvalProviders } = await discoverApprovals(authFile, openaiReview);
   const receipts = new ReceiptLedger({
-    file: process.env.MULTI_RECEIPTS_FILE
-      ? path.resolve(process.env.MULTI_RECEIPTS_FILE)
+    file: process.env.SWITCHBOARD_RECEIPTS_FILE
+      ? path.resolve(process.env.SWITCHBOARD_RECEIPTS_FILE)
       : undefined,
     onError: (error) => {
       process.stderr.write(`[native] receipt not written: ${String(error)}\n`);
@@ -268,7 +268,7 @@ function validateSessionLaunch(args: string[]) {
     ['attach', 'respawn'].includes(args[0] ?? '')
   ) {
     throw new Error(
-      'Multi sessions must stay attached to their launcher. Exit and use --resume <session-id> to continue with a fresh gateway; whole-session background handoff is unsupported.',
+      'Switchboard sessions must stay attached to their launcher. Exit and use --resume <session-id> to continue with a fresh gateway; whole-session background handoff is unsupported.',
     );
   }
   if (process.env.ANTHROPIC_BASE_URL) {
@@ -377,7 +377,7 @@ function atLeastVersion(actual: number[], required: number[]): boolean {
  * the mod can acknowledge. A cold start on Windows takes well over five seconds
  * (large binary, antivirus scan), so the wait is generous and overridable.
  */
-const modSessionStartTimeoutMs = Number(process.env.MULTI_MOD_START_TIMEOUT_MS ?? 30000);
+const modSessionStartTimeoutMs = Number(process.env.SWITCHBOARD_MOD_START_TIMEOUT_MS ?? 30000);
 
 function awaitModSessionStart(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -385,7 +385,7 @@ function awaitModSessionStart(): Promise<void> {
       process.off('multi-mod-session-start', ready);
       reject(
         new Error(
-          'Claude Code 2.1.272 or newer with loaded function hooks is required; the Multi mod did not acknowledge session.start.',
+          'Claude Code 2.1.272 or newer with loaded function hooks is required; the Switchboard mod did not acknowledge session.start.',
         ),
       );
     }, modSessionStartTimeoutMs);
@@ -453,7 +453,7 @@ export function workerDefinitions(
       {
         description: `${model}, ${effort} reasoning. Native coding, investigation, and review.`,
         prompt: WORKER_PROMPT,
-        model: `multi/openai/${model}`,
+        model: `switchboard/openai/${model}`,
         tools: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
         effort,
       },
@@ -562,8 +562,8 @@ async function initialSelection(args: string[], settings: LaunchSettings, anthro
   const options = settings.modelPicker.options;
   const initialModel = retagSelection(requested, options);
   const defaultModel =
-    process.env.MULTI_MODELS === undefined
-      ? options.find((option) => option.model === 'multi/openai/gpt-5.6-luna')
+    process.env.SWITCHBOARD_MODELS === undefined
+      ? options.find((option) => option.model === 'switchboard/openai/gpt-5.6-luna')
       : undefined;
   const fallback = anthropic ? undefined : (defaultModel ?? options[0])?.model;
   const selectedModel = initialModel ?? fallback;
@@ -657,12 +657,12 @@ function filterPicker(
   const chosen = new Set<ModelOption>();
   for (const model of models) {
     // A tagged row stays selectable by its plain provider ID and the reverse: a selection
-    // saved while the tag was on must still resolve once MULTI_DISABLE_1M_CONTEXT turns it off.
+    // saved while the tag was on must still resolve once SWITCHBOARD_DISABLE_1M_CONTEXT turns it off.
     const native = nativeSpelling(model) ?? model;
     const option = available.get(model) ?? available.get(`${native}[1m]`) ?? available.get(native);
     if (!option) {
       throw new Error(
-        `MULTI_MODELS: model is not available from a connected provider in this launcher's picker: ${model}. Check the full ID with --zen-models, then add it with /multi-core:setup --models <id>.`,
+        `SWITCHBOARD_MODELS: model is not available from a connected provider in this launcher's picker: ${model}. Check the full ID with --opencode-models, then add it with /switchboard:setup --models <id>.`,
       );
     }
     chosen.add(option);
@@ -671,7 +671,7 @@ function filterPicker(
 }
 
 function approvalProvider(model: string | undefined): 'openai' | undefined {
-  if (model?.startsWith('multi/openai/')) {
+  if (model?.startsWith('switchboard/openai/')) {
     return 'openai';
   }
   return undefined;
@@ -722,7 +722,7 @@ async function handleCommand(command?: string) {
   }
   if (command === '--help') {
     console.log(
-      'Usage: node plugins/multi-core/src/launcher.ts [--zen-models] [-- <claude arguments>]\nLaunch Claude with external models and native coding workers.\n--zen-models: list supported Zen models and capabilities\nOPENCODE_API_KEY: Zen key (or use OpenCode /connect)\nMULTI_ZEN_MODELS: comma-separated Zen model IDs to show, leaving other providers unchanged\nMULTI_MODELS: comma-separated full model IDs to show in /model (unset: defaults; empty: hide external rows)',
+      'Usage: bun src/launcher.ts [--zen-models] [-- <claude arguments>]\nLaunch Claude with external models and native coding workers.\n--zen-models: list supported Zen models and capabilities\nOPENCODE_API_KEY: Zen key (or use OpenCode /connect)\nSWITCHBOARD_ZEN_MODELS: comma-separated Zen model IDs to show, leaving other providers unchanged\nSWITCHBOARD_MODELS: comma-separated full model IDs to show in /model (unset: defaults; empty: hide external rows)',
     );
     process.exit(0);
   }
@@ -781,13 +781,13 @@ function pickerProfile(adjustableEffort: boolean): string {
 function pickerSettings(codexSignedIn: boolean, zen: boolean, fullCatalog = false) {
   let zenOptions = zenPickerOptions('');
   if (zen) {
-    zenOptions = fullCatalog ? zenModelOptions() : zenPickerOptions(process.env.MULTI_ZEN_MODELS);
+    zenOptions = fullCatalog ? zenModelOptions() : zenPickerOptions(process.env.SWITCHBOARD_ZEN_MODELS);
   }
   const settings: LaunchSettings = {
     modelPicker: {
       options: [
         ...Object.values(codexSignedIn ? MODELS : {}).map((model) => ({
-          model: `multi/openai/${model}`,
+          model: `switchboard/openai/${model}`,
           label: model,
           description: 'OpenAI subscription · native Claude Code harness',
           behavesAs: pickerProfile(true),
@@ -816,7 +816,7 @@ function translateTrafficPolicy(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   }
   const { CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: _flag, ...rest } = env;
   process.stderr.write(
-    'Multi: CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC would block the local gateway; using DISABLE_AUTOUPDATER, DISABLE_TELEMETRY, DISABLE_ERROR_REPORTING and DISABLE_BUG_COMMAND instead.\n',
+    'Switchboard: CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC would block the local gateway; using DISABLE_AUTOUPDATER, DISABLE_TELEMETRY, DISABLE_ERROR_REPORTING and DISABLE_BUG_COMMAND instead.\n',
   );
   return {
     ...rest,
@@ -840,13 +840,13 @@ function gatewayEnvironment(port: number, token: string, anthropic: boolean) {
     // A custom base URL disables Claude's on-demand tool loading unless opted in.
     // We forward Claude tool references; preserve an explicit user preference.
     ENABLE_TOOL_SEARCH: process.env.ENABLE_TOOL_SEARCH ?? 'auto',
-    MULTI_GATEWAY_TOKEN: token,
+    SWITCHBOARD_GATEWAY_TOKEN: token,
     CLAUDE_CODE_ENABLE_FUNCTION_HOOKS: '1',
-    MULTI_MOD_GATEWAY_URL: `http://127.0.0.1:${port}`,
+    SWITCHBOARD_MOD_GATEWAY_URL: `http://127.0.0.1:${port}`,
     ...(!anthropic ? { ANTHROPIC_AUTH_TOKEN: token } : {}),
     ANTHROPIC_CUSTOM_HEADERS: [
       process.env.ANTHROPIC_CUSTOM_HEADERS,
-      `x-multi-gateway-token: ${token}`,
+      `x-switchboard-gateway-token: ${token}`,
     ]
       .filter(Boolean)
       .join('\n'),
@@ -854,7 +854,7 @@ function gatewayEnvironment(port: number, token: string, anthropic: boolean) {
 }
 
 function traceEvent(event: GatewayEvent) {
-  if (process.env.MULTI_NATIVE_TRACE === '1') {
+  if (process.env.SWITCHBOARD_NATIVE_TRACE === '1') {
     process.stderr.write(`[native] ${JSON.stringify(event)}\n`);
   }
 }
@@ -868,7 +868,7 @@ async function findPluginRoot(file: string): Promise<string> {
     } catch {
       const parent = path.dirname(directory);
       if (parent === directory) {
-        throw new Error(`Could not find the Multi plugin root above ${file}`);
+        throw new Error(`Could not find the Switchboard plugin root above ${file}`);
       }
     }
   }

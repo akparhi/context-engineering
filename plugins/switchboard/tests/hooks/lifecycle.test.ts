@@ -4,7 +4,7 @@ test('turn.step telemetry preserves core model, effort and streamed chunks', asy
   mock.env(on, {});
   on('session.id', () => ({ value: 's' }));
   on('turn.step', async function* (_$, event) {
-    expect(event.model).toBe('multi/openai/gpt-6-astra');
+    expect(event.model).toBe('switchboard/openai/gpt-6-astra');
     expect(event.effort).toBe('high');
     yield { kind: 'text', index: 0, text: 'core response' };
     return {
@@ -20,7 +20,7 @@ test('turn.step telemetry preserves core model, effort and streamed chunks', asy
   for await (const chunk of $.turn.step({
     turnId: 't',
     index: 0,
-    model: 'multi/openai/gpt-6-astra',
+    model: 'switchboard/openai/gpt-6-astra',
     effort: 'high',
     messageCount: 1,
   })) {
@@ -31,10 +31,10 @@ test('turn.step telemetry preserves core model, effort and streamed chunks', asy
   expect(chunks).toEqual(['core response']);
 });
 
-test('Claude completion does not wait on Multi accounting or clear another provider status', async ($, on) => {
+test('Claude completion does not wait on Switchboard accounting or clear another provider status', async ($, on) => {
   mock.env(on, {
-    MULTI_GATEWAY_TOKEN: 'secret',
-    MULTI_MOD_GATEWAY_URL: 'http://127.0.0.1:4000',
+    SWITCHBOARD_GATEWAY_TOKEN: 'secret',
+    SWITCHBOARD_MOD_GATEWAY_URL: 'http://127.0.0.1:4000',
   });
   on('session.id', () => ({ value: 's' }));
   const routes: string[] = [];
@@ -82,7 +82,7 @@ test('Claude completion does not wait on Multi accounting or clear another provi
 });
 
 test('a completed harness child retains its provider for compaction between turns', async ($, on) => {
-  mock.env(on, { MULTI_GATEWAY_TOKEN: 'secret', MULTI_MOD_GATEWAY_URL: 'http://127.0.0.1:4000' });
+  mock.env(on, { SWITCHBOARD_GATEWAY_TOKEN: 'secret', SWITCHBOARD_MOD_GATEWAY_URL: 'http://127.0.0.1:4000' });
   on('session.id', () => ({ value: 's' }));
   on('session.model', () => ({ value: 'claude-sonnet-5' }));
   on('ui.status', () => ({ value: undefined }));
@@ -104,7 +104,7 @@ test('a completed harness child retains its provider for compaction between turn
     turnId: 't',
     agentId: 'child',
     index: 0,
-    model: 'multi/cursor/auto',
+    model: 'switchboard/cursor/auto',
     messageCount: 1,
   })) {
     void chunk; // drain the stream; the hook retains the model observed during inference
@@ -118,6 +118,6 @@ test('a completed harness child retains its provider for compaction between turn
     reason: 'end_turn',
   });
   expect((await $.session.compact({ agentId: 'child' })).skip).toBe(
-    'Multi compaction policy generation is unavailable.',
+    'Switchboard compaction policy generation is unavailable.',
   );
 });

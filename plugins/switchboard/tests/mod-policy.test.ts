@@ -9,7 +9,7 @@ import { PermissionModes } from '../src/gateway/mode-hook.ts';
 
 const policy: PreparedPolicy = {
   cwd: '/workspace',
-  workers: { cursor: { model: 'multi/cursor/auto', tools: ['Read'] } },
+  workers: { cursor: { model: 'switchboard/cursor/auto', tools: ['Read'] } },
   restrictions: { disallowedTools: ['Bash'] },
 };
 
@@ -62,7 +62,7 @@ test('worker admission rejects inconsistent identity and native dispatch awaits 
   for (const change of [
     { subagentType: 'unknown' },
     { model: 'wrong' },
-    { parentModel: 'multi/cursor/wrong' },
+    { parentModel: 'switchboard/cursor/wrong' },
     { parentAgentId: 'unknown' },
     { permissionMode: 'bypassPermissions' },
     { cwd: '/other' },
@@ -78,25 +78,25 @@ test('worker admission rejects inconsistent identity and native dispatch awaits 
 
 test('a worker spawned by its plain model ID matches its tagged catalog definition', async () => {
   const modes = new PermissionModes(async () => ({
-    gemini: { model: 'multi/antigravity/gemini[1m]', tools: ['Read'] },
+    gemini: { model: 'switchboard/antigravity/gemini[1m]', tools: ['Read'] },
   }));
   await modes.precompute('/workspace');
   modes.recordModSession('s', {
     permissionMode: 'plan',
     cwd: '/workspace',
-    model: 'multi/antigravity/gemini[1m]',
+    model: 'switchboard/antigravity/gemini[1m]',
   });
   const spawn = {
     subagentType: 'gemini',
     cwd: '/workspace',
     permissionMode: 'plan',
-    parentModel: 'multi/antigravity/gemini',
+    parentModel: 'switchboard/antigravity/gemini',
   };
   // The tag is Claude-side presentation, so a caller that spells the model without it is
   // naming the same native model, not a different one.
-  await modes.prepareModWorker('s', { ...spawn, model: 'multi/antigravity/gemini' });
+  await modes.prepareModWorker('s', { ...spawn, model: 'switchboard/antigravity/gemini' });
   await assert.rejects(
-    modes.prepareModWorker('s', { ...spawn, model: 'multi/antigravity/other' }),
+    modes.prepareModWorker('s', { ...spawn, model: 'switchboard/antigravity/other' }),
     /inconsistent with its catalog definition/,
   );
 });
@@ -104,7 +104,7 @@ test('a worker spawned by its plain model ID matches its tagged catalog definiti
 test('host-only snapshots cannot authorize harness workers until policy admission', async () => {
   const modes = new PermissionModes(
     async () => ({
-      cursor: { model: 'multi/cursor/auto', tools: ['Read'] },
+      cursor: { model: 'switchboard/cursor/auto', tools: ['Read'] },
       native: { model: 'claude-sonnet-5', disallowedTools: ['Edit'] },
     }),
     async () => ({ disallowedTools: ['Bash'] }),
@@ -113,7 +113,7 @@ test('host-only snapshots cannot authorize harness workers until policy admissio
   modes.recordHostSession('s', {
     permissionMode: 'auto',
     cwd: '/workspace',
-    model: 'multi/cursor/auto',
+    model: 'switchboard/cursor/auto',
   });
   assert.throws(() => modes.resolveHarness('s'), /settings policy has not been admitted/);
   assert.throws(() => modes.authorizeModCompaction('s'), /settings policy has not been admitted/);
@@ -122,8 +122,8 @@ test('host-only snapshots cannot authorize harness workers until policy admissio
       subagentType: 'cursor',
       cwd: '/workspace',
       permissionMode: 'auto',
-      model: 'multi/cursor/auto',
-      parentModel: 'multi/cursor/auto',
+      model: 'switchboard/cursor/auto',
+      parentModel: 'switchboard/cursor/auto',
     }),
     /settings policy has not been admitted/,
   );
@@ -133,32 +133,32 @@ test('host-only snapshots cannot authorize harness workers until policy admissio
   modes.admitPolicy('s', pending.generation, {
     permissionMode: 'auto',
     cwd: '/workspace',
-    model: 'multi/cursor/auto',
+    model: 'switchboard/cursor/auto',
   });
   const parentToken = await modes.prepareModWorker('s', {
     subagentType: 'native',
     cwd: '/workspace',
     permissionMode: 'auto',
-    model: 'multi/cursor/auto',
-    parentModel: 'multi/cursor/auto',
+    model: 'switchboard/cursor/auto',
+    parentModel: 'switchboard/cursor/auto',
   });
   modes.startPreparedModWorker('s', 'parent', 'native', '/workspace');
   assert.deepEqual(
     new Set(modes.resolve('s', 'parent').disallowedTools),
     new Set(['Bash', 'Edit']),
   );
-  assert.throws(() => modes.resolveHarness('s', 'parent', 'multi/cursor/other'), /inconsistent/);
+  assert.throws(() => modes.resolveHarness('s', 'parent', 'switchboard/cursor/other'), /inconsistent/);
   const childToken = await modes.prepareModWorker('s', {
     subagentType: 'cursor',
     cwd: '/workspace',
     permissionMode: 'auto',
-    model: 'multi/cursor/auto',
+    model: 'switchboard/cursor/auto',
     parentModel: 'claude-sonnet-5',
     parentAgentId: 'parent',
   });
   modes.startPreparedModWorker('s', 'child', 'cursor', '/workspace');
   assert.deepEqual(
-    new Set(modes.resolveHarness('s', 'child', 'multi/cursor/auto').disallowedTools),
+    new Set(modes.resolveHarness('s', 'child', 'switchboard/cursor/auto').disallowedTools),
     new Set(['Bash', 'Edit']),
   );
   assert.equal(typeof parentToken, 'string');
@@ -167,7 +167,7 @@ test('host-only snapshots cannot authorize harness workers until policy admissio
 
 test('Claude-loop workers use the prompt snapshot without settings-policy admission', async () => {
   const modes = new PermissionModes(async () => ({
-    'openai-native': { model: 'multi/openai/gpt-6-astra' },
+    'openai-native': { model: 'switchboard/openai/gpt-6-astra' },
     custom: { tools: ['Read'] },
   }));
   await modes.precompute('/workspace');
@@ -179,12 +179,12 @@ test('Claude-loop workers use the prompt snapshot without settings-policy admiss
   const token = await modes.prepareModWorker('s', {
     subagentType: 'openai-native',
     cwd: '/workspace',
-    model: 'multi/openai/gpt-6-astra',
+    model: 'switchboard/openai/gpt-6-astra',
     permissionMode: 'default',
     parentModel: 'claude-sonnet-4-6',
   });
   modes.startPreparedModWorker('s', 'worker', 'openai-native', '/workspace');
-  assert.equal(modes.resolve('s', 'worker').model, 'multi/openai/gpt-6-astra');
+  assert.equal(modes.resolve('s', 'worker').model, 'switchboard/openai/gpt-6-astra');
   assert.equal(
     modes.workerSelection({ subagentType: 'custom', cwd: '/workspace' }).execution,
     'claude',

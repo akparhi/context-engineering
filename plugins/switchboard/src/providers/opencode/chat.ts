@@ -10,7 +10,7 @@ import type {
 import { callId, toolName } from '../../gateway/tools.ts';
 import { prefixSafeLength, readSse } from '../codex/responses.ts';
 
-const SIGNATURE_PREFIX = 'multi-zen-chat:';
+const SIGNATURE_PREFIX = 'switchboard-zen-chat:';
 const IMAGE_MEDIA_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 
 export interface ChatRequest {
@@ -173,7 +173,7 @@ function signature(model: string, reasoning: string): string {
 }
 
 function canonicalModel(model: string): string {
-  return model.replace(/^multi\/zen\//, '');
+  return model.replace(/^switchboard\/zen\//, '');
 }
 
 function ownReasoning(model: string, block: ContentBlock): string | undefined {
@@ -915,7 +915,7 @@ class ChatAccumulator {
       stop_reason: stop,
       stop_sequence: stopSequence,
       usage: resultUsage,
-      multi_usage: {
+      switchboard_usage: {
         source: 'provider',
         total_tokens: this.usageValue.prompt_tokens + this.usageValue.completion_tokens,
         model: this.model,

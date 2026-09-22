@@ -45,7 +45,7 @@ export async function handleModRoute(
 ) {
   try {
     if (
-      ['/multi/mod/usage', '/multi/mod/receipts', '/multi/mod/usage/complete'].includes(
+      ['/switchboard/mod/usage', '/switchboard/mod/receipts', '/switchboard/mod/usage/complete'].includes(
         url.pathname,
       )
     ) {
@@ -55,7 +55,7 @@ export async function handleModRoute(
       return reply(res, await usageRoute(req, url, parsed, receipts, billedUsage, dashboard));
     }
     switch (url.pathname) {
-      case '/multi/mod/telemetry':
+      case '/switchboard/mod/telemetry':
         if (req.method === 'POST') {
           return handlePostRoute(
             req,
@@ -77,7 +77,7 @@ export async function handleModRoute(
             ),
           ) ?? {},
         );
-      case '/multi/mod/lifecycle':
+      case '/switchboard/mod/lifecycle':
         method(req, 'GET');
         return reply(
           res,
@@ -88,7 +88,7 @@ export async function handleModRoute(
             ),
           ) ?? {},
         );
-      case '/multi/mod/mode':
+      case '/switchboard/mod/mode':
         method(req, 'GET');
         return modeRoute(
           res,
@@ -131,11 +131,11 @@ async function handlePostRoute(
   }
   const sessionId = text(parsed.sessionId, 'sessionId');
   const key = sessionKey(sessionId, parsed.agentId);
-  if (route.startsWith('/multi/mod/compact/')) {
+  if (route.startsWith('/switchboard/mod/compact/')) {
     return compactRoute(res, route, parsed, bridge, permissionModes, compactions);
   }
   switch (route) {
-    case '/multi/mod/policy':
+    case '/switchboard/mod/policy':
       if (parsed.generation === undefined) {
         if (parsed.sourceGeneration !== bridge.mode(key)?.generation) {
           throw new Error('Policy source generation is stale');
@@ -151,31 +151,31 @@ async function handlePostRoute(
           ? permissionModes.beginPolicy(sessionId, text(parsed.cwd, 'cwd'))
           : permissionModes.policies.status(sessionId, text(parsed.generation, 'generation')),
       );
-    case '/multi/mod/detach':
+    case '/switchboard/mod/detach':
       compactions?.cancel(sessionId);
       bridge.forgetSession(sessionId);
       permissionModes?.forgetSession(sessionId);
       return reply(res, { accepted: true });
-    case '/multi/mod/telemetry':
+    case '/switchboard/mod/telemetry':
       bridge.observeStep(key, {
         model: text(parsed.model, 'model'),
         effort: telemetryEffort(parsed.effort),
       });
       return reply(res, { accepted: true });
-    case '/multi/mod/session':
+    case '/switchboard/mod/session':
       return sessionRoute(res, parsed, key, bridge, permissionModes);
-    case '/multi/mod/offer':
+    case '/switchboard/mod/offer':
       return reply(res, {
         ...permissionModes?.workerSelection({ ...parsed, subagentType: parsed.agent }),
         isOffered:
           permissionModes?.offered(text(parsed.cwd, 'cwd'), text(parsed.agent, 'agent')) ?? false,
       });
-    case '/multi/mod/worker-model':
+    case '/switchboard/mod/worker-model':
       if (!permissionModes) {
         throw new Error('Worker catalog is unavailable');
       }
       return reply(res, permissionModes.workerSelection(parsed));
-    case '/multi/mod/worker':
+    case '/switchboard/mod/worker':
       return await workerRoute(res, parsed, key, bridge, permissionModes);
     default:
       throw new Error('Unknown mod route');
@@ -326,7 +326,7 @@ function compactRoute(
   compactions?: ModCompactions,
 ) {
   const session = text(value.sessionId, 'sessionId');
-  if (route === '/multi/mod/compact/cancel') {
+  if (route === '/switchboard/mod/compact/cancel') {
     compactions?.cancelScope(
       session,
       value.agentId === undefined ? undefined : text(value.agentId, 'agentId'),
@@ -340,7 +340,7 @@ function compactRoute(
   }
   const agent = value.agentId === undefined ? undefined : text(value.agentId, 'agentId');
   const identity = { session, agent, generation: current.generation };
-  if (route === '/multi/mod/compact/run') {
+  if (route === '/switchboard/mod/compact/run') {
     const context = modes.resolve(session, agent);
     return reply(res, compactions.run(identity, text(value.precomputeId, 'precomputeId'), context));
   }
@@ -349,14 +349,14 @@ function compactRoute(
     messages: value.messages === undefined ? [] : transcript(value.messages),
     instructions: compactInstructions(value.instructions),
   };
-  if (route === '/multi/mod/compact/precompute') {
+  if (route === '/switchboard/mod/compact/precompute') {
     if (!input.messages.length) {
       throw new Error('Precompute requires a transcript');
     }
     modes.resolve(session, agent);
     return reply(res, compactions.prepare(input));
   }
-  if (route !== '/multi/mod/compact/authorize') {
+  if (route !== '/switchboard/mod/compact/authorize') {
     throw new Error('Unknown compaction route');
   }
   const result = compactions.authorize(input);

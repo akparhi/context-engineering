@@ -5,16 +5,16 @@ import type { MessagesRequest } from '../src/gateway/messages.ts';
 
 const workers = {
   'openai-native': {
-    model: 'multi/openai/gpt-6-astra',
+    model: 'switchboard/openai/gpt-6-astra',
     description: 'Astra',
     tools: ['Read', 'Bash'],
   },
   'openai-native-high': {
-    model: 'multi/openai/gpt-6-astra',
+    model: 'switchboard/openai/gpt-6-astra',
     description: 'Astra high',
     tools: ['Read', 'Bash'],
   },
-  'zen-other': { model: 'multi/zen/other', description: 'Other', tools: ['Read'] },
+  'zen-other': { model: 'switchboard/zen/other', description: 'Other', tools: ['Read'] },
 };
 const rows = Object.entries(workers).map(
   ([name, worker]) => `- ${name}: ${worker.description} (Tools: ${worker.tools.join(', ')})`,
@@ -26,7 +26,7 @@ const request = (content: string): MessagesRequest => ({ messages: [{ role: 'use
 
 test('catalog advertises one worker per picker model without mutating registration or history', () => {
   const original = structuredClone(workers);
-  const catalog = new AgentCatalog(workers, ['multi/openai/gpt-6-astra']);
+  const catalog = new AgentCatalog(workers, ['switchboard/openai/gpt-6-astra']);
   for (const heading of [
     'Available agent types for the Agent tool:',
     'New agent types are now available for the Agent tool:',
@@ -63,7 +63,7 @@ test('catalog preserves ordinary text, custom overrides, tool results and unknow
 });
 
 test('catalog handles bare native system announcements without changing ordinary user text', () => {
-  const catalog = new AgentCatalog(workers, ['multi/openai/gpt-6-astra']);
+  const catalog = new AgentCatalog(workers, ['switchboard/openai/gpt-6-astra']);
   const text = `Available agent types for the Agent tool:\n${[...rows, custom].join('\n')}\n\nKeep concurrency instructions.`;
   const body: MessagesRequest = {
     messages: [
@@ -80,7 +80,7 @@ test('catalog handles bare native system announcements without changing ordinary
 });
 
 test('catalog compacts text blocks only and follows a changed picker selection', () => {
-  const catalog = new AgentCatalog(workers, ['multi/zen/other']);
+  const catalog = new AgentCatalog(workers, ['switchboard/zen/other']);
   const body: MessagesRequest = {
     messages: [
       {

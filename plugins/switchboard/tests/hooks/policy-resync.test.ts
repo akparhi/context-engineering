@@ -13,13 +13,13 @@ type Call = { url: string; body: Record<string, unknown> };
 /** The HTTP adapter has already parsed success and refusal replies. */
 function gateway(held: number | undefined, calls: Call[]): PolicyClient {
   return {
-    model: 'multi/cursor/auto',
+    model: 'switchboard/cursor/auto',
     request: async (route, body) => {
       calls.push({ url: route, body });
-      if (route.startsWith('/multi/mod/mode?')) {
+      if (route.startsWith('/switchboard/mod/mode?')) {
         return held === undefined ? { refused: true, httpStatus: 409 } : { generation: held };
       }
-      if (route === '/multi/mod/session') {
+      if (route === '/switchboard/mod/session') {
         return { accepted: true, generation: 11 };
       }
       if (typeof body.generation === 'string') {
@@ -33,7 +33,7 @@ function gateway(held: number | undefined, calls: Call[]): PolicyClient {
   };
 }
 function unreachable(): PolicyClient {
-  return { model: 'multi/cursor/auto', request: async () => undefined };
+  return { model: 'switchboard/cursor/auto', request: async () => undefined };
 }
 
 test('concurrent harness helpers share admission and later helpers reuse it', async () => {
@@ -44,7 +44,7 @@ test('concurrent harness helpers share admission and later helpers reuse it', as
   };
   await Promise.all([ensureHarnessPolicy(client, state), ensureHarnessPolicy(client, state)]);
   await ensureHarnessPolicy(client, state);
-  expect(calls.filter((call) => call.url === '/multi/mod/session').length).toBe(1);
+  expect(calls.filter((call) => call.url === '/switchboard/mod/session').length).toBe(1);
   expect(state.harnessReady).toBe(true);
   expect(state.generation).toBe(11);
 });
@@ -53,14 +53,14 @@ test('a reloaded hooks module adopts the mode generation the gateway still holds
   const calls: Call[] = [];
   const prepared = await preparePolicy(gateway(7, calls), 'session', '/workspace', undefined);
   expect(prepared).toEqual({ policyGeneration: 'policy-1', generation: 7 });
-  expect(calls.some((call) => call.url.startsWith('/multi/mod/mode?'))).toBe(true);
+  expect(calls.some((call) => call.url.startsWith('/switchboard/mod/mode?'))).toBe(true);
 });
 
 test('a detached session adopts the absence of a generation instead of blocking forever', async () => {
   const calls: Call[] = [];
   const prepared = await preparePolicy(gateway(undefined, calls), 'session', '/workspace', 3);
   expect(prepared).toEqual({ policyGeneration: 'policy-1', generation: undefined });
-  const begins = calls.filter((call) => call.url === '/multi/mod/policy' && !call.body.generation);
+  const begins = calls.filter((call) => call.url === '/switchboard/mod/policy' && !call.body.generation);
   expect(begins.at(-1)?.body.sourceGeneration).toBe(undefined);
 });
 
@@ -72,7 +72,7 @@ test('a matching source generation never re-reads the gateway mode', async () =>
   const calls: Call[] = [];
   const prepared = await preparePolicy(gateway(4, calls), 'session', '/workspace', 4);
   expect(prepared).toEqual({ policyGeneration: 'policy-1', generation: 4 });
-  expect(calls.some((call) => call.url.startsWith('/multi/mod/mode?'))).toBe(false);
+  expect(calls.some((call) => call.url.startsWith('/switchboard/mod/mode?'))).toBe(false);
 });
 
 test('a session that already holds no generation is not resynced in a loop', async () => {
@@ -80,7 +80,7 @@ test('a session that already holds no generation is not resynced in a loop', asy
   expect(
     await preparePolicy(gateway(undefined, calls), 'session', '/workspace', undefined),
   ).toEqual({ policyGeneration: 'policy-1', generation: undefined });
-  expect(calls.some((call) => call.url.startsWith('/multi/mod/mode?'))).toBe(false);
+  expect(calls.some((call) => call.url.startsWith('/switchboard/mod/mode?'))).toBe(false);
 });
 
 test('a prompt whose policy cannot be admitted carries no generation and is never blocked', async () => {
@@ -90,16 +90,16 @@ test('a prompt whose policy cannot be admitted carries no generation and is neve
   expect(await admitPrompt(unreachable(), snapshot, 3)).toBe(undefined);
   // A detached session recovers on its own and records the new snapshot.
   expect(await admitPrompt(gateway(undefined, calls), snapshot, 3)).toBe(11);
-  expect(calls.some((call) => call.url === '/multi/mod/session')).toBe(true);
+  expect(calls.some((call) => call.url === '/switchboard/mod/session')).toBe(true);
 });
 
-for (const model of ['claude-sonnet-5', 'multi/openai/gpt-6-astra', 'multi/zen/glm-5']) {
+for (const model of ['claude-sonnet-5', 'switchboard/openai/gpt-6-astra', 'switchboard/zen/glm-5']) {
   test(`${model} prompts record identity without preparing harness policy`, async () => {
     const calls: Call[] = [];
     const client = { ...gateway(undefined, calls), model };
     const snapshot = { sessionId: 'session', cwd: '/workspace', permissionMode: 'plan' };
     expect(await recordPrompt(client, snapshot, 7)).toBe(11);
-    expect(calls.map((call) => call.url)).toEqual(['/multi/mod/session']);
+    expect(calls.map((call) => call.url)).toEqual(['/switchboard/mod/session']);
     expect(calls[0].body.policyGeneration).toBe(undefined);
     expect(calls[0].body.permissionMode).toBe('plan');
   });

@@ -4,7 +4,7 @@ import type { GatewayFetch } from '../src/gateway/fetch.ts';
 import type { GatewayOptions } from '../src/gateway/server.ts';
 import { createNativeGateway } from '../src/gateway/server.ts';
 
-const model = 'multi/zen/gpt-5.6-luna';
+const model = 'switchboard/zen/gpt-5.6-luna';
 const request = {
   model,
   max_tokens: 1024,
@@ -14,7 +14,7 @@ const request = {
 };
 const headers = {
   'content-type': 'application/json',
-  'x-multi-gateway-token': 'local-fixture-token',
+  'x-switchboard-gateway-token': 'local-fixture-token',
   authorization: 'Bearer claude-secret-fixture',
   'x-api-key': 'anthropic-secret-fixture',
 };
@@ -34,7 +34,7 @@ test('disabled providers reject typed models and token counts without upstream r
       const response = await fetch(`${url}${endpoint}`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ ...request, model: `multi/${provider}/test` }),
+        body: JSON.stringify({ ...request, model: `switchboard/${provider}/test` }),
       });
       assert.equal(response.status, 400);
       assert.match(await response.text(), /not enabled/);
@@ -112,7 +112,7 @@ test('Zen isolates credentials, keeps cache affinity over restarts, and reports 
     assert.equal(init.redirect, 'error');
     assert.equal(init.headers.authorization, 'Bearer zen-secret-fixture');
     assert.equal(init.headers['x-api-key'], undefined);
-    assert.equal(init.headers['x-multi-gateway-token'], undefined);
+    assert.equal(init.headers['x-switchboard-gateway-token'], undefined);
     assert(!JSON.stringify(init.headers).includes('claude-secret-fixture'));
     sent.push({ headers: init.headers, body: JSON.parse(String(init.body)) });
     return completion();
@@ -133,7 +133,7 @@ test('Zen isolates credentials, keeps cache affinity over restarts, and reports 
   assert.equal(sent[0].body.prompt_cache_key, sent[0].headers['x-opencode-session']);
   assert.equal(sent[0].body.max_output_tokens, 1024);
   await (await post(restarted, request, { 'x-claude-code-agent-id': 'worker-one' })).arrayBuffer();
-  await (await post(restarted, { ...request, model: 'multi/zen/gpt-5.6-sol' })).arrayBuffer();
+  await (await post(restarted, { ...request, model: 'switchboard/zen/gpt-5.6-sol' })).arrayBuffer();
   assert.notEqual(sent[0].body.prompt_cache_key, sent[2].body.prompt_cache_key);
   assert.notEqual(sent[0].body.prompt_cache_key, sent[3].body.prompt_cache_key);
 });
@@ -149,11 +149,11 @@ test('Zen admission and counting never invoke inference; errors retain status wi
     headers,
     body: JSON.stringify(request),
   });
-  assert.equal(counted.headers.get('x-multi-token-count'), 'estimate');
+  assert.equal(counted.headers.get('x-switchboard-token-count'), 'estimate');
   const count = await counted.json();
   assert(count && typeof count === 'object' && 'input_tokens' in count);
   assert(typeof count.input_tokens === 'number' && count.input_tokens > 0);
-  const bad = await post(base, { ...request, model: 'multi/zen/not-a-model' });
+  const bad = await post(base, { ...request, model: 'switchboard/zen/not-a-model' });
   assert.equal(bad.status, 400);
   const missing = await gateway(
     t,
@@ -196,7 +196,7 @@ test('Zen native tools cannot acquire OpenAI review; explicit bypass stays expli
     const inference = await post(base, body);
     assert.equal(inference.status, 200);
     await inference.arrayBuffer();
-    const hook = await fetch(`${base}/multi/permission`, {
+    const hook = await fetch(`${base}/switchboard/permission`, {
       method: 'POST',
       headers,
       body: JSON.stringify({

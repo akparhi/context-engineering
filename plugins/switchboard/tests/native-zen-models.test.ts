@@ -194,7 +194,7 @@ test('Zen catalog exposes bounded protocols and only supported effort workers', 
       ['muse-spark-1.3', 'responses'],
     ],
   );
-  assert.equal(zenModelOptions(['big-pickle'])[0].model, 'multi/zen/big-pickle');
+  assert.equal(zenModelOptions(['big-pickle'])[0].model, 'switchboard/zen/big-pickle');
   assert.equal(ZEN_WORKERS['zen-big-pickle'].effort, undefined);
   assert.equal(ZEN_WORKERS['zen-gpt-5.6-luna'].effort, 'medium');
   assert.equal(ZEN_WORKERS['zen-gpt-5.6-luna-high'].effort, 'high');
@@ -218,7 +218,7 @@ test('Zen picker allowlist preserves order and validates model IDs', () => {
     zenPickerOptions(' mimo-v2.5-free, big-pickle,mimo-v2.5-free ').map((model) => model.id),
     ['mimo-v2.5-free', 'big-pickle'],
   );
-  assert.throws(() => zenPickerOptions('typo'), /MULTI_ZEN_MODELS: unknown Zen model/);
+  assert.throws(() => zenPickerOptions('typo'), /SWITCHBOARD_ZEN_MODELS: unknown Zen model/);
 });
 
 test('Zen local key entry preserves other accounts and writes a private auth file', async (t) => {

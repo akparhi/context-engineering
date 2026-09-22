@@ -30,8 +30,8 @@ function validateMedia(request: ResponsesRequest, model: ZenModel) {
 
 /** Pure translation keeps repeated prefixes byte-stable; the caller owns credentials. */
 export function zenRequest(body: MessagesRequest, cacheKey: string) {
-  const model = zenModel(body.model?.replace(/^multi\/zen\//, '') ?? '');
-  if (!model || body.model !== `multi/zen/${model.id}`) {
+  const model = zenModel(body.model?.replace(/^switchboard\/zen\//, '') ?? '');
+  if (!model || body.model !== `switchboard/zen/${model.id}`) {
     throw new Error('Unknown Zen model. Run the launcher with --zen-models for supported choices.');
   }
   if (
@@ -42,7 +42,7 @@ export function zenRequest(body: MessagesRequest, cacheKey: string) {
   ) {
     throw new Error(`Zen max_tokens must be between 1 and ${model.maxOutputTokens}`);
   }
-  const signaturePrefix = `multi-zen-responses:${model.id}:`;
+  const signaturePrefix = `switchboard-zen-responses:${model.id}:`;
   const normalized = toResponses(body, model.id, signaturePrefix);
   validateMedia(normalized, model);
   const effort = body.output_config?.effort;

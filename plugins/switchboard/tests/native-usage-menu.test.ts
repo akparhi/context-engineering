@@ -29,7 +29,7 @@ test('usage client messages refresh props and receipts without losing providers 
   const requests: string[] = [];
   const engine = {
     env: {
-      get: async (name: string) => (name === 'MULTI_GATEWAY_TOKEN' ? 'secret' : 'http://localhost'),
+      get: async (name: string) => (name === 'SWITCHBOARD_GATEWAY_TOKEN' ? 'secret' : 'http://localhost'),
     },
     session: { id: async () => 'session/one' },
     http: {
@@ -67,7 +67,7 @@ test('usage client messages refresh props and receipts without losing providers 
   assert(command && message);
   await command(engine, { args: '' }, emptyNext);
   const event = {
-    requestId: 'multi-usage',
+    requestId: 'switchboard-usage',
     element: 'usage',
     module: 'hooks/usage-view.ts',
     data: { action: 'refresh' },
@@ -138,7 +138,7 @@ test('quota advice is opt-in, session scoped, advisory and removed on detach', a
   let available = true;
   const engine = {
     env: {
-      get: async (name: string) => (name === 'MULTI_GATEWAY_TOKEN' ? 'secret' : 'http://localhost'),
+      get: async (name: string) => (name === 'SWITCHBOARD_GATEWAY_TOKEN' ? 'secret' : 'http://localhost'),
     },
     session: { id: async () => session },
     http: {
@@ -174,7 +174,7 @@ test('quota advice is opt-in, session scoped, advisory and removed on detach', a
   assert.equal(reads, 0);
   await command(engine, { args: '' }, emptyNext);
   const toggle = {
-    requestId: 'multi-usage',
+    requestId: 'switchboard-usage',
     element: 'usage',
     data: { action: 'toggle-quota-advice' },
   };

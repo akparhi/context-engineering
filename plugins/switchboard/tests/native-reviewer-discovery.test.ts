@@ -41,11 +41,11 @@ const args = process.argv.slice(2);
 if (args.includes('plugin') && args.includes('list')) { console.log('[]'); process.exit(0); }
 if (args[0] === '--version') { console.log('2.1.272'); process.exit(0); }
 const emit = (value) => {
-  const base = process.env.MULTI_MOD_GATEWAY_URL;
+  const base = process.env.SWITCHBOARD_MOD_GATEWAY_URL;
   if (!base) { console.log(value); return; }
-  const req = require('node:http').request(new URL(base + '/multi/mod/session'), {
+  const req = require('node:http').request(new URL(base + '/switchboard/mod/session'), {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-multi-gateway-token': process.env.MULTI_GATEWAY_TOKEN },
+    headers: { 'content-type': 'application/json', 'x-switchboard-gateway-token': process.env.SWITCHBOARD_GATEWAY_TOKEN },
   }, () => console.log(value));
   req.on('error', () => console.log(value));
   req.end(JSON.stringify({ sessionId: 'fixture', event: 'start' }));
@@ -82,7 +82,7 @@ globalThis.fetch = async (url, init) => {
           launcher,
           '--',
           '--model',
-          'multi/openai/gpt-6-astra',
+          'switchboard/openai/gpt-6-astra',
         ],
         {
           cwd,
@@ -92,7 +92,7 @@ globalThis.fetch = async (url, init) => {
             HOME: cwd,
             CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
             CODEX_HOME: cwd,
-            MULTI_ENABLED_PROVIDERS: 'openai',
+            SWITCHBOARD_ENABLED_PROVIDERS: 'openai',
             TEST_AUTH: auth,
             TEST_REVIEW: review,
             ...(auth === 'api' ? { ANTHROPIC_API_KEY: 'anthropic-fixture' } : {}),

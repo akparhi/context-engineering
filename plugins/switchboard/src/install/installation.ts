@@ -15,8 +15,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const begin = '# >>> multi-cli >>>';
-const end = '# <<< multi-cli <<<';
+const begin = '# >>> switchboard >>>';
+const end = '# <<< switchboard <<<';
 const files = ['bootstrap.ts', 'installation.ts', 'plugins.ts', 'process.ts'];
 
 type Platform = NodeJS.Platform;
@@ -28,9 +28,9 @@ export interface Installation {
   block: string;
   platform?: Platform;
   shims?: string[];
-  /** Launch command name; `claude-multi` unless customized. */
+  /** Launch command name; `switchboard` unless customized. */
   command?: string;
-  /** Persisted `MULTI_MODELS` picker selection; undefined keeps launcher defaults. */
+  /** Persisted `SWITCHBOARD_MODELS` picker selection; undefined keeps launcher defaults. */
   models?: string;
 }
 
@@ -44,9 +44,9 @@ export interface InstallationOptions {
   models?: string;
 }
 
-export const DEFAULT_COMMAND = 'claude-multi';
-/** The management shim; `<command> --multi` and `multi` reach the same dispatcher. */
-const MANAGEMENT_COMMAND = 'multi';
+export const DEFAULT_COMMAND = 'switchboard';
+/** The management shim; `switchboard-ctl` and `<command> --switchboard-ctl` reach the same dispatcher. */
+export const MANAGEMENT_COMMAND = 'switchboard-ctl';
 
 type DeferDeletion = (command: string, args: string[], options: SpawnOptions) => void;
 
@@ -64,8 +64,8 @@ function optionsFor(options: InstallationOptions = {}) {
   };
 }
 
-function installationDirectory(homedir = os.homedir()) {
-  return path.join(homedir, '.local', 'share', 'multi-cli');
+export function installationDirectory(homedir = os.homedir()) {
+  return path.join(homedir, '.local', 'share', 'switchboard');
 }
 
 function posixQuote(value: string) {
@@ -103,7 +103,7 @@ export async function readInstallation(directory = installationDirectory()): Pro
       (key) => value[key] === undefined || typeof value[key] === 'string',
     )
   ) {
-    throw new Error('Invalid Multi installation state');
+    throw new Error('Invalid Switchboard installation state');
   }
   return value;
 }
@@ -116,7 +116,7 @@ function validateCommand(command: string) {
     );
   }
   if (command.toLowerCase() === MANAGEMENT_COMMAND) {
-    throw new Error(`The name ${MANAGEMENT_COMMAND} is reserved for Multi management commands.`);
+    throw new Error(`The name ${MANAGEMENT_COMMAND} is reserved for Switchboard management commands.`);
   }
   return command;
 }
@@ -147,9 +147,9 @@ function normalizeModels(value: string | undefined, previous?: string): string |
   // sibling plugin sources beside it.
   const persisted = models.map((model) => model.replace(/\[1m\]$/i, ''));
   for (const model of persisted) {
-    if (!/^multi\/[a-z]+\/[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(model)) {
+    if (!/^switchboard\/[a-z]+\/[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(model)) {
       throw new Error(
-        `Invalid picker model ID: ${JSON.stringify(model)}. Use full IDs such as multi/openai/gpt-6-astra, or all/none.`,
+        `Invalid picker model ID: ${JSON.stringify(model)}. Use full IDs such as switchboard/openai/gpt-6-astra, or all/none.`,
       );
     }
   }
@@ -209,7 +209,7 @@ function removeBlock(source: string, block: string) {
   const finish = source.indexOf(end, start + begin.length);
   const recorded = start >= 0 && finish >= 0 ? source.slice(start, finish + end.length) : '';
   if (normalizeLineEndings(recorded) !== normalizeLineEndings(block.trim())) {
-    throw new Error('Multi shell configuration was edited; refusing to overwrite it.');
+    throw new Error('Switchboard shell configuration was edited; refusing to overwrite it.');
   }
   const blockStart = start > 0 && source[start - 1] === '\n' ? start - 1 : start;
   const blockEnd =
@@ -222,15 +222,15 @@ function removeBlock(source: string, block: string) {
 function validateRuntime(shell: string, platform: Platform) {
   const [major, minor] = process.versions.node.split('.').map(Number);
   if (major < 24 || (major === 24 && minor < 12)) {
-    throw new Error('Multi setup requires Node >= 24.12 on PATH.');
+    throw new Error('Switchboard setup requires Node >= 24.12 on PATH.');
   }
   const supported =
     platform === 'win32' ? ['powershell', 'pwsh', 'cmd', 'cmd.exe'] : ['bash', 'zsh', 'fish'];
   if (!supported.includes(shell.toLowerCase())) {
     throw new Error(
       platform === 'win32'
-        ? 'Multi setup supports PowerShell or cmd on Windows. Use --shell powershell or --shell cmd.'
-        : 'Multi setup supports Bash, Zsh, or fish on macOS/Linux. Use --shell bash, --shell zsh, or --shell fish.',
+        ? 'Switchboard setup supports PowerShell or cmd on Windows. Use --shell powershell or --shell cmd.'
+        : 'Switchboard setup supports Bash, Zsh, or fish on macOS/Linux. Use --shell bash, --shell zsh, or --shell fish.',
     );
   }
 }
@@ -242,7 +242,7 @@ async function previousInstallation(directory: string) {
   try {
     if ((await readdir(directory)).length) {
       throw new Error(
-        'Multi installation directory contains unrecognized files; refusing to overwrite them.',
+        'Switchboard installation directory contains unrecognized files; refusing to overwrite them.',
       );
     }
   } catch (error) {
@@ -362,7 +362,7 @@ export async function setup(
   const source = await optionalText(startupFile);
   const original = previous ? removeBlock(source, previous.block) : source;
   if (original.includes(begin) || original.includes(end)) {
-    throw new Error('Unrecognized Multi shell block; refusing to modify shell configuration.');
+    throw new Error('Unrecognized Switchboard shell block; refusing to modify shell configuration.');
   }
   const node = process.execPath;
   const bin = path.join(directory, 'bin');

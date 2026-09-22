@@ -14,31 +14,31 @@ async function dispatch(state: Installation, args: string[], management: boolean
   if (!management && (!root || providers.length === 0)) {
     return run(state.claude, args);
   }
-  if (!management && state.command === 'claude' && process.env.MULTI_GATEWAY_TOKEN) {
+  if (!management && state.command === 'claude' && process.env.SWITCHBOARD_GATEWAY_TOKEN) {
     // A launch command named `claude` also catches Claude's own nested runs (agents
-    // calling `claude -p`, SDK spawns, hooks). Inside a Multi session those must
+    // calling `claude -p`, SDK spawns, hooks). Inside a Switchboard session those must
     // reach the real executable rather than start a second gateway.
     return run(state.claude, args);
   }
   if (!root) {
-    throw new Error('Enable multi-core at user scope before using Multi commands.');
+    throw new Error('Enable the switchboard plugin at user scope before using Switchboard commands.');
   }
   const manifest = JSON.parse(
     await readFile(path.join(root, '.claude-plugin', 'plugin.json'), 'utf8'),
   );
-  if (manifest.name !== 'multi-core') {
-    throw new Error('Installed core manifest does not identify multi-core');
+  if (manifest.name !== 'switchboard') {
+    throw new Error('Installed manifest does not identify switchboard');
   }
   const env = {
     ...process.env,
-    ...(state.models !== undefined && process.env.MULTI_MODELS === undefined
-      ? { MULTI_MODELS: state.models }
+    ...(state.models !== undefined && process.env.SWITCHBOARD_MODELS === undefined
+      ? { SWITCHBOARD_MODELS: state.models }
       : {}),
-    MULTI_REAL_CLAUDE: state.claude,
-    MULTI_ENABLED_PROVIDERS: providers.join(','),
+    SWITCHBOARD_REAL_CLAUDE: state.claude,
+    SWITCHBOARD_ENABLED_PROVIDERS: providers.join(','),
   };
   const entry = management ? 'account.ts' : 'launcher.ts';
-  return run(state.node, [path.join(root, 'plugins', 'multi-core', 'src', entry), ...args], {
+  return run(state.node, [path.join(root, 'src', entry), ...args], {
     env,
   });
 }
@@ -52,7 +52,7 @@ async function main() {
       return dispatch(state, args.slice(1), true);
     }
     await uninstall(directory);
-    console.log('Multi startup removed. Open a new terminal. Provider logins are preserved.');
+    console.log('Switchboard startup removed. Open a new terminal. Provider logins are preserved.');
     return 0;
   }
   return dispatch(state, args, false);
@@ -63,7 +63,7 @@ void main().then(
     process.exitCode = code;
   },
   (error: unknown) => {
-    console.error(`Multi: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`Switchboard: ${error instanceof Error ? error.message : String(error)}`);
     process.exitCode = 1;
   },
 );
