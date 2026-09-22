@@ -793,7 +793,7 @@ function pickerSettings(codexSignedIn: boolean, zen: boolean, fullCatalog = fals
         })),
         ...zenOptions.map(({ model, label, efforts }) => ({
           model,
-          label: `Zen · ${label}`,
+          label,
           behavesAs: pickerProfile(Boolean(efforts?.length)),
           description: `Zen API billing · Claude tools${efforts ? '' : ' · native reasoning; /effort not applicable'}`,
         })),

@@ -121,7 +121,7 @@ await writeFile(
       options: zenPickerOptions(pickerModels.join(',')).map(
         ({ model: pickerModel, label, efforts }) => ({
           model: pickerModel,
-          label: `Zen · ${label}`,
+          label,
           behavesAs: efforts?.length ? 'claude-sonnet-4-6' : 'claude-haiku-4-5',
           description: `Zen API billing · Claude tools${efforts ? '' : ' · native reasoning; /effort not applicable'}`,
         }),
