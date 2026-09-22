@@ -16,7 +16,7 @@ export interface Worker {
 export const OPENAI_WORKERS: Readonly<Record<string, Worker>> = Object.freeze(
   Object.fromEntries(
     Object.entries(MODELS).flatMap(([name, model]) =>
-      (['', 'low', 'medium', 'high', 'xhigh', 'max'] as const).map((level) => [
+      (['', 'low', 'medium', 'high'] as const).map((level) => [
         level ? `${name}-${level}` : name,
         { model, effort: level || 'medium' },
       ]),

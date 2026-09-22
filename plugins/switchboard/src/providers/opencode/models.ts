@@ -24,7 +24,7 @@ export interface ZenWorker {
   effort?: Effort;
 }
 
-const GPT_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const satisfies readonly Effort[];
+const GPT_EFFORTS = ['low', 'medium', 'high'] as const satisfies readonly Effort[];
 
 // Bounded catalog from OpenCode's models.dev snapshot:
 // github.com/anomalyco/opencode/blob/830d5eb5354874105cc31599635a80c1662609e8/packages/opencode/test/tool/fixtures/models-api.json
@@ -138,7 +138,7 @@ export const ZEN_MODELS: readonly ZenModel[] = Object.freeze([
     protocol: 'responses',
     label: 'Muse Spark 1.3 Free',
     description: 'OpenCode Zen · Free',
-    efforts: ['low', 'medium', 'high', 'xhigh'],
+    efforts: ['low', 'medium', 'high'],
     images: true,
     documents: true,
     maxOutputTokens: 131072,
@@ -148,7 +148,7 @@ export const ZEN_MODELS: readonly ZenModel[] = Object.freeze([
     protocol: 'responses',
     label: 'Muse Spark 1.2 Free',
     description: 'OpenCode Zen · Free',
-    efforts: ['low', 'medium', 'high', 'xhigh'],
+    efforts: ['low', 'medium', 'high'],
     images: true,
     documents: true,
     maxOutputTokens: 131072,

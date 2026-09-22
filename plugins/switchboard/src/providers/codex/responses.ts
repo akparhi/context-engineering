@@ -18,9 +18,13 @@ const IMAGE_MEDIA_TYPES: readonly unknown[] = [
   'image/gif',
   'image/webp',
 ];
-const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
+const EFFORTS = ['none', 'low', 'medium', 'high'] as const;
 
 export type Effort = (typeof EFFORTS)[number];
+
+export function isEffort(value: string): value is Effort {
+  return (EFFORTS as readonly string[]).includes(value);
+}
 
 // ---------------------------------------------------------------------------
 // OpenAI Responses, as the gateway sends and reads them.
@@ -248,10 +252,6 @@ function isReasoningState(value: unknown): value is ReasoningState {
     typeof value.encrypted_content === 'string' &&
     value.encrypted_content.length > 0
   );
-}
-
-function isEffort(value: string): value is Effort {
-  return (EFFORTS as readonly string[]).includes(value);
 }
 
 // Only rewrite Claude-bound history when it contains our provider's opaque state.
@@ -489,9 +489,11 @@ function toolChoice(
   }
 }
 
-function budgetEffort(thinking: MessagesRequest['thinking']): Effort {
+export function budgetEffort(thinking: MessagesRequest['thinking']): Effort {
+  // `none` is honored by the Responses API (0 reasoning tokens, no summary) but is
+  // absent from every model's advertised levels, so only the catalog can surface it.
   if (thinking?.type === 'disabled') {
-    return 'low';
+    return 'none';
   }
   const budget = thinking?.budget_tokens;
   if (budget === undefined) {
@@ -503,10 +505,7 @@ function budgetEffort(thinking: MessagesRequest['thinking']): Effort {
   if (budget <= 8192) {
     return 'medium';
   }
-  if (budget <= 24576) {
-    return 'high';
-  }
-  return 'xhigh';
+  return 'high';
 }
 
 function reasoningEffort(body: MessagesRequest): Effort {
@@ -518,10 +517,8 @@ function reasoningEffort(body: MessagesRequest): Effort {
   if (budget !== undefined && (!Number.isSafeInteger(budget) || budget < 0)) {
     throw new Error('Invalid thinking budget');
   }
-  const effort = body.output_config?.effort ?? budgetEffort(thinking);
-  if (!isEffort(effort)) {
-    throw new Error(`Unsupported reasoning effort: ${effort}`);
-  }
+  const requested = body.output_config?.effort ?? budgetEffort(thinking);
+  const effort: Effort = isEffort(requested) ? requested : 'high';
   return effort;
 }
 
