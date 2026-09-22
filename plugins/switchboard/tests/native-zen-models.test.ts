@@ -13,8 +13,6 @@ import {
 import {
   ZEN_MODELS,
   ZEN_WORKERS,
-  zenModelOptions,
-  zenPickerOptions,
 } from '../src/providers/opencode/models.ts';
 import { removeTemporary } from '../temporary.ts';
 
@@ -174,22 +172,8 @@ test('Zen catalog exposes bounded protocols and only supported effort workers', 
     ZEN_MODELS.map((model) => [model.id, model.protocol]),
     [['deepseek-v4.1-flash', 'chat']],
   );
-  assert.equal(zenModelOptions(['deepseek-v4.1-flash'])[0].model, 'switchboard/zen/deepseek-v4.1-flash');
   assert.equal(ZEN_WORKERS['zen-deepseek-v4.1-flash'].effort, undefined);
   assert.equal(ZEN_WORKERS['zen-deepseek-v4.1-flash-impossible'], undefined);
-});
-
-test('Zen picker allowlist preserves order and validates model IDs', () => {
-  assert.deepEqual(
-    zenPickerOptions(undefined).map((model) => model.id),
-    ['deepseek-v4.1-flash'],
-  );
-  assert.deepEqual(zenPickerOptions(''), []);
-  assert.deepEqual(
-    zenPickerOptions('deepseek-v4.1-flash').map((model) => model.id),
-    ['deepseek-v4.1-flash'],
-  );
-  assert.throws(() => zenPickerOptions('typo'), /SWITCHBOARD_ZEN_MODELS: unknown Zen model/);
 });
 
 test('Zen local key entry preserves other accounts and writes a private auth file', async (t) => {

@@ -13,12 +13,6 @@ export interface ZenModel {
   maxOutputTokens: number;
 }
 
-export interface ZenModelOption extends ZenModel {
-  model: string;
-  worker: string;
-  nativeWorker: true;
-}
-
 export interface ZenWorker {
   model: string;
   effort?: Effort;
@@ -46,17 +40,6 @@ function route(id: string): string {
   return `switchboard/zen/${id}`;
 }
 
-/** Build picker rows, optionally intersected with a discovered Zen catalog. */
-export function zenModelOptions(availableIds?: readonly string[]): ZenModelOption[] {
-  const available = availableIds === undefined ? undefined : new Set(availableIds);
-  return ZEN_MODELS.filter((model) => available?.has(model.id) ?? true).map((model) => ({
-    ...model,
-    model: route(model.id),
-    worker: workerName(model.id),
-    nativeWorker: true,
-  }));
-}
-
 export const ZEN_WORKERS: Readonly<Record<string, ZenWorker>> = Object.freeze(
   Object.fromEntries(
     ZEN_MODELS.flatMap((model) => {
@@ -80,23 +63,3 @@ export function zenModel(id: string): ZenModel | undefined {
   return modelById.get(id);
 }
 
-/** Restrict Zen rows without hiding subscription providers. */
-export function zenPickerOptions(selection: string | undefined): ZenModelOption[] {
-  if (selection === undefined) {
-    return zenModelOptions();
-  }
-  return [
-    ...new Set(
-      selection
-        .split(',')
-        .map((id) => id.trim())
-        .filter(Boolean),
-    ),
-  ].map((id) => {
-    const option = zenModelOptions([id])[0];
-    if (!option) {
-      throw new Error(`SWITCHBOARD_ZEN_MODELS: unknown Zen model: ${id}`);
-    }
-    return option;
-  });
-}

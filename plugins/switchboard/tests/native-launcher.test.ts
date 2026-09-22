@@ -303,7 +303,6 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
         CODEX_HOME: cwd,
         OPENCODE_API_KEY: 'zen-fixture-key',
         SWITCHBOARD_MODELS: selection,
-        SWITCHBOARD_ZEN_MODELS: 'big-pickle,glm-5.2',
       },
     });
   const filtered = JSON.parse(

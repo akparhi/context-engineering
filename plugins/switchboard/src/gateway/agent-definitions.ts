@@ -35,7 +35,7 @@ const BUILTIN_WORKERS: Readonly<Record<string, WorkerPermissions>> = {
 
 export interface PluginPermissionInventory {
   permissions: Record<string, WorkerPermissions>;
-  multiCoreEnabled: boolean;
+  switchboardEnabled: boolean;
 }
 
 export async function loadWorkerPermissions(
@@ -221,7 +221,7 @@ export async function pluginPermissions(
     throw new Error('Invalid Claude plugin inventory');
   }
   const permissions: Record<string, WorkerPermissions> = Object.create(null);
-  let multiCoreEnabled = false;
+  let switchboardEnabled = false;
   for (const plugin of plugins) {
     if (!plugin.enabled || (plugin.projectPath && !withinProject(cwd, plugin.projectPath))) {
       continue;
@@ -229,10 +229,10 @@ export async function pluginPermissions(
     if (typeof plugin.id !== 'string' || typeof plugin.installPath !== 'string') {
       throw new Error('Invalid enabled Claude plugin');
     }
-    multiCoreEnabled ||= plugin.id === 'switchboard@switchboard';
+    switchboardEnabled ||= plugin.id === 'switchboard@switchboard';
     Object.assign(permissions, await pluginAgents(plugin.installPath, plugin.id.split('@')[0]));
   }
-  return { permissions, multiCoreEnabled };
+  return { permissions, switchboardEnabled };
 }
 
 function pluginArguments(args: readonly string[]): string[] {

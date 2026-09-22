@@ -86,7 +86,7 @@ async function main() {
   const callerSettings = structuredClone(settings);
   const agents = workerDefinitions(activeCatalog);
   const modBridge = new ModBridge();
-  const settingsDir = await mkdtemp(path.join(os.tmpdir(), 'multi-native-settings-'));
+  const settingsDir = await mkdtemp(path.join(os.tmpdir(), 'switchboard-native-settings-'));
   const callerSettingsFile = path.join(settingsDir, 'caller-settings.json');
   await writeFile(callerSettingsFile, JSON.stringify(callerSettings), { mode: 0o600 });
   const permissionModes = new PermissionModes(
@@ -149,7 +149,7 @@ async function main() {
     env: childEnvironment,
   });
   const pluginDirectory =
-    !hasPluginDirectory(args) && (!pluginInventory.multiCoreEnabled || hasEmptySettingSources(args))
+    !hasPluginDirectory(args) && (!pluginInventory.switchboardEnabled || hasEmptySettingSources(args))
       ? ['--plugin-dir', pluginRoot]
       : [];
   const childArguments = [...launcherArguments(args, settingsFile, definitions), ...pluginDirectory];
@@ -655,7 +655,7 @@ async function handleCommand(command?: string) {
   }
   if (command === '--help') {
     console.log(
-      'Usage: bun src/launcher.ts [--zen-models] [-- <claude arguments>]\nLaunch Claude with external models and native coding workers.\n--zen-models: list supported Zen models and capabilities\nOPENCODE_API_KEY: Zen key (or use OpenCode /connect)\nSWITCHBOARD_ZEN_MODELS: comma-separated Zen model IDs to show, leaving other providers unchanged\nSWITCHBOARD_MODELS: comma-separated full model IDs to show in /model (unset: defaults; empty: hide external rows)',
+      'Usage: bun src/launcher.ts [--zen-models] [-- <claude arguments>]\nLaunch Claude with external models and native coding workers.\n--zen-models: list supported Zen models and capabilities\nOPENCODE_API_KEY: Zen key (or use OpenCode /connect)\nSWITCHBOARD_MODELS: comma-separated full model IDs to show in /model (unset: defaults; empty: hide external rows)',
     );
     process.exit(0);
   }

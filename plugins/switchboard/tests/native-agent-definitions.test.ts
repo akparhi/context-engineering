@@ -120,7 +120,7 @@ test('discovers scoped plugin workers, manifest replacement paths and inherited 
     },
   ];
   const pluginInventory = await pluginPermissions(cwd, ['--plugin-dir', root]);
-  assert.equal(pluginInventory.multiCoreEnabled, true);
+  assert.equal(pluginInventory.switchboardEnabled, true);
   const definitions = await loadWorkerPermissions(cwd, {}, ['--plugin-dir', root]);
   assert.deepEqual(definitions['fixture:reader'], {
     tools: ['Read', 'Grep'],
