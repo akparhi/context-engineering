@@ -35,7 +35,7 @@ import {
   readSse,
   toResponses,
 } from '../src/providers/codex/responses.ts';
-import { removeTemporary } from '../temporary.ts';
+import { removeTemporary } from './temporary.ts';
 
 /** A test double for one OpenAI Responses SSE event; sent as JSON, never typed upstream. */
 interface SseEvent {

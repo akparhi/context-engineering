@@ -13,7 +13,7 @@ import {
   parseApprovalRequest,
 } from '../src/gateway/approval.ts';
 import { createNativeGateway } from '../src/gateway/server.ts';
-import { removeTemporary } from '../temporary.ts';
+import { removeTemporary } from './temporary.ts';
 
 const request = (stage = 1, session = 'session-one', command = 'node harmless-test.js') => ({
   model: 'claude-sonnet-5',

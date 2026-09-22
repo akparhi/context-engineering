@@ -14,7 +14,7 @@ import {
   providerSelection,
   settingsArguments,
 } from '../src/install/plugins.ts';
-import { removeTemporary } from '../temporary.ts';
+import { removeTemporary } from './temporary.ts';
 
 const execute = promisify(execFile);
 

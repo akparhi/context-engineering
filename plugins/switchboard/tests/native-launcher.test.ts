@@ -11,7 +11,7 @@ import {
 } from '../src/launcher.ts';
 import { CATALOG, workerDefinitions } from '../src/catalog.ts';
 import { ZEN_MODELS } from '../src/providers/opencode/models.ts';
-import { removeTemporary } from '../temporary.ts';
+import { removeTemporary } from './temporary.ts';
 
 async function writeClaudeFixture(bin: string, source: string): Promise<void> {
   if (process.platform === 'win32') {

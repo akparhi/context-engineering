@@ -9,7 +9,7 @@ import {
   codexRequest,
   readCodexAuth,
 } from '../src/providers/codex/auth.ts';
-import { removeTemporary } from '../temporary.ts';
+import { removeTemporary } from './temporary.ts';
 
 const jwt = (exp: number) =>
   `header.${Buffer.from(JSON.stringify({ exp })).toString('base64url')}.signature`;

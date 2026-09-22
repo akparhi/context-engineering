@@ -18,7 +18,7 @@ type GatewayResponse = {
   generation?: number | string;
   status?: string;
   stale?: boolean;
-  nextPage?: number;
+  nextCursor?: number;
 };
 
 // Claude Code 2.1.272 loads exactly one entry from hooks.json `modules`; compose here.

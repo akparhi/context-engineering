@@ -172,13 +172,13 @@ test('quota advice is opt-in, session scoped, advisory and removed on detach', a
   };
   assert.deepEqual(await submit(engine, prompt, next), await next(prompt));
   assert.equal(reads, 0);
-  await command(engine, { args: '' }, emptyNext);
+  await command(engine, { args: '' }, next);
   const toggle = {
     requestId: 'switchboard-usage',
     element: 'usage',
     data: { action: 'toggle-quota-advice' },
   };
-  const enabled = await message(engine, toggle, emptyNext);
+  const enabled = await message(engine, toggle, next);
   assert.equal((enabled.props as { quotaAdviceEnabled: boolean }).quotaAdviceEnabled, true);
   const readsBeforeSpawn = reads;
   const informed = await submit(engine, prompt, async (event) => {
@@ -216,11 +216,11 @@ test('quota advice is opt-in, session scoped, advisory and removed on detach', a
     ((await submit(engine, prompt, next)).additionalContext as string[])[1],
     /could not be retrieved/,
   );
-  await message(engine, toggle, emptyNext);
+  await message(engine, toggle, next);
   const beforeDisabled = reads;
   assert.deepEqual(await submit(engine, prompt, next), await next(prompt));
   assert.equal(reads, beforeDisabled);
-  await message(engine, toggle, emptyNext);
+  await message(engine, toggle, next);
   module.forgetUsageSession(session);
   assert.deepEqual(await submit(engine, prompt, next), await next(prompt));
   assert.equal(reads, beforeDisabled);

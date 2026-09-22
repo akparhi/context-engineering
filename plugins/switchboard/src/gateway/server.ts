@@ -50,15 +50,13 @@ const STRIPPED_RESPONSE_HEADERS = [
 
 /** What the gateway reports to `onEvent`; routing only, never credentials or bodies. */
 export interface GatewayEvent {
-  // yagni: string broadens the union for forward-compatibility with provider integrations
   route:
     | 'anthropic'
     | 'openai'
     | 'openai-request'
     | 'approval'
     | 'zen'
-    | 'zen-request'
-    | string;
+    | 'zen-request';
   model?: string;
   agentId?: string | null;
   path?: string;
@@ -98,8 +96,6 @@ export interface GatewayOptions {
   permissionModes?: PermissionModes;
   agentCatalog?: AgentCatalog;
   modBridge?: ModBridge;
-  // yagni: extra fields accepted for forward-compatibility with provider integrations
-  [key: string]: unknown;
 }
 
 /** Rejected before any provider call; answered as HTTP 400 rather than 502. */

@@ -10,7 +10,7 @@ import {
   discoverOpenAIReviewer,
   inspectApprovalPath,
 } from '../src/providers/codex/approval.ts';
-import { removeTemporary } from '../temporary.ts';
+import { removeTemporary } from './temporary.ts';
 
 const request = (model = 'claude-sonnet-5') => ({
   model,

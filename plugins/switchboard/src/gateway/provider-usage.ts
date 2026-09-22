@@ -19,8 +19,6 @@ interface ProviderUsageOptions {
   openai?: ProviderUsageReader;
   zen?: ProviderUsageReader;
   now?: () => number;
-  // yagni: extra reader slots accepted for forward-compatibility with provider integrations
-  [key: string]: unknown;
 }
 type ProviderUsageReader = (session: string) => Promise<{
   summary: string;

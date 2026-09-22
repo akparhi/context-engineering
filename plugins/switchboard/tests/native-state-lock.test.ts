@@ -5,7 +5,7 @@ import os, { hostname } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { lockStateFile } from '../src/gateway/state-lock.ts';
-import { removeTemporary } from '../temporary.ts';
+import { removeTemporary } from './temporary.ts';
 
 async function temporaryDirectory(t: test.TestContext, prefix: string): Promise<string> {
   const directory = await mkdtemp(path.join(os.tmpdir(), prefix));

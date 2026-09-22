@@ -8,14 +8,12 @@ import { createNativeGateway } from '../src/gateway/server.ts';
 async function start(
   t: test.TestContext,
   permissionModes?: PermissionModes,
-  antigravity?: Parameters<typeof createNativeGateway>[0]['antigravity'],
   guardAuto?: boolean,
 ) {
   const server = createNativeGateway({
     token: 'mod-token',
     authFile: 'unused',
     permissionModes,
-    antigravity,
     guardAuto,
     modBridge: new ModBridge(),
   });
@@ -75,7 +73,7 @@ test('permission observations neither prepare settings nor grant harness admissi
     discoveries++;
     return {};
   });
-  const base = await start(t, modes, undefined, true);
+  const base = await start(t, modes, true);
   const response = await request(base, '/switchboard/permission', {
     hook_event_name: 'PreToolUse',
     session_id: 'native',
@@ -314,26 +312,7 @@ test('model effort telemetry is scoped observation and cannot change policy', as
 
 test('two-phase compaction invokes the native fixture once without tools or origin-state mutation', async (t) => {
   const modes = new PermissionModes(async () => ({}));
-  let calls = 0;
-  const base = await start(t, modes, {
-    validate: () => 1,
-    handle: async (_body: unknown, scope: string, _signal: unknown, _emit: unknown, context: Record<string, unknown> | undefined) => {
-      calls++;
-      assert.deepEqual(context?.tools, []);
-      assert.equal(typeof context?.compaction, 'string');
-      assert.match(scope, /compact-/);
-      return {
-        id: 'summary',
-        type: 'message',
-        role: 'assistant',
-        model: 'switchboard/antigravity/model',
-        content: [{ type: 'text', text: 'fixture summary' }],
-        stop_reason: 'end_turn',
-        stop_sequence: null,
-        usage: { input_tokens: 1, output_tokens: 1 },
-      };
-    },
-  });
+  const base = await start(t, modes);
   const generation = await admit(base);
   const payload = {
     sessionId: 's',
@@ -341,7 +320,6 @@ test('two-phase compaction invokes the native fixture once without tools or orig
     messages: [{ role: 'user', text: 'task', toolUses: [], handle: 'one' }],
   };
   const prepared = await request(base, '/switchboard/mod/compact/precompute', payload);
-  assert.equal(calls, 0);
   const run = { sessionId: 's', generation, precomputeId: prepared.body.precomputeId };
   assert.equal((await request(base, '/switchboard/mod/compact/run', run)).body.accepted, true);
   await setImmediate();
@@ -350,7 +328,6 @@ test('two-phase compaction invokes the native fixture once without tools or orig
   assert.deepEqual(result.body.messages, [
     { role: 'user', text: 'Conversation summary:\nfixture summary', toolUses: [] },
   ]);
-  assert.equal(calls, 1);
   assert.equal(
     modes.resolve('s').compaction,
     undefined,

@@ -14,7 +14,7 @@ import {
   ZEN_MODELS,
   ZEN_WORKERS,
 } from '../src/providers/opencode/models.ts';
-import { removeTemporary } from '../temporary.ts';
+import { removeTemporary } from './temporary.ts';
 
 function hostAuthOptions(dataHome: string) {
   const env: NodeJS.ProcessEnv = { OPENCODE_API_KEY: undefined };
