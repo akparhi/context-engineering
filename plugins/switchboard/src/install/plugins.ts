@@ -4,7 +4,7 @@ import { promisify } from 'node:util';
 
 import { executableInvocation } from '../gateway/executable.ts';
 
-const MARKETPLACE = 'switchboard';
+const MARKETPLACE = 'akparhi';
 const PROVIDERS = ['openai', 'zen'] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
@@ -65,7 +65,7 @@ export async function installedPlugins(
   for (const plugin of plugins) {
     if (
       plugin.enabled &&
-      plugin.id.endsWith(`@${MARKETPLACE}`) &&
+      plugin.id === `switchboard@${MARKETPLACE}` &&
       Array.isArray(plugin.errors) &&
       plugin.errors.length
     ) {

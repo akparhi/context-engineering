@@ -4,10 +4,11 @@ This product includes software developed by greenpolo
 (https://github.com/greenpolo/cc-multi-cli-plugin), Copyright 2026 greenpolo,
 licensed under the Apache License, Version 2.0.
 
-Modifications from the upstream work: support reduced to the Codex (OpenAI) and
-OpenCode Zen providers; the Cursor, Antigravity and Grok integrations removed;
-runtime ported from Node to Bun; a curated static model catalog and
-effort-suffixed model ids added.
+Modifications from the upstream work: rebranded from Multi to Switchboard;
+the Cursor, Antigravity and Grok integrations and the gpt-5.6-terra model
+removed; OpenAI models moved to the gpt-6 ids (gpt-6-astra, gpt-6-sol,
+gpt-6-luna); pinned reasoning-effort model rows with short picker labels added;
+toolchain moved from Node, npm and Biome to Bun and oxlint.
 
 Upstream acknowledgments, preserved from the original NOTICE:
 

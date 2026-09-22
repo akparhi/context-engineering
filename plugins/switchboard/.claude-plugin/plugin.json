@@ -1,5 +1,11 @@
 {
+  "version": "0.2.0",
+  "author": {
+    "name": "akparhi"
+  },
+  "license": "Apache-2.0",
   "name": "switchboard",
-  "version": "0.1.0",
-  "description": "Codex and opencode-go models in the Claude Code model picker and as named subagents."
+  "description": "Shared Switchboard gateway, setup, status and reversible Claude startup integration.",
+  "skills": "./skills",
+  "hooks": "./hooks/hooks.json"
 }

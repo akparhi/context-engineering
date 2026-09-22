@@ -28,7 +28,7 @@ function windowsInvocation(pathname: string, args: string[], env: NodeJS.Process
   };
 }
 const setup = fileURLToPath(new URL('../src/setup.ts', import.meta.url));
-const marketplace = 'switchboard';
+const marketplace = 'akparhi';
 
 async function fixture(t: test.TestContext) {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'switchboard-install-'));

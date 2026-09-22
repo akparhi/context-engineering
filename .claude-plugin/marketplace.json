@@ -29,6 +29,18 @@
       },
       "category": "development",
       "keywords": ["mcp", "reasoning", "architecture", "delegation"]
+    },
+    {
+      "name": "switchboard",
+      "source": "./plugins/switchboard",
+      "description": "Shared Switchboard gateway, setup, status and reversible Claude startup integration.",
+      "version": "0.2.0",
+      "author": {
+        "name": "akparhi"
+      },
+      "license": "Apache-2.0",
+      "category": "development",
+      "keywords": ["gateway", "openai", "codex", "models", "subagents"]
     }
   ]
 }

@@ -229,7 +229,7 @@ export async function pluginPermissions(
     if (typeof plugin.id !== 'string' || typeof plugin.installPath !== 'string') {
       throw new Error('Invalid enabled Claude plugin');
     }
-    switchboardEnabled ||= plugin.id === 'switchboard@switchboard';
+    switchboardEnabled ||= plugin.id === 'switchboard@akparhi';
     Object.assign(permissions, await pluginAgents(plugin.installPath, plugin.id.split('@')[0]));
   }
   return { permissions, switchboardEnabled };

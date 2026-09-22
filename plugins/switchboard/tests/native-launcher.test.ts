@@ -49,7 +49,7 @@ test('launcher preserves native auth, disables unavailable auto mode, and merges
     path.join(cwd, 'bin'),
     `#!/usr/bin/env node
 const fs=require('node:fs');const args=process.argv.slice(2);
-if(args.includes('plugin')&&args.includes('list')){console.log(process.env.TEST_PLUGIN==='enabled'?JSON.stringify([{id:'switchboard@switchboard',enabled:true,installPath:process.cwd()}]):'[]');process.exit(0)}
+if(args.includes('plugin')&&args.includes('list')){console.log(process.env.TEST_PLUGIN==='enabled'?JSON.stringify([{id:'switchboard@akparhi',enabled:true,installPath:process.cwd()}]):'[]');process.exit(0)}
 if(args[0]==='--version'){console.log(process.env.TEST_CLAUDE_VERSION??'2.1.272');process.exit(0)}
 const result=(value)=>{const base=process.env.SWITCHBOARD_MOD_GATEWAY_URL;if(!base){console.log(value);return}const url=new URL(base+'/switchboard/mod/session');const req=require('node:http').request(url,{method:'POST',headers:{'content-type':'application/json','x-switchboard-gateway-token':process.env.SWITCHBOARD_GATEWAY_TOKEN}},()=>console.log(value));req.on('error',()=>console.log(value));req.end(JSON.stringify({sessionId:'fixture',event:'start'}));};
 if(args[0]==='auth'){if(process.env.TEST_AUTH==='malformed'){console.log('not-json');process.exit(0)}if(process.env.TEST_AUTH==='error'){process.exit(2)}if(process.env.TEST_AUTH==='missing'){console.log('{}');process.exit(0)}process.stdout.write(JSON.stringify({loggedIn:process.env.TEST_AUTH==='yes'}));process.exitCode=process.env.TEST_AUTH==='yes'?0:1}else{
