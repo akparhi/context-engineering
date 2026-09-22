@@ -480,6 +480,18 @@ function providerToolResponse(url: string, id: string, command: string, stream: 
       { headers: { 'content-type': 'text/event-stream', 'x-provider-test': 'preserved' } },
     );
   }
+  // Zen DeepSeek uses chat/completions; respond with OpenAI chat SSE tool-call format.
+  if (url.includes('opencode.ai/zen')) {
+    const args = JSON.stringify({ command });
+    return new Response(
+      [
+        `data: ${JSON.stringify({ id: 'chatcmpl-zen', choices: [{ index: 0, delta: { role: 'assistant', tool_calls: [{ index: 0, id, type: 'function', function: { name: 'Bash', arguments: '' } }] }, finish_reason: null }] })}\n\n`,
+        `data: ${JSON.stringify({ id: 'chatcmpl-zen', choices: [{ index: 0, delta: { tool_calls: [{ index: 0, function: { arguments: args } }] }, finish_reason: null }] })}\n\n`,
+        `data: ${JSON.stringify({ id: 'chatcmpl-zen', choices: [{ index: 0, delta: {}, finish_reason: 'tool_calls' }], usage: { prompt_tokens: 10, completion_tokens: 5 } })}\n\n`,
+        'data: [DONE]\n\n',
+      ].join(''),
+    );
+  }
   const item = {
     type: 'function_call',
     call_id: id,
@@ -637,7 +649,7 @@ test('authenticated mixed-provider review follows main and headerless worker ori
   const gateway = await mixedReviewGateway(t);
   const claude = 'claude-sonnet-5';
   const gpt = 'switchboard/openai/gpt-6-astra';
-  const zen = 'switchboard/zen/gpt-5.6-luna';
+  const zen = 'switchboard/zen/deepseek-v4.1-flash';
   assert.deepEqual(
     await (await gateway.prepare(claude, 'node parent.js', undefined, true)).json(),
     {},
@@ -695,7 +707,7 @@ test('Claude-only Auto passes native classifier formats and fallback models thro
 test('native Claude classifier retries survive an unrelated Zen context', async (t) => {
   const gateway = await mixedReviewGateway(t);
   await gateway.prepare('claude-sonnet-5', 'node claude-worker.js', 'claude-worker');
-  await gateway.prepare('switchboard/zen/gpt-5.6-luna', 'node zen.js');
+  await gateway.prepare('switchboard/zen/deepseek-v4.1-flash', 'node zen.js');
   const body = request(1, JSON.stringify({ session_id: 'mixed' }), 'node claude-worker.js');
   const instruction = body.messages[0].content.at(-1);
   assert(instruction);

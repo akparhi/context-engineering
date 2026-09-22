@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { createOpenAIApproval, discoverOpenAIReviewer } from './providers/codex/approval.ts';
 import { readCodexAuth } from './providers/codex/auth.ts';
-import { MODELS, OPENAI_WORKERS } from './providers/codex/models.ts';
+import { CATALOG } from './catalog.ts';
 import type { Effort } from './providers/codex/responses.ts';
 import { readZenKey } from './providers/opencode/auth.ts';
 import {
@@ -447,8 +447,17 @@ export function workerDefinitions(
   selectedModels?: readonly string[],
 ) {
   const zen = zenSignedIn;
+  // yagni: Task 8 rewrites this block wholesale; minimum shim to typecheck
+  const openaiWorkers = codexSignedIn
+    ? Object.fromEntries(
+        CATALOG.filter((e) => e.source === 'openai').map((e) => [
+          e.id,
+          { model: e.id, effort: 'medium' as const },
+        ]),
+      )
+    : {};
   const agents: Record<string, AgentDefinition> = Object.fromEntries(
-    Object.entries(codexSignedIn ? OPENAI_WORKERS : {}).map(([name, { model, effort }]) => [
+    Object.entries(openaiWorkers).map(([name, { model, effort }]) => [
       name,
       {
         description: `${model}, ${effort} reasoning. Native coding, investigation, and review.`,
@@ -786,9 +795,9 @@ function pickerSettings(codexSignedIn: boolean, zen: boolean, fullCatalog = fals
   const settings: LaunchSettings = {
     modelPicker: {
       options: [
-        ...Object.values(codexSignedIn ? MODELS : {}).map((model) => ({
-          model: `switchboard/openai/${model}`,
-          label: model,
+        ...(codexSignedIn ? CATALOG.filter((e) => e.source === 'openai') : []).map((entry) => ({
+          model: `switchboard/openai/${entry.id}`,
+          label: entry.id,
           description: 'OpenAI subscription · native Claude Code harness',
           behavesAs: pickerProfile(true),
         })),

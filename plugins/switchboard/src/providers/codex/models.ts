@@ -1,25 +1,12 @@
+// Compatibility stub. MODELS and OPENAI_WORKERS are retired; CATALOG in src/catalog.ts
+// is the source of truth. Tests in native-gateway.test.ts that reference OPENAI_WORKERS
+// will fail on assertion; Task 10 retires those tests.
 import type { Effort } from './responses.ts';
 
-export const MODELS = {
-  'openai-native': 'gpt-6-astra',
-  'openai-sol': 'gpt-5.6-sol',
-  'openai-terra': 'gpt-5.6-terra',
-  'openai-luna': 'gpt-5.6-luna',
-};
-
-/** A registered native worker: the OpenAI model it runs on and its reasoning effort. */
 export interface Worker {
   model: string;
   effort: Effort;
 }
 
-export const OPENAI_WORKERS: Readonly<Record<string, Worker>> = Object.freeze(
-  Object.fromEntries(
-    Object.entries(MODELS).flatMap(([name, model]) =>
-      (['', 'low', 'medium', 'high'] as const).map((level) => [
-        level ? `${name}-${level}` : name,
-        { model, effort: level || 'medium' },
-      ]),
-    ),
-  ),
-);
+export const MODELS: Record<string, string> = {};
+export const OPENAI_WORKERS: Readonly<Record<string, Worker>> = Object.freeze({});

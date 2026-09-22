@@ -6,7 +6,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { CodexAuthError, codexRequest } from '../providers/codex/auth.ts';
 import { openaiInstructions } from '../providers/codex/instructions.ts';
-import { MODELS } from '../providers/codex/models.ts';
+import { CATALOG } from '../catalog.ts';
 import type { ResponsesRequest } from '../providers/codex/responses.ts';
 import { forAnthropic, fromResponses, toResponses } from '../providers/codex/responses.ts';
 import { readCodexUsage } from '../providers/codex/usage.ts';
@@ -891,7 +891,7 @@ function prepareZenRequest(exchange: ProviderRequest, fallbackSession: string) {
 function openaiRequest(exchange: ProviderRequest, extModel: string): ResponsesRequest {
   const { req, body, url } = exchange;
   try {
-    const model = Object.values(MODELS).find((slug) => extModel === `switchboard/openai/${slug}`);
+    const model = CATALOG.filter((e) => e.source === 'openai').map((e) => e.id).find((slug) => extModel === `switchboard/openai/${slug}`);
     if (!model) {
       throw new Error('Unknown native OpenAI model');
     }
