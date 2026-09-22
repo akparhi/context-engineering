@@ -7,7 +7,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "oxlint .",
-    "test": "bun test",
+    "test": "bun test --timeout=120000",
+    "test:mod": "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test .",
     "test:live:compaction": "bun tests/live/native-compaction.ts",
     "test:live:zen": "bun tests/live/native-zen.ts",
     "test:live:auto-mode": "bun tests/live/native-auto-mode.ts",

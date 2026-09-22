@@ -131,13 +131,9 @@ async function core(directory: string, name: string) {
   return root;
 }
 
-function plugins(root: string) {
-  return [
-    // The single switchboard plugin contains both providers; there are no per-provider entries.
-    { id: `switchboard@${marketplace}`, enabled: true, scope: 'user', installPath: root },
-    // An entry for an unknown/disabled plugin to prove discovery ignores it.
-    { id: `other-plugin@${marketplace}`, enabled: false, scope: 'user', installPath: path.join(root, 'other') },
-  ];
+function plugins(root: string, enabled = true) {
+  // The single switchboard plugin contains both providers; there are no per-provider entries.
+  return [{ id: `switchboard@${marketplace}`, enabled, scope: 'user', installPath: root }];
 }
 
 test('setup preserves shell content, is repeatable, and uninstall survives plugin removal', async (t) => {
@@ -179,6 +175,8 @@ test('wrapper follows installed core updates and enables only selected providers
   await rm(old, { recursive: true });
   await writeFile(f.listing, JSON.stringify(plugins(next)));
   assert.match(JSON.parse((await f.invoke('switchboard', [])).stdout).root, /core-v2/);
+  await writeFile(f.listing, JSON.stringify(plugins(next, false)));
+  assert.equal(JSON.parse((await f.invoke('switchboard', [])).stdout).native, true);
 });
 
 test('setup renames the launch command, persists picker models, and keeps them across reruns', async (t) => {

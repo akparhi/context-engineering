@@ -14,7 +14,7 @@ async function temporaryDirectory(t: test.TestContext, prefix: string): Promise<
 }
 
 test('acquires, excludes concurrent owners, and releases a state lock', async (t) => {
-  const directory = await temporaryDirectory(t, 'multi-state-lock-');
+  const directory = await temporaryDirectory(t, 'switchboard-state-lock-');
   const file = path.join(directory, 'session.lock');
   const release = await lockStateFile(file);
   const metadata = JSON.parse(await readFile(file, 'utf8')) as { pid: number; token: string };
@@ -27,14 +27,14 @@ test('acquires, excludes concurrent owners, and releases a state lock', async (t
 });
 
 test('legacy directory locks remain explicit recovery evidence', async (t) => {
-  const directory = await temporaryDirectory(t, 'multi-legacy-lock-');
+  const directory = await temporaryDirectory(t, 'switchboard-legacy-lock-');
   const file = path.join(directory, 'session.lock');
   await mkdir(file);
   await assert.rejects(lockStateFile(file), /legacy interrupted lock/);
 });
 
 test('waits for an owner that is still writing its marker', async (t) => {
-  const directory = await temporaryDirectory(t, 'multi-partial-lock-');
+  const directory = await temporaryDirectory(t, 'switchboard-partial-lock-');
   const file = path.join(directory, 'session.lock');
   await writeFile(file, '', { mode: 0o600 });
   const writing = new Promise<void>((resolve, reject) => {
@@ -50,7 +50,7 @@ test('waits for an owner that is still writing its marker', async (t) => {
 });
 
 test('does not take over a lock recorded on another hostname', async (t) => {
-  const directory = await temporaryDirectory(t, 'multi-foreign-lock-');
+  const directory = await temporaryDirectory(t, 'switchboard-foreign-lock-');
   const file = path.join(directory, 'session.lock');
   await writeFile(
     file,
@@ -61,7 +61,7 @@ test('does not take over a lock recorded on another hostname', async (t) => {
 });
 
 test('takes over a lock whose recorded owner is no longer alive', async (t) => {
-  const directory = await temporaryDirectory(t, 'multi-stale-lock-');
+  const directory = await temporaryDirectory(t, 'switchboard-stale-lock-');
   const file = path.join(directory, 'session.lock');
   await writeFile(
     file,
@@ -73,7 +73,7 @@ test('takes over a lock whose recorded owner is no longer alive', async (t) => {
 });
 
 test('releases after the holder process is killed', { timeout: 10000 }, async (t) => {
-  const directory = await temporaryDirectory(t, 'multi-crash-lock-');
+  const directory = await temporaryDirectory(t, 'switchboard-crash-lock-');
   const file = path.join(directory, 'session.lock');
   const module = new URL('../src/gateway/state-lock.ts', import.meta.url);
   const child = spawn(
@@ -104,7 +104,7 @@ test('releases after the holder process is killed', { timeout: 10000 }, async (t
 });
 
 test('bounds repeated stale-lock takeover races', async (t) => {
-  const directory = await temporaryDirectory(t, 'multi-lock-budget-');
+  const directory = await temporaryDirectory(t, 'switchboard-lock-budget-');
   const file = path.join(directory, 'session.lock');
   await writeFile(
     file,
@@ -116,7 +116,7 @@ test('bounds repeated stale-lock takeover races', async (t) => {
 });
 
 test('bounds transient Windows unlink failures during release', async (t) => {
-  const directory = await temporaryDirectory(t, 'multi-lock-unlink-');
+  const directory = await temporaryDirectory(t, 'switchboard-lock-unlink-');
   const file = path.join(directory, 'session.lock');
   let failures = 1;
   const release = await lockStateFile(file, {
@@ -136,7 +136,7 @@ test('bounds transient Windows unlink failures during release', async (t) => {
 });
 
 test('supports the Windows lock branch through the injected platform', async (t) => {
-  const directory = await temporaryDirectory(t, 'multi-win32-lock-');
+  const directory = await temporaryDirectory(t, 'switchboard-win32-lock-');
   const file = path.join(directory, 'session.lock');
   const release = await lockStateFile(file, { platform: 'win32' });
   await assert.rejects(lockStateFile(file, { platform: 'win32' }), /locked/);
@@ -146,7 +146,7 @@ test('supports the Windows lock branch through the injected platform', async (t)
 });
 
 test('recovers when a Windows delete-pending marker vanishes between open and stat', async (t) => {
-  const directory = await temporaryDirectory(t, 'multi-lock-delete-pending-');
+  const directory = await temporaryDirectory(t, 'switchboard-lock-delete-pending-');
   const file = path.join(directory, 'session.lock');
   let openAttempts = 0;
   const release = await lockStateFile(file, {

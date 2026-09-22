@@ -382,7 +382,7 @@ const modSessionStartTimeoutMs = Number(process.env.SWITCHBOARD_MOD_START_TIMEOU
 function awaitModSessionStart(): Promise<void> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      process.off('multi-mod-session-start', ready);
+      process.off('switchboard-mod-session-start', ready);
       reject(
         new Error(
           'Claude Code 2.1.272 or newer with loaded function hooks is required; the Switchboard mod did not acknowledge session.start.',
@@ -393,7 +393,7 @@ function awaitModSessionStart(): Promise<void> {
       clearTimeout(timer);
       resolve();
     };
-    process.once('multi-mod-session-start', ready);
+    process.once('switchboard-mod-session-start', ready);
   });
 }
 

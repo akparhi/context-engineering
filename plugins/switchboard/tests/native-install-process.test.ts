@@ -7,7 +7,7 @@ const probe = ['-e', 'process.exit(process.env.PATH ? 0 : 3)'];
 
 test('run inherits the parent environment when no options are supplied', async () => {
   // Issue #18: an empty options object was read as an empty env map, so
-  // `multi login openai` spawned `codex` without PATH and failed with ENOENT.
+  // `switchboard-ctl login openai` spawned `codex` without PATH and failed with ENOENT.
   assert.equal(await run(process.execPath, probe), 0);
 });
 

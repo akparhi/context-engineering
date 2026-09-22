@@ -223,7 +223,7 @@ function sessionRoute(
     generation,
   });
   if (snapshot && value.event === 'start') {
-    process.emit('multi-mod-session-start');
+    process.emit('switchboard-mod-session-start');
   }
   return snapshot
     ? reply(res, { accepted: true, ...snapshot })

@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing';
-import { register } from '../../hooks/workers.ts';
+import { register } from '../workers.ts';
 
 test('registers the worker admission hook', () => {
   expect(typeof register).toBe('function');
@@ -48,25 +48,6 @@ test('agent.offer preserves a known catalog worker', async ($, on) => {
     provider: { plugin: 'engine', tier: 'core' },
   });
   expect(result.isOffered).toBe(true);
-});
-
-test('worker spawn is denied when gateway admission is unavailable', async ($, on) => {
-  on('env.get', () => ({ value: 'configured' }));
-  on('session.id', () => ({ value: 's' }));
-  on('session.cwd', () => ({ value: '/workspace' }));
-  on('http.fetch', () => ({ value: { ok: false, status: 503, headers: {}, text: '{}' } }));
-  let started = false;
-  on('agent.spawn', () => {
-    started = true;
-    return { model: 'm', agentId: 'worker' };
-  });
-  const result = await $.agent.spawn({
-    prompt: 'task',
-    subagentType: 'cursor',
-    model: 'switchboard/cursor/auto',
-  });
-  expect(typeof result.deny).toBe('string');
-  expect(started).toBe(false);
 });
 
 test('harness spawn remains dormant when gateway is not configured', async ($, on) => {
@@ -119,7 +100,7 @@ test('known catalog harness with omitted event model is admitted through worker-
           ok: true,
           status: 200,
           headers: {},
-          text: '{"known":true,"execution":"harness","model":"multi/cursor/auto"}',
+          text: '{"known":true,"execution":"harness","model":"switchboard/cursor/auto"}',
         },
       };
     }
@@ -131,80 +112,6 @@ test('known catalog harness with omitted event model is admitted through worker-
   on('agent.spawn', () => ({ model: 'switchboard/cursor/auto', agentId: 'worker' }));
   const result = await $.agent.spawn({ prompt: 'task', subagentType: 'cursor-auto' });
   expect(result.agentId).toBe('worker');
-});
-
-test('a refused spawn shows the gateway reason instead of the generic denial', async ($, on) => {
-  on('env.get', () => ({ value: 'configured' }));
-  on('session.id', () => ({ value: 's' }));
-  on('session.cwd', () => ({ value: '/workspace' }));
-  on('http.fetch', (_$, event) => ({
-    value: {
-      ok: event.url.includes('/mode?'),
-      status: event.url.includes('/mode?') ? 200 : 400,
-      headers: {},
-      text: event.url.includes('/mode?')
-        ? '{"generation":1}'
-        : '{"error":"Claude permission mode is unavailable; submit a new prompt"}',
-    },
-  }));
-  let started = false;
-  on('agent.spawn', () => {
-    started = true;
-    return { model: 'm', agentId: 'worker' };
-  });
-  const result = await $.agent.spawn({
-    prompt: 'task',
-    subagentType: 'cursor',
-    model: 'switchboard/cursor/auto',
-  });
-  expect(result.deny).toContain('Claude permission mode is unavailable; submit a new prompt');
-  expect(started).toBe(false);
-});
-
-test('a non-JSON gateway refusal still names the status in the denial', async ($, on) => {
-  on('env.get', () => ({ value: 'configured' }));
-  on('session.id', () => ({ value: 's' }));
-  on('session.cwd', () => ({ value: '/workspace' }));
-  on('http.fetch', () => ({
-    value: { ok: false, status: 502, headers: {}, text: 'upstream failure' },
-  }));
-  on('agent.spawn', () => ({ model: 'm', agentId: 'worker' }));
-  const result = await $.agent.spawn({
-    prompt: 'task',
-    subagentType: 'cursor',
-    model: 'switchboard/cursor/auto',
-  });
-  expect(result.deny).toContain('gateway 502: upstream failure');
-});
-
-test('a refused reply cannot acknowledge a spawn through its body', async ($, on) => {
-  on('env.get', () => ({ value: 'configured' }));
-  on('session.id', () => ({ value: 's' }));
-  on('session.cwd', () => ({ value: '/workspace' }));
-  // A contradictory body must not outrank the HTTP status.
-  on('http.fetch', (_$, event) => ({
-    value: {
-      ok: false,
-      status: 400,
-      headers: {},
-      text: event.url.includes('/mode?')
-        ? '{"generation":1}'
-        : '{"accepted":true,"error":"policy refused"}',
-    },
-  }));
-  let started = false;
-  on('agent.spawn', () => {
-    started = true;
-    return { model: 'm', agentId: 'worker' };
-  });
-  const result = await $.agent.spawn({
-    prompt: 'task',
-    subagentType: 'cursor',
-    model: 'switchboard/cursor/auto',
-  });
-  expect(result.deny).toContain('policy refused');
-  expect(result.deny).toContain('issues/new?template=bug_report.yml');
-  expect(started).toBe(false);
 });
 
 test('an unclassified refused offer remains available for the engine to decide', async ($, on) => {

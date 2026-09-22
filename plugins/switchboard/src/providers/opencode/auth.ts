@@ -103,7 +103,7 @@ export async function saveZenKey(key: string, options: ZenAuthPathOptions = {}):
   await mkdir(pathApi.dirname(file), { recursive: true, mode: 0o700 });
   const temporary = pathApi.join(
     pathApi.dirname(file),
-    `${pathApi.basename(file)}.multi-${process.pid}.tmp`,
+    `${pathApi.basename(file)}.switchboard-${process.pid}.tmp`,
   );
   await writeFile(
     temporary,

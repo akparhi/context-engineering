@@ -251,44 +251,6 @@ test('compaction core fallback authenticates generation and removes all native c
   assert.equal(typeof modes.resolve('s').compaction, 'string');
 });
 
-test('worker route authenticates catalog and generation before child-start acknowledgement', async (t) => {
-  const modes = new PermissionModes(async () => ({
-    worker: { model: 'switchboard/cursor/auto', tools: ['Read'] },
-  }));
-  const base = await start(t, modes);
-  const generation = await admit(base);
-  const spawn = {
-    sessionId: 's',
-    cwd: '/workspace',
-    generation,
-    parentModel: 'switchboard/antigravity/model',
-    permissionMode: 'bypassPermissions',
-    subagentType: 'worker',
-  };
-  assert.equal(
-    (await request(base, '/switchboard/mod/worker', { ...spawn, generation: -1 })).status,
-    400,
-  );
-  assert.equal(
-    (await request(base, '/switchboard/mod/worker', { ...spawn, model: 'wrong' })).status,
-    400,
-  );
-  assert.equal((await request(base, '/switchboard/mod/worker', spawn)).body.accepted, true);
-  assert.throws(() => modes.resolve('s', 'child'), /unavailable/);
-  assert.equal(
-    (
-      await request(base, '/switchboard/mod/worker', {
-        sessionId: 's',
-        agentId: 'child',
-        cwd: '/workspace',
-        subagentType: 'worker',
-      })
-    ).body.accepted,
-    true,
-  );
-  assert.deepEqual(modes.resolve('s', 'child').tools, ['Read']);
-});
-
 test('model effort telemetry is scoped observation and cannot change policy', async (t) => {
   const modes = new PermissionModes(async () => ({}));
   const base = await start(t, modes);

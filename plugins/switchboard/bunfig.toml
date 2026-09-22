@@ -1,0 +1,3 @@
+[test]
+# Hook tests under hooks/tests run in the Claude engine via `bun run test:mod`, as upstream.
+root = "tests"
