@@ -10,6 +10,7 @@
 
 # Working Principles
 
+- Once you have answered something, treat that answer as done. On later turns, focus your thinking on what the user is asking now, and don't go back over an earlier answer unless the user asks about it or points out a problem with it.
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
 - **IMPORTANT RULES**:
   - If available, use codex for adversarial review of research, specs and implementation plans.

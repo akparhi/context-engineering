@@ -4,9 +4,9 @@
   "syncClaudeAiPlugins": false,
   "env": {
     "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-1[1m]",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5[1m]",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
-    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "256000",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "240000",
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
     "ENABLE_LSP_TOOL": "1",
@@ -128,12 +128,16 @@
   "disableWorkflows": true,
   "disableArtifact": true,
   "enabledPlugins": {
+    "agents-md@builtin": false,
+    "sec-default@builtin": false,
+    "telemetry@builtin": false,
     "context7@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "context-mode@context-mode": true,
     "codex@openai-codex": true,
     "commit-commands@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": true
+    "superpowers@claude-plugins-official": true,
+    "switchboard@akparhi": true
   },
   "extraKnownMarketplaces": {
     "context-mode": {
@@ -148,10 +152,10 @@
         "repo": "openai/codex-plugin-cc"
       }
     },
-    "cc-multi-cli-plugin": {
+    "akparhi": {
       "source": {
-        "source": "github",
-        "repo": "greenpolo/cc-multi-cli-plugin"
+        "source": "directory",
+        "path": "/Users/akparhi/Projects/Home/context-engineering"
       }
     }
   },

@@ -1,6 +1,6 @@
 #:schema https://developers.openai.com/codex/config-schema.json
 # Personal default; machine-specific desktop preferences and trust entries below.
-model = "gpt-6-astra"
+model = "gpt-6-sol"
 model_reasoning_effort = "low"
 model_verbosity = "low"
 service_tier = "default"
