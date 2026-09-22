@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 import { executableInvocation } from '../gateway/executable.ts';
 
 const MARKETPLACE = 'switchboard';
-const PROVIDERS = ['codex', 'opencode'] as const;
+const PROVIDERS = ['openai', 'zen'] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
 interface Plugin {
@@ -74,7 +74,7 @@ export async function installedPlugins(
       );
     }
   }
-  const self = plugins.filter((plugin) => plugin.id.startsWith(`switchboard@`) && plugin.enabled);
+  const self = plugins.filter((plugin) => plugin.id === `switchboard@${MARKETPLACE}` && plugin.enabled);
   // Startup executes before the workspace trust prompt. Only a user-installed
   // plugin may supply executable code here; project plugins are fixed opt-ins.
   const personalSelf = self.filter((plugin) => plugin.scope === 'user');
@@ -85,7 +85,7 @@ export async function installedPlugins(
     return { root: undefined, providers: [] as Provider[] };
   }
   // Both providers ship inside this plugin; there is nothing further to discover.
-  return { root: personalSelf[0]?.installPath, providers: ['codex', 'opencode'] as Provider[] };
+  return { root: personalSelf[0]?.installPath, providers: ['openai', 'zen'] as Provider[] };
 }
 
 export function settingsArguments(args: string[]): string[] {

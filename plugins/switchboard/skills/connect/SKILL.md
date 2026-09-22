@@ -8,7 +8,7 @@ allowed-tools: Bash
 Tell the user to run this command in a separate terminal:
 
 ```sh
-"$HOME/.local/share/switchboard/bin/switchboard-ctl" connect opencode
+"$HOME/.local/share/switchboard/bin/switchboard-ctl" connect zen
 ```
 
 The helper prompts privately and saves the key in OpenCode's auth store. Tell the
