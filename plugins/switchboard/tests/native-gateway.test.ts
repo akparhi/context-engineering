@@ -60,9 +60,9 @@ const body: MessagesRequest = {
 const sse = (list: SseEvent[]) =>
   list.map((event) => `event: ${event.type}\r\ndata: ${JSON.stringify(event)}\r\n\r\n`).join('');
 const stream = (list: SseEvent[]) => {
-  const responseBody = new Response(sse(list)).body;
-  assert(responseBody, 'Response body');
-  return responseBody;
+  const body = new Response(sse(list)).body;
+  assert(body, 'Response body');
+  return body;
 };
 function events(item: SseEvent, deltas: SseEvent[] = []): SseEvent[] {
   return [
@@ -732,8 +732,8 @@ test('external route isolates provider credentials and handles simultaneous work
     assert.equal(textOf(result), 'Done');
     assert.equal(result.stop_reason, 'end_turn');
   }
-  assert.deepEqual(ids.toSorted(), ['a', 'b']);
-  assert.deepEqual(models.toSorted(), [...slugs].toSorted());
+  assert.deepEqual(ids.sort(), ['a', 'b']);
+  assert.deepEqual(models.sort(), [...slugs].sort());
 });
 
 test('browser, unauthenticated and unregistered external requests never reach a provider', async (t) => {
@@ -1183,10 +1183,6 @@ test('invalid request shapes fail locally and legacy thinking budgets respect ex
   );
 });
 
-async function* oversized() {
-  yield new TextEncoder().encode(`data: ${'x'.repeat(8 * 1024 * 1024)}`);
-}
-
 test('multiple text parts, unknown events, and oversized SSE frames have explicit outcomes', async () => {
   const result = await fromResponses(
     stream(
@@ -1207,6 +1203,9 @@ test('multiple text parts, unknown events, and oversized SSE frames have explici
     model,
   );
   assert.equal(textOf(result), 'firstsecond');
+  async function* oversized() {
+    yield new TextEncoder().encode(`data: ${'x'.repeat(8 * 1024 * 1024)}`);
+  }
   await assert.rejects(async () => {
     for await (const _ of readSse(oversized())) {
     }
@@ -1247,18 +1246,16 @@ test('oversized uploads receive HTTP 413 while the client is still streaming', a
   assert.equal(await response.text(), 'Request too large');
 });
 
-const anthropicOrOpenAiUpstream: GatewayFetch = async (url) =>
-  url.includes('api.anthropic.com')
-    ? new Response('{}', { headers: { 'content-type': 'application/json' } })
-    : new Response(sse(textEvents));
-
 test('OpenAI has no implicit request deadline while explicit limits and Claude passthrough remain bounded', async (t) => {
   const durations: number[] = [];
   t.mock.method(AbortSignal, 'timeout', (ms: number) => {
     durations.push(ms);
     return new AbortController().signal;
   });
-  const upstream = anthropicOrOpenAiUpstream;
+  const upstream: GatewayFetch = async (url) =>
+    url.includes('api.anthropic.com')
+      ? new Response('{}', { headers: { 'content-type': 'application/json' } })
+      : new Response(sse(textEvents));
   const ordinary = await gateway(t, upstream);
   assert.equal((await ordinary(body)).status, 200);
   assert.deepEqual(durations, [], 'Astra must not inherit an absolute three-minute timer');

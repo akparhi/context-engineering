@@ -20,7 +20,7 @@ test('provider dashboard reads every enabled provider and preserves unavailable 
     zen: reader('zen'),
   });
   const result = await dashboard.read('owned', empty());
-  assert.deepEqual(calls.toSorted(), ['openai:owned', 'zen:owned']);
+  assert.deepEqual(calls.sort(), ['openai:owned', 'zen:owned']);
   assert.deepEqual(
     result.providers.map((row) => row.status),
     ['ready', 'ready'],

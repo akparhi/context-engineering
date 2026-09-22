@@ -151,7 +151,7 @@ function updatePane(previous: UsagePaneProps, action: string, response: unknown)
   return {
     ...previous,
     error: undefined,
-    receiptLines: response.receipts.slice(-20).toReversed().flatMap(receiptLines),
+    receiptLines: response.receipts.slice(-20).reverse().flatMap(receiptLines),
   };
 }
 function receiptLines(value: unknown): string[] {

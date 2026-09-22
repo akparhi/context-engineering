@@ -59,13 +59,13 @@ test('Claude completion does not wait on Switchboard accounting or clear another
     };
   });
   on('turn.complete', (_$, event) => ({ text: event.answer }));
-  for await (const chunk of $.turn.step({
+  for await (const _chunk of $.turn.step({
     turnId: 'native-turn',
     index: 0,
     model: 'claude-sonnet-5',
     messageCount: 1,
   })) {
-    void chunk; // drain the stream; the hook observes each step event
+    // Observe the same completed inference step as the engine.
   }
   const result = await $.turn.complete({
     turnId: 'native-turn',
@@ -100,14 +100,14 @@ test('a completed harness child retains its provider for compaction between turn
   });
   on('turn.complete', (_$, event) => ({ text: event.answer }));
   on('session.compact', () => ({ skip: 'core compaction' }));
-  for await (const chunk of $.turn.step({
+  for await (const _chunk of $.turn.step({
     turnId: 't',
     agentId: 'child',
     index: 0,
     model: 'switchboard/cursor/auto',
     messageCount: 1,
   })) {
-    void chunk; // drain the stream; the hook retains the model observed during inference
+    // Retain the model observed during inference.
   }
   await $.turn.complete({
     turnId: 't',

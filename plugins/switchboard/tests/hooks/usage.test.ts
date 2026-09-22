@@ -98,14 +98,14 @@ test('worker completion awaits accounting and preserves the engine answer', asyn
       usage: null,
     };
   });
-  for await (const chunk of $.turn.step({
+  for await (const _chunk of $.turn.step({
     turnId: 'turn',
     index: 0,
     agentId: 'worker',
     model: 'switchboard/openai/gpt-6-astra',
     messageCount: 1,
   })) {
-    void chunk; // drain the stream; let the model step complete before turn.complete fires
+    // Let the model step complete before the engine emits turn.complete.
   }
   const result = await $.turn.complete({
     turnId: 'turn',

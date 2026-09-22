@@ -313,7 +313,7 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
     ['switchboard/zen/big-pickle', 'switchboard/zen/glm-5.2'],
   );
   assert.deepEqual(filtered.models, ['switchboard/zen/big-pickle']);
-  assert.deepEqual(filtered.agents.toSorted(), ['zen-big-pickle', 'zen-glm-5.2']);
+  assert.deepEqual(filtered.agents.sort(), ['zen-big-pickle', 'zen-glm-5.2']);
   const outsideDefaults = JSON.parse((await launchFiltered('switchboard/zen/kimi-k2.7-code')).stdout);
   assert.deepEqual(
     outsideDefaults.settings.modelPicker.options.map((option: { model: string }) => option.model),

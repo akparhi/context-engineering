@@ -148,31 +148,6 @@ interface ProviderRequest {
   startStream: () => void;
 }
 
-function matchesBashAction(
-  candidate: { tool: PendingApprovalTool; context: ApprovalContext },
-  action: unknown,
-): boolean {
-  if (
-    !isRecord(candidate.tool.input) ||
-    typeof candidate.tool.input.command !== 'string' ||
-    typeof action !== 'string'
-  ) {
-    return false;
-  }
-  if (candidate.tool.input.command === action) {
-    return true;
-  }
-  // Claude's classifier omits its redundant current-workspace `cd` prefix.
-  const cwd =
-    typeof candidate.context.cwd === 'string'
-      ? approvalCwdForComparison(candidate.context.cwd)
-      : undefined;
-  return (
-    cwd !== undefined &&
-    candidate.tool.input.command.replaceAll('\\', '/') === `cd ${cwd} && ${action}`
-  );
-}
-
 export function createNativeGateway({
   token,
   enabledProviders,
@@ -239,6 +214,30 @@ export function createNativeGateway({
     // carry no correlatable tool action.
     return contexts.length > 0 && contexts.every((context) => !providerOwnedReview(context.model));
   }
+  const matchesBashAction = (
+    candidate: { tool: PendingApprovalTool; context: ApprovalContext },
+    action: unknown,
+  ) => {
+    if (
+      !isRecord(candidate.tool.input) ||
+      typeof candidate.tool.input.command !== 'string' ||
+      typeof action !== 'string'
+    ) {
+      return false;
+    }
+    if (candidate.tool.input.command === action) {
+      return true;
+    }
+    // Claude's classifier omits its redundant current-workspace `cd` prefix.
+    const cwd =
+      typeof candidate.context.cwd === 'string'
+        ? approvalCwdForComparison(candidate.context.cwd)
+        : undefined;
+    return (
+      cwd !== undefined &&
+      candidate.tool.input.command.replaceAll('\\', '/') === `cd ${cwd} && ${action}`
+    );
+  };
   function permissionHook(parsed: Record<string, unknown>) {
     const id = typeof parsed.tool_use_id === 'string' ? parsed.tool_use_id : '';
     const pending = pendingTools.get(id);
@@ -306,9 +305,9 @@ export function createNativeGateway({
   const compactions = new ModCompactions(async (_request) => {
     throw new Error('Precomputed summaries require a native harness model');
   });
-  async function handleOpenAI(exchange: ProviderRequest, extModel: string) {
+  async function handleOpenAI(exchange: ProviderRequest, externalModel: string) {
     const { req, res, body, url, signal, abort, agentId, emit } = exchange;
-    const request = openaiRequest(exchange, extModel);
+    const request = openaiRequest(exchange, externalModel);
     request.prompt_cache_key = createHash('sha256')
       .update(
         JSON.stringify([
@@ -362,7 +361,7 @@ export function createNativeGateway({
     exchange.startStream();
     const result = await fromResponses(
       upstream.body,
-      extModel,
+      externalModel,
       body.stream ? emit : undefined,
       { toolNames, stopSequences: body.stop_sequences, inputTokens: estimateInputTokens(request) },
     );
@@ -638,7 +637,7 @@ export function createNativeGateway({
     let sourceModel = '';
     let sourceSession = '';
     let sourceScope: string | undefined;
-    const toolObserver = new ToolObserver((tool) => remember(tool));
+    const observer = new ToolObserver((tool) => remember(tool));
     const remember = (tool: { id: string; name: string; input: unknown }) => {
       if (!guardAuto || !sourceSession) {
         return;
@@ -670,7 +669,7 @@ export function createNativeGateway({
     };
     const emit: Emit = (type, value) => {
       if (guardAuto) {
-        toolObserver.event({ type, ...value });
+        observer.event({ type, ...value });
       }
       return res.write(`event: ${type}\ndata: ${JSON.stringify({ type, ...value })}\n\n`);
     };
@@ -884,10 +883,10 @@ function prepareZenRequest(exchange: ProviderRequest, fallbackSession: string) {
   }
 }
 
-function openaiRequest(exchange: ProviderRequest, extModel: string): ResponsesRequest {
+function openaiRequest(exchange: ProviderRequest, externalModel: string): ResponsesRequest {
   const { req, body, url } = exchange;
   try {
-    const model = CATALOG.filter((e) => e.source === 'openai').map((e) => e.id).find((slug) => extModel === `switchboard/openai/${slug}`);
+    const model = CATALOG.filter((e) => e.source === 'openai').map((e) => e.id).find((slug) => externalModel === `switchboard/openai/${slug}`);
     if (!model) {
       throw new Error('Unknown native OpenAI model');
     }

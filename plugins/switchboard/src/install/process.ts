@@ -7,9 +7,6 @@ export interface RunOptions {
   env?: NodeJS.ProcessEnv;
 }
 
-// The foreground terminal signals both processes on Unix; no-op handler just prevents Node from exiting.
-const noopInterrupt = () => {};
-
 /** Shell-free foreground process, including cancellation and exit status. */
 export async function run(
   command: string,
@@ -30,8 +27,9 @@ export async function run(
       terminateProcessTree(child.pid, { platform });
     }
   };
+  const interrupt = () => {}; // The foreground terminal signals both processes on Unix.
   process.on('SIGTERM', terminate);
-  process.on('SIGINT', noopInterrupt);
+  process.on('SIGINT', interrupt);
   try {
     return await new Promise<number>((resolve, reject) => {
       child.once('error', reject);
@@ -39,6 +37,6 @@ export async function run(
     });
   } finally {
     process.off('SIGTERM', terminate);
-    process.off('SIGINT', noopInterrupt);
+    process.off('SIGINT', interrupt);
   }
 }

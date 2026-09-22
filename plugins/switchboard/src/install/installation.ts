@@ -412,7 +412,7 @@ export async function uninstall(
     'state.json',
     '../gateway/executable.ts',
     '../gateway/process-tree.ts',
-    ...immediate.map((shimPath) => path.relative(directory, shimPath)),
+    ...immediate.map((file) => path.relative(directory, file)),
   ]) {
     await rm(path.join(directory, file), { force: true });
   }

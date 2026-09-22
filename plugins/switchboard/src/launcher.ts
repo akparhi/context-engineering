@@ -454,7 +454,7 @@ export function checkLauncherArgumentLimit(
     );
   }
   const largest = [...providers.entries()]
-    .toSorted((left, right) => right[1] - left[1])
+    .sort((left, right) => right[1] - left[1])
     .slice(0, 3)
     .map(([provider, bytes]) => `${provider} (${bytes} B)`)
     .join(', ');

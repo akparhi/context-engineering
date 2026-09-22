@@ -37,8 +37,6 @@ const unavailable: Record<UsageProvider, string[]> = {
   ],
 };
 
-const formatCount = (value: number) => value.toLocaleString('en-US');
-
 function sessionLines(snapshot: UsageSnapshot, provider: UsageProvider): string[] {
   const entries = snapshot.entries.filter((entry) => entry.provider === provider);
   const totals = { input: 0, output: 0, read: 0, write: 0, requests: 0 };
@@ -49,7 +47,7 @@ function sessionLines(snapshot: UsageSnapshot, provider: UsageProvider): string[
     totals.write += entry.usage.cache_creation_input_tokens;
     totals.requests += entry.requests;
   }
-  const count = formatCount;
+  const count = (value: number) => value.toLocaleString('en-US');
   return [
     `This session: ${count(totals.requests)} completed requests`,
     `Tokens: ${count(totals.input)} input · ${count(totals.output)} output`,

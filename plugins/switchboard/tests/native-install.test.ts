@@ -18,10 +18,9 @@ import { removeTemporary } from './temporary.ts';
 
 const execute = promisify(execFile);
 
-const quoteForWindows = (value: string) => `"${value.replaceAll('"', '\\"')}"`;
-
 function windowsInvocation(pathname: string, args: string[], env: NodeJS.ProcessEnv) {
-  const commandLine = [pathname, ...args].map(quoteForWindows).join(' ');
+  const quote = (value: string) => `"${value.replaceAll('"', '\\"')}"`;
+  const commandLine = [pathname, ...args].map(quote).join(' ');
   return {
     command: env.ComSpec ?? 'C:\\Windows\\System32\\cmd.exe',
     args: ['/d', '/s', '/c', `"${commandLine}"`],

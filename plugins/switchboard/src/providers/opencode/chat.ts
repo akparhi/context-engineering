@@ -924,7 +924,7 @@ class ChatAccumulator {
   }
 
   private finishTools() {
-    for (const slot of [...this.slots.values()].toSorted((left, right) => left.index - right.index)) {
+    for (const slot of [...this.slots.values()].sort((left, right) => left.index - right.index)) {
       if (!slot.id || !slot.name) {
         throw new Error('Zen Chat returned an incomplete tool call');
       }

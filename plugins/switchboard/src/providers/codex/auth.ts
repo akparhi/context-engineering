@@ -103,7 +103,7 @@ export async function codexRequest(
 }
 
 async function waitForAuth(pending: Promise<CodexAuthHeaders>, signal: AbortSignal) {
-  let onAbort: (() => void) | undefined;
+  let onAbort = () => {};
   const aborted = new Promise<never>((_, reject) => {
     onAbort = () => reject(signal.reason);
     signal.addEventListener('abort', onAbort, { once: true });
@@ -114,7 +114,7 @@ async function waitForAuth(pending: Promise<CodexAuthHeaders>, signal: AbortSign
   try {
     return await Promise.race([pending, aborted]);
   } finally {
-    if (onAbort) signal.removeEventListener('abort', onAbort);
+    signal.removeEventListener('abort', onAbort);
   }
 }
 

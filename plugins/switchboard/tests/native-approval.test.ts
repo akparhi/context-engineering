@@ -324,6 +324,7 @@ test('classifier cwd comparison accepts Windows drive and UNC paths on Linux', (
 });
 
 test('headerless classifier uses pending worker context and rejects ambiguous actions', async (t) => {
+  const { mkdtemp, writeFile } = await import('node:fs/promises');
   const dir = await mkdtemp(path.join(os.tmpdir(), 'approval-scope-'));
   t.after(() => removeTemporary(dir));
   await writeFile(

@@ -185,19 +185,17 @@ function validResponse(value: unknown): boolean {
   if (!isRecord(value.usage)) {
     return false;
   }
+  const count = (v: unknown) =>
+    v === undefined || (typeof v === 'number' && Number.isSafeInteger(v) && v >= 0);
   const usage = value.usage;
   return (
-    isValidCount(usage.input_tokens) &&
-    isValidCount(usage.output_tokens) &&
+    count(usage.input_tokens) &&
+    count(usage.output_tokens) &&
     (usage.input_tokens_details === undefined ||
       (isRecord(usage.input_tokens_details) &&
-        isValidCount(usage.input_tokens_details.cached_tokens) &&
-        isValidCount(usage.input_tokens_details.cache_write_tokens)))
+        count(usage.input_tokens_details.cached_tokens) &&
+        count(usage.input_tokens_details.cache_write_tokens)))
   );
-}
-
-function isValidCount(v: unknown) {
-  return v === undefined || (typeof v === 'number' && Number.isSafeInteger(v) && v >= 0);
 }
 
 /** Ignore new event types; validate every known field before narrowing JSON. */

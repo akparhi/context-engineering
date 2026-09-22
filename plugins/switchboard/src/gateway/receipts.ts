@@ -330,7 +330,7 @@ export class ReceiptLedger {
   }
 
   finishAll(outcome: ReceiptOutcome = 'cancelled'): void {
-    for (const pending of this.pending.values()) {
+    for (const pending of [...this.pending.values()]) {
       this.complete(pending.ref, outcome, true);
     }
   }

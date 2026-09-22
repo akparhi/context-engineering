@@ -4,13 +4,13 @@ import { settleOrAbort } from '../src/gateway/settle.ts';
 
 test('a running operation has no deadline until its signal aborts', async () => {
   const controller = new AbortController();
-  let resolveRun: ((value: string) => void) | undefined;
+  let resolveRun: (value: string) => void = () => {};
   const run = new Promise<string>((resolve) => {
     resolveRun = resolve;
   });
   const settled = settleOrAbort(run, controller.signal, 'run', 10);
   await new Promise((resolve) => setTimeout(resolve, 40));
-  resolveRun?.('done');
+  resolveRun('done');
   assert.equal(await settled, 'done');
 });
 
