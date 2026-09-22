@@ -693,6 +693,9 @@ export function createNativeGateway({
           dashboard,
         );
       }
+      if (isTitleRequest(body) && (enabledProviders ?? ['openai']).includes('openai')) {
+        body.model = `switchboard/openai/${MODELS['openai-luna']}`;
+      }
       const external = externalModel(body.model);
       assertProviderEnabled(external, enabledProviders);
       const signal = providerSignal(abort.signal, external, timeoutMs);
@@ -884,8 +887,9 @@ function prepareZenRequest(exchange: ProviderRequest, fallbackSession: string) {
 }
 
 /**
- * Claude Code's session-title call asks for `{title}` JSON at high effort, which is
- * wasted reasoning on OpenAI. No header marks it, so match its output schema.
+ * Claude Code's session-title call asks for `{title}` JSON on the session model at high
+ * effort. It is low value, so it runs on Luna at low effort whatever the session model.
+ * No header marks it, so match its output schema.
  */
 // yagni: exact schema match; if Claude Code renames the field the call falls back to its own effort.
 function isTitleRequest(body: MessagesRequest): boolean {

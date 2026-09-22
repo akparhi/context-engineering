@@ -795,22 +795,27 @@ test('all registered model and reasoning choices reach OpenAI without substituti
   }
 });
 
-test("Claude Code's session-title request runs at low effort on OpenAI", async (t) => {
+test("Claude Code's session-title request runs on Luna at low effort", async (t) => {
   const efforts: string[] = [];
   const call = await gateway(t, async (_url, options) => {
-    efforts.push(JSON.parse(String(options.body)).reasoning.effort);
+    const request = JSON.parse(String(options.body));
+    efforts.push(`${request.model} ${request.reasoning.effort}`);
     return new Response(sse(textEvents));
   });
   const title = {
     type: 'json_schema',
     schema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] },
   };
-  for (const output_config of [{ effort: 'high', format: title }, { effort: 'high' }]) {
-    const response = await call({ ...body, model: 'switchboard/openai/gpt-6-luna', output_config });
+  for (const [model, output_config] of [
+    ['claude-opus-5-5', { effort: 'high', format: title }],
+    ['switchboard/openai/gpt-6-astra', { effort: 'high', format: title }],
+    ['switchboard/openai/gpt-6-astra', { effort: 'high' }],
+  ] as const) {
+    const response = await call({ ...body, model, output_config });
     assert.equal(response.status, 200);
     await readMessage(response);
   }
-  assert.deepEqual(efforts, ['low', 'high']);
+  assert.deepEqual(efforts, ['gpt-6-luna low', 'gpt-6-luna low', 'gpt-6-astra high']);
 });
 
 test('a dropped downstream connection aborts external inference', async (t) => {
