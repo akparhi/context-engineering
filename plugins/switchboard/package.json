@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "oxlint .",
     "test": "bun test --timeout=120000",
-    "test:mod": "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test .",
+    "test:mod": "d=$(mktemp -d) && cp -R hooks \"$d/\" && CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test \"$d\"; s=$?; rm -rf \"$d\"; exit $s",
     "test:live:compaction": "bun tests/live/native-compaction.ts",
     "test:live:zen": "bun tests/live/native-zen.ts",
     "test:live:auto-mode": "bun tests/live/native-auto-mode.ts",
@@ -16,9 +16,6 @@
     "test:live:reviewer": "bun tests/live/native-reviewer.ts",
     "test:live:approval-worker": "bun tests/live/native-approval-worker.ts",
     "test:live:permissions": "bun tests/live/native-permissions.ts"
-  },
-  "alias": {
-    "claude-code/testing": "./types/claude-code-testing-shim.js"
   },
   "dependencies": {
     "js-tiktoken": "1.0.21",
