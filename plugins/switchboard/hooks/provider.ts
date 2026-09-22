@@ -1,7 +1,4 @@
-/**
- * Returns true for native harness models (Claude running in the Claude Code loop),
- * false for external multi/ provider models routed through the gateway.
- */
+/** These providers execute tools outside Claude Code and need policy translation. */
 export function isHarnessModel(model: string | undefined): boolean {
-  return typeof model === 'string' && !model.startsWith('switchboard/');
+  return false;
 }

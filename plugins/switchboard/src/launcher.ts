@@ -84,7 +84,10 @@ async function main() {
   settings.disableAgentView = true;
   filterPicker(settings, process.env.SWITCHBOARD_MODELS, settings.modelPicker.options.map((o) => o.model));
   const callerSettings = structuredClone(settings);
-  const agents = workerDefinitions(activeCatalog);
+  const selectedModels = new Set(callerSettings.modelPicker.options.map((o) => o.model));
+  const agents = workerDefinitions(activeCatalog.filter((entry) =>
+    selectedModels.has(`switchboard/${entry.source}/${entry.id}`)
+  ));
   const modBridge = new ModBridge();
   const settingsDir = await mkdtemp(path.join(os.tmpdir(), 'switchboard-native-settings-'));
   const callerSettingsFile = path.join(settingsDir, 'caller-settings.json');
