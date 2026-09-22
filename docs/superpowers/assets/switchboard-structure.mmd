@@ -1,0 +1,49 @@
+graph TD
+    subgraph CE["context-engineering/"]
+        direction TB
+        DOCS["docs/superpowers/<br/>SPEC-switchboard-plugin.md<br/>plans/2026-09-22-switchboard-plugin.md"]
+        LOCAL[".local/cc-multi-cli-plugin/<br/>reference checkout @ b3220ef<br/>gitignored"]
+
+        subgraph PLUGIN["plugins/switchboard/"]
+            direction TB
+            META[".claude-plugin/plugin.json<br/>package.json · tsconfig.json<br/>.oxlintrc.json · LICENSE · NOTICE"]
+            BIN["bin/switchboard<br/>sh shim to bun src/launcher.ts"]
+
+            subgraph SRC["src/"]
+                CAT["catalog.ts NEW<br/>effort-suffix.ts NEW"]
+                LAUNCH["launcher.ts MOD<br/>account.ts · setup.ts"]
+
+                subgraph GW["gateway/ 24 files"]
+                    GWA["server.ts MOD · messages.ts<br/>tokens.ts · receipts.ts · fetch.ts"]
+                    GWB["mod-bridge · mod-routes<br/>mod-compaction · mod-usage<br/>mod-policy · mode-hook MOD"]
+                    GWC["agent-catalog · agent-definitions<br/>approval MOD · permission-hook<br/>tools · tool-observer · direct-tools"]
+                    GWD["executable BUN · process-tree BUN<br/>atomic-write · state-lock · settle"]
+                end
+
+                subgraph PROV["providers/"]
+                    CX["codex/<br/>responses.ts MOD · auth.ts<br/>instructions.md + instructions.ts<br/>guardian/ · approval.ts · usage.ts<br/>models.ts DELETED"]
+                    OC["opencode/<br/>chat.ts · auth.ts<br/>request.ts · usage.ts<br/>models.ts MOD one entry"]
+                end
+            end
+
+            subgraph HOOKS["hooks/ Mods"]
+                HK["hooks.json · register.ts MOD<br/>lifecycle · usage · usage-view<br/>compact · policy · quota-advice<br/>workers MOD · provider.ts DELETED"]
+            end
+
+            TESTS["tests/<br/>catalog · effort · resolve<br/>launcher-settings · smoke NEW<br/>vendored suite MOD"]
+        end
+    end
+
+    LOCAL -.->|copy then strip| SRC
+    LOCAL -.->|copy| HOOKS
+    CAT -->|pickerRows| LAUNCH
+    CAT -->|workerDefinitions| LAUNCH
+    BIN --> LAUNCH
+    LAUNCH -->|--settings --agents<br/>ANTHROPIC_BASE_URL| GW
+    GW --> CX
+    GW --> OC
+
+    classDef new fill:#1a4d2e,stroke:#4ade80,color:#ffffff
+    classDef ref fill:#2a2a35,stroke:#71717a,color:#a1a1aa
+    class CAT,BIN,TESTS,LAUNCH,CX,OC,HK,GWA,GWB,GWC new
+    class LOCAL ref
