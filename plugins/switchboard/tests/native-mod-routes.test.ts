@@ -31,6 +31,7 @@ async function request(base: string, route: string, body?: unknown, method = 'PO
   const response = await fetch(base + route, {
     method,
     headers: { 'x-switchboard-gateway-token': 'mod-token', 'content-type': 'application/json' },
+    // oxlint-disable-next-line unicorn/no-invalid-fetch-options -- helper is shared by GET and POST routes
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   return { status: response.status, body: (await response.json()) as Record<string, unknown> };

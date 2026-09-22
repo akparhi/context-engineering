@@ -330,6 +330,7 @@ export class ReceiptLedger {
   }
 
   finishAll(outcome: ReceiptOutcome = 'cancelled'): void {
+    // oxlint-disable-next-line unicorn/no-useless-spread -- complete() deletes from pending mid-loop
     for (const pending of [...this.pending.values()]) {
       this.complete(pending.ref, outcome, true);
     }

@@ -1,10 +1,13 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "categories": { "correctness": "error", "suspicious": "warn" },
-  "env": { "builtin": true },
-  "ignorePatterns": ["node_modules/**"],
-  "rules": {
-    "unicorn/no-useless-spread": "off",
-    "unicorn/no-invalid-fetch-options": "off"
-  }
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": [
+    "node_modules/**"
+  ]
 }
