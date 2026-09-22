@@ -433,7 +433,7 @@ export function createNativeGateway({
   async function handleAnthropic(exchange: ProviderRequest) {
     const { req, res, body, url, raw, signal } = exchange;
     const headers = anthropicHeaders(req);
-    const cleaned = forAnthropic(body);
+    const cleaned = titleAtLowEffort(forAnthropic(body));
     let forwarded: Buffer | undefined;
     if (req.method === 'POST') {
       forwarded = cleaned === body ? raw : Buffer.from(JSON.stringify(cleaned));
@@ -693,9 +693,6 @@ export function createNativeGateway({
           dashboard,
         );
       }
-      if (isTitleRequest(body) && String(body.model).startsWith('switchboard/openai/')) {
-        body.model = `switchboard/openai/${MODELS['openai-luna']}`;
-      }
       const external = externalModel(body.model);
       assertProviderEnabled(external, enabledProviders);
       const signal = providerSignal(abort.signal, external, timeoutMs);
@@ -887,14 +884,14 @@ function prepareZenRequest(exchange: ProviderRequest, fallbackSession: string) {
 }
 
 /**
- * Claude Code's session-title call asks for `{title}` JSON on the session model at high
- * effort. It is low value, so OpenAI sessions run it on Luna at low effort; Claude keeps its own.
- * No header marks it, so match its output schema.
+ * Claude Code's session-title call asks for `{title}` JSON at high effort, which is wasted
+ * reasoning on a low-value call. No header marks it, so match its output schema; the model stays.
  */
 // yagni: exact schema match; if Claude Code renames the field the call falls back to its own effort.
-function isTitleRequest(body: MessagesRequest): boolean {
+function titleAtLowEffort(body: MessagesRequest): MessagesRequest {
   const schema = body.output_config?.format?.schema as { properties?: object } | undefined;
-  return Object.keys(schema?.properties ?? {}).join() === 'title';
+  const title = Object.keys(schema?.properties ?? {}).join() === 'title';
+  return title ? { ...body, output_config: { ...body.output_config, effort: 'low' } } : body;
 }
 
 function openaiRequest(exchange: ProviderRequest, externalModel: string): ResponsesRequest {
@@ -910,7 +907,7 @@ function openaiRequest(exchange: ProviderRequest, externalModel: string): Respon
     ) {
       throw new Error('External models require POST /v1/messages or /v1/messages/count_tokens');
     }
-    const request = toResponses(isTitleRequest(body) ? { ...body, output_config: { ...body.output_config, effort: 'low' } } : body, model);
+    const request = toResponses(titleAtLowEffort(body), model);
     return { ...request, instructions: openaiInstructions(request.instructions) };
   } catch (error) {
     throw new BadRequest(reason(error));

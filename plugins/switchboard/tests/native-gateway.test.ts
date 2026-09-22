@@ -795,7 +795,7 @@ test('all registered model and reasoning choices reach OpenAI without substituti
   }
 });
 
-test("Claude Code's session-title request runs on Luna at low effort for OpenAI sessions", async (t) => {
+test("Claude Code's session-title request runs at low effort on its own model", async (t) => {
   const efforts: string[] = [];
   const call = await gateway(t, async (_url, options) => {
     const request = JSON.parse(String(options.body));
@@ -815,7 +815,7 @@ test("Claude Code's session-title request runs on Luna at low effort for OpenAI 
     assert.equal(response.status, 200);
     await response.text();
   }
-  assert.deepEqual(efforts, ['claude-opus-5-5 high', 'gpt-6-luna low', 'gpt-6-astra high']);
+  assert.deepEqual(efforts, ['claude-opus-5-5 low', 'gpt-6-astra low', 'gpt-6-astra high']);
 });
 
 test('a dropped downstream connection aborts external inference', async (t) => {
