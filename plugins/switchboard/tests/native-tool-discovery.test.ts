@@ -4,7 +4,7 @@ import { toResponses } from '../src/providers/codex/responses.ts';
 import { toChat } from '../src/providers/opencode/chat.ts';
 
 const body = {
-  model: 'switchboard/openai/gpt-5.6-luna',
+  model: 'switchboard/openai/gpt-6-luna',
   messages: [
     {
       role: 'user',

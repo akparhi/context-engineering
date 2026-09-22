@@ -17,28 +17,44 @@ test('provider dashboard reads every enabled provider and preserves unavailable 
   const dashboard = new ProviderUsageDashboard({
     enabled: ['openai', 'zen'],
     openai: reader('openai'),
-    zen: reader('zen'),
+    zen: async () => ({
+      summary: 'Native quota unavailable',
+      details: ['No native quota connection'],
+      status: 'unavailable',
+    }),
   });
   const result = await dashboard.read('owned', empty());
-  assert.deepEqual(calls.sort(), ['openai:owned', 'zen:owned']);
+  assert.deepEqual(calls.sort(), ['openai:owned']);
   assert.deepEqual(
     result.providers.map((row) => row.status),
-    ['ready', 'ready'],
+    ['ready', 'unavailable'],
   );
-  assert.equal(result.providers[1].summary, 'zen quota');
+  assert.equal(result.providers[0].summary, 'openai quota');
+  assert(result.providers[1].details.includes('No native quota connection'));
 });
 
 test('provider dashboard isolates errors and explicitly reports disabled and unsupported billing', async () => {
   const dashboard = new ProviderUsageDashboard({
     enabled: ['openai', 'zen'],
-    openai: async () => ({ summary: 'quota', details: ['50% used'] }),
+    openai: async () => {
+      throw new Error('secret token');
+    },
   });
   const result = await dashboard.read('s', empty());
   assert.deepEqual(
     result.providers.map((row) => row.status),
-    ['ready', 'unavailable'],
+    ['error', 'unavailable'],
   );
+  assert(!JSON.stringify(result).includes('secret'));
   assert(result.providers[1].details.some((line) => line.includes('billing console')));
+  const disabled = new ProviderUsageDashboard({
+    enabled: ['openai'],
+    openai: async () => ({ summary: 'quota', details: ['50% used'] }),
+  });
+  assert.deepEqual(
+    (await disabled.read('s', empty())).providers.map((row) => row.status),
+    ['ready', 'disabled'],
+  );
 });
 
 test('provider dashboard coalesces reads, caches account data, refreshes and keeps session counts fresh', async () => {

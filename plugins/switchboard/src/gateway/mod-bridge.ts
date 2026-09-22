@@ -124,7 +124,7 @@ export class ModBridge {
     const event: ModDisplayEvent = {
       sequence: ++this.sequence,
       toolUseId: observation.id,
-      tool: `mcp__switchboard__${action.kind}`,
+      tool: `mcp__switchboard__cursor_${action.kind}`,
       input: {
         description: action.description,
         output,

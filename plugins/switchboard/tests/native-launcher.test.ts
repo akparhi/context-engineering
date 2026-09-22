@@ -8,8 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import {
   checkLauncherArgumentLimit,
+  workerDefinitions,
 } from '../src/launcher.ts';
-import { CATALOG, workerDefinitions } from '../src/catalog.ts';
 import { ZEN_MODELS } from '../src/providers/opencode/models.ts';
 import { removeTemporary } from './temporary.ts';
 
@@ -93,7 +93,7 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
     );
     const result = JSON.parse(stdout);
     assert.equal(result.args.at(-2), '--plugin-dir');
-    assert.equal(result.args.at(-1), path.resolve(path.dirname(launcher), '../../..'));
+    assert.equal(result.args.at(-1), path.resolve(path.dirname(launcher), '..'));
     assert.equal(result.settingsCount, 1);
     assert.equal(result.settings.disableAgentView, true);
     assert.equal(result.agentView, '1');
@@ -135,7 +135,7 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
     (
       await promisify(execFile)(
         process.execPath,
-        [launcher, '--', '--plugin-dir', path.resolve(path.dirname(launcher), '../../..')],
+        [launcher, '--', '--plugin-dir', path.resolve(path.dirname(launcher), '..')],
         { cwd, timeout: 20000, env: baseEnvironment },
       )
     ).stdout,
@@ -303,6 +303,7 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
         CODEX_HOME: cwd,
         OPENCODE_API_KEY: 'zen-fixture-key',
         SWITCHBOARD_MODELS: selection,
+        SWITCHBOARD_ZEN_MODELS: 'big-pickle,glm-5.2',
       },
     });
   const filtered = JSON.parse(
@@ -394,17 +395,14 @@ result(JSON.stringify({settings,models:args.filter(x=>x.startsWith('switchboard/
   );
 });
 
-test('worker registration follows sign-in state: signed-out provider contributes no workers', () => {
-  // Only openai signed in: zen entries must be absent.
-  const openaiOnly = CATALOG.filter((e) => e.source === 'openai');
-  const agents = workerDefinitions(openaiOnly);
-  assert.ok(Object.keys(agents).length > 0, 'signed-in provider contributes workers');
-  assert.ok(
-    Object.values(agents).every((w) => w.model.startsWith('switchboard/openai/')),
-    'only openai models when zen is not signed in',
-  );
-  // Nothing signed in: no workers at all.
-  assert.deepEqual(workerDefinitions([]), {});
+test('worker registration follows selected models and retains their effort aliases', () => {
+  const selected = ['switchboard/openai/gpt-6-luna', 'switchboard/zen/gpt-5.6-sol'];
+  const agents = workerDefinitions(true, true, selected);
+  assert.deepEqual(new Set(Object.values(agents).map((worker) => worker.model)), new Set(selected));
+  assert.equal(Object.keys(agents).length, 12);
+  assert.equal(agents['openai-luna-high'].effort, 'high');
+  assert.equal(agents['zen-gpt-5.6-sol-max'].effort, 'max');
+  assert.deepEqual(workerDefinitions(true, true, []), {});
 });
 
 test('launcher argument limits are platform-aware and identify largest providers', () => {

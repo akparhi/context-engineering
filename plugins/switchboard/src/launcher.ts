@@ -9,13 +9,19 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { createOpenAIApproval, discoverOpenAIReviewer } from './providers/codex/approval.ts';
 import { readCodexAuth } from './providers/codex/auth.ts';
-import { CATALOG, pickerRows, workerDefinitions } from './catalog.ts';
-import type { AgentDefinition } from './catalog.ts';
+import { MODELS, OPENAI_WORKERS } from './providers/codex/models.ts';
+import type { Effort } from './providers/codex/responses.ts';
 import { readZenKey } from './providers/opencode/auth.ts';
-import { ZEN_MODELS } from './providers/opencode/models.ts';
+import {
+  ZEN_MODELS,
+  ZEN_WORKERS,
+  zenModelOptions,
+  zenPickerOptions,
+} from './providers/opencode/models.ts';
 import { AgentCatalog } from './gateway/agent-catalog.ts';
 import {
   loadWorkerPermissions,
+  type PluginPermissionInventory,
   pluginPermissions,
 } from './gateway/agent-definitions.ts';
 import { executableInvocation, resolveExecutable } from './gateway/executable.ts';
@@ -36,6 +42,21 @@ const enabledProviders = providerSelection(process.env.SWITCHBOARD_ENABLED_PROVI
 const providerEnabled = (provider: string) =>
   enabledProviders?.some((name) => name === provider) ?? true;
 const claudeExecutable = process.env.SWITCHBOARD_REAL_CLAUDE;
+
+/**
+ * Claude Code requires a non-empty subagent prompt. Workers get no behavioral rules here;
+ * provider profiles and Claude's native subagent prompt govern them.
+ */
+const WORKER_PROMPT = 'Complete the delegated task.';
+
+/** One `--agents` entry: an external worker using Claude Code's native tools. */
+interface AgentDefinition {
+  description: string;
+  prompt: string;
+  model: string;
+  tools: string[];
+  effort?: Effort;
+}
 
 /** One `/model` entry the launched session offers. */
 interface ModelOption {
@@ -62,6 +83,7 @@ async function main() {
   const pluginRoot = await findPluginRoot(fileURLToPath(import.meta.url));
   await assertFunctionHooksSupported();
   const anthropic = await anthropicSignedIn();
+  const fullCatalog = process.env.SWITCHBOARD_MODELS !== undefined;
   const authFile = path.join(
     process.env.CODEX_HOME || path.join(os.homedir(), '.codex'),
     'auth.json',
@@ -69,25 +91,24 @@ async function main() {
   const { codexSignedIn, openaiReview } = await discoverOpenAI(authFile);
   const zenKey = providerEnabled('zen') ? await readZenKey() : undefined;
   const token = randomBytes(32).toString('hex');
-  // Filter catalog to only signed-in providers so workers and picker rows
-  // are not advertised for providers the user hasn't authenticated with.
-  const activeCatalog = CATALOG.filter(
-    (entry) =>
-      (entry.source === 'openai' && codexSignedIn) ||
-      (entry.source === 'zen' && Boolean(zenKey)),
-  );
-  const settings: LaunchSettings = { modelPicker: { options: pickerRows(activeCatalog) } };
+  const defaultModels = fullCatalog
+    ? pickerSettings(codexSignedIn, Boolean(zenKey)).modelPicker.options.map(
+        (option) => option.model,
+      )
+    : [];
+  const settings = pickerSettings(codexSignedIn, Boolean(zenKey), fullCatalog);
   await mergeSettings(args, settings);
   // The supervisor does not transfer --agents or our session-local gateway env,
   // and can outlive the child whose exit releases settingsDir and the gateway.
   // Keep ordinary background subagent tasks available within this owned session.
   settings.disableAgentView = true;
-  filterPicker(settings, process.env.SWITCHBOARD_MODELS, settings.modelPicker.options.map((o) => o.model));
+  filterPicker(settings, process.env.SWITCHBOARD_MODELS, defaultModels);
   const callerSettings = structuredClone(settings);
-  const selectedModels = new Set(callerSettings.modelPicker.options.map((o) => o.model));
-  const agents = workerDefinitions(activeCatalog.filter((entry) =>
-    selectedModels.has(`switchboard/${entry.source}/${entry.id}`)
-  ));
+  const agents = workerDefinitions(
+    codexSignedIn,
+    Boolean(zenKey),
+    settings.modelPicker.options.map((option) => option.model),
+  );
   const modBridge = new ModBridge();
   const settingsDir = await mkdtemp(path.join(os.tmpdir(), 'switchboard-native-settings-'));
   const callerSettingsFile = path.join(settingsDir, 'caller-settings.json');
@@ -151,11 +172,13 @@ async function main() {
     configuredPath: claudeExecutable,
     env: childEnvironment,
   });
-  const pluginDirectory =
-    !hasPluginDirectory(args) && (!pluginInventory.switchboardEnabled || hasEmptySettingSources(args))
-      ? ['--plugin-dir', pluginRoot]
-      : [];
-  const childArguments = [...launcherArguments(args, settingsFile, definitions), ...pluginDirectory];
+  const childArguments = launcherArguments(
+    args,
+    settingsFile,
+    definitions,
+    pluginInventory,
+    pluginRoot,
+  );
   const childInvocation = executableInvocation(
     claudePath,
     childArguments,
@@ -418,10 +441,50 @@ async function discoverOpenAI(authFile: string) {
   return { codexSignedIn, openaiReview };
 }
 
-/** Returns picker rows and worker definitions for the full catalog, regardless of sign-in state.
- * For the per-session, sign-in-gated version used at runtime, main() filters CATALOG first. */
-export function launchSettings(): LaunchSettings {
-  return { modelPicker: { options: pickerRows() } };
+export function workerDefinitions(
+  codexSignedIn: boolean,
+  zen: boolean,
+  selectedModels?: readonly string[],
+) {
+  const agents: Record<string, AgentDefinition> = Object.fromEntries(
+    Object.entries(codexSignedIn ? OPENAI_WORKERS : {}).map(([name, { model, effort }]) => [
+      name,
+      {
+        description: `${model}, ${effort} reasoning. Native coding, investigation, and review.`,
+        prompt: WORKER_PROMPT,
+        model: `switchboard/openai/${model}`,
+        tools: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
+        effort,
+      },
+    ]),
+  );
+  for (const [name, option] of Object.entries(zen ? ZEN_WORKERS : {})) {
+    agents[name] = {
+      description: `OpenCode Zen ${option.model}${option.effort ? `, ${option.effort} effort` : ''}. Uses native Claude Code tools.`,
+      prompt: WORKER_PROMPT,
+      model: option.model,
+      tools: ['Read', 'Grep', 'Glob', 'Bash', 'Edit', 'Write'],
+      ...(option.effort ? { effort: option.effort } : {}),
+    };
+  }
+  return selectWorkers(agents, selectedModels);
+}
+
+function selectWorkers(
+  agents: Record<string, AgentDefinition>,
+  selectedModels: readonly string[] | undefined,
+) {
+  if (selectedModels === undefined) {
+    return agents;
+  }
+  // Selections arrive in the picker's spelling, which may carry the context tag; native
+  // model IDs never do. Compare both in the untagged spelling.
+  const selected = new Set(selectedModels.map((model) => nativeSpelling(model) ?? model));
+  return Object.fromEntries(
+    Object.entries(agents).filter(([, worker]) =>
+      selected.has(nativeSpelling(worker.model) ?? worker.model),
+    ),
+  );
 }
 
 interface LauncherInvocation {
@@ -499,7 +562,7 @@ async function initialSelection(args: string[], settings: LaunchSettings, anthro
   const initialModel = retagSelection(requested, options);
   const defaultModel =
     process.env.SWITCHBOARD_MODELS === undefined
-      ? options.find((option) => option.model === 'switchboard/openai/gpt-5.6-luna')
+      ? options.find((option) => option.model === 'switchboard/openai/gpt-6-luna')
       : undefined;
   const fallback = anthropic ? undefined : (defaultModel ?? options[0])?.model;
   const selectedModel = initialModel ?? fallback;
@@ -658,7 +721,7 @@ async function handleCommand(command?: string) {
   }
   if (command === '--help') {
     console.log(
-      'Usage: bun src/launcher.ts [--zen-models] [-- <claude arguments>]\nLaunch Claude with external models and native coding workers.\n--zen-models: list supported Zen models and capabilities\nOPENCODE_API_KEY: Zen key (or use OpenCode /connect)\nSWITCHBOARD_MODELS: comma-separated full model IDs to show in /model (unset: defaults; empty: hide external rows)',
+      'Usage: bun src/launcher.ts [--zen-models] [-- <claude arguments>]\nLaunch Claude with external models and native coding workers.\n--zen-models: list supported Zen models and capabilities\nOPENCODE_API_KEY: Zen key (or use OpenCode /connect)\nSWITCHBOARD_ZEN_MODELS: comma-separated Zen model IDs to show, leaving other providers unchanged\nSWITCHBOARD_MODELS: comma-separated full model IDs to show in /model (unset: defaults; empty: hide external rows)',
     );
     process.exit(0);
   }
@@ -707,6 +770,38 @@ async function savedSelection(args: string[]) {
   return savedModel;
 }
 
+/** Client compatibility only, not provider equivalence. Both profiles default to 200K
+ * in Claude 2.1.267; newer xhigh profiles imply native 1M and are deliberately not used.
+ * Provider validation remains authoritative for every requested effort value. */
+function pickerProfile(adjustableEffort: boolean): string {
+  return adjustableEffort ? 'claude-sonnet-4-6' : 'claude-haiku-4-5';
+}
+
+function pickerSettings(codexSignedIn: boolean, zen: boolean, fullCatalog = false) {
+  let zenOptions = zenPickerOptions('');
+  if (zen) {
+    zenOptions = fullCatalog ? zenModelOptions() : zenPickerOptions(process.env.SWITCHBOARD_ZEN_MODELS);
+  }
+  const settings: LaunchSettings = {
+    modelPicker: {
+      options: [
+        ...Object.values(codexSignedIn ? MODELS : {}).map((model) => ({
+          model: `switchboard/openai/${model}`,
+          label: model,
+          description: 'OpenAI subscription · native Claude Code harness',
+          behavesAs: pickerProfile(true),
+        })),
+        ...zenOptions.map(({ model, label, efforts }) => ({
+          model,
+          label: `Zen · ${label}`,
+          behavesAs: pickerProfile(Boolean(efforts?.length)),
+          description: `Zen API billing · Claude tools${efforts ? '' : ' · native reasoning; /effort not applicable'}`,
+        })),
+      ],
+    },
+  };
+  return settings;
+}
 
 /**
  * CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC also blocks the plugin worker's
@@ -737,8 +832,8 @@ function gatewayEnvironment(port: number, token: string, anthropic: boolean) {
   return {
     ...env,
     CLAUDE_CODE_DISABLE_AGENT_VIEW: '1',
-    // Extended OpenAI reasoning can outlive Claude's default API timer;
-    // preserve explicit user limits.
+    // Native runs and extended OpenAI reasoning can outlive Claude's default
+    // API timer; preserve explicit user limits.
     API_TIMEOUT_MS: process.env.API_TIMEOUT_MS ?? '2147483647',
     ANTHROPIC_BASE_URL: `http://127.0.0.1:${port}`,
     // A custom base URL disables Claude's on-demand tool loading unless opted in.
@@ -782,12 +877,18 @@ function hasPluginDirectory(args: readonly string[]): boolean {
   return args.some((arg) => arg === '--plugin-dir' || arg.startsWith('--plugin-dir='));
 }
 
-export function launcherArguments(
+function launcherArguments(
   args: readonly string[],
   settingsFile: string,
   definitions: string,
+  inventory: PluginPermissionInventory,
+  pluginRoot: string,
 ): string[] {
-  return ['--settings', settingsFile, '--agents', definitions, ...args];
+  const pluginDirectory =
+    !hasPluginDirectory(args) && (!inventory.switchboardEnabled || hasEmptySettingSources(args))
+      ? ['--plugin-dir', pluginRoot]
+      : [];
+  return ['--settings', settingsFile, '--agents', definitions, ...args, ...pluginDirectory];
 }
 
 function hasEmptySettingSources(args: readonly string[]): boolean {

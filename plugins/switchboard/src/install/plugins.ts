@@ -74,18 +74,17 @@ export async function installedPlugins(
       );
     }
   }
-  const self = plugins.filter((plugin) => plugin.id === `switchboard@${MARKETPLACE}` && plugin.enabled);
+  const core = plugins.filter(
+    (plugin) => plugin.id === `switchboard@${MARKETPLACE}` && plugin.enabled,
+  );
   // Startup executes before the workspace trust prompt. Only a user-installed
-  // plugin may supply executable code here; project plugins are fixed opt-ins.
-  const personalSelf = self.filter((plugin) => plugin.scope === 'user');
-  if (self.length && personalSelf.length !== 1) {
-    throw new Error('Install the switchboard plugin at user scope before running setup.');
+  // core may supply executable code here; project providers are fixed opt-ins.
+  const personalCore = core.filter((plugin) => plugin.scope === 'user');
+  if (core.length && personalCore.length !== 1) {
+    throw new Error('Install switchboard at user scope before running Switchboard setup.');
   }
-  if (personalSelf.length === 0) {
-    return { root: undefined, providers: [] as Provider[] };
-  }
-  // Both providers ship inside this plugin; there is nothing further to discover.
-  return { root: personalSelf[0]?.installPath, providers: ['openai', 'zen'] as Provider[] };
+  const providers = personalCore.length ? [...PROVIDERS] : [];
+  return { root: personalCore[0]?.installPath, providers };
 }
 
 export function settingsArguments(args: string[]): string[] {

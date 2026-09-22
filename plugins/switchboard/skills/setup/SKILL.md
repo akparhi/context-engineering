@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Install the Switchboard gateway and configure providers.
+description: Configure ordinary claude startup for installed Switchboard providers.
 disable-model-invocation: true
 allowed-tools: Bash
 ---
@@ -15,7 +15,7 @@ setup. Use the defaults unless the user chooses otherwise:
 
 - **Launch command name** (default `switchboard`). Switchboard is the real Claude Code
   binary started behind a local gateway, so only the command name differs. Any name
-  works, such as `myswitchboard`; pass it with `--command <name>`. Naming it `claude`
+  works, such as `switchboardclaude`; pass it with `--command <name>`. Naming it `claude`
   shadows the plain command for every launch, including scripts, editors and agents
   that run `claude`; explain that before accepting it.
 - **Models shown in `/model`** (default: curated rows for connected providers). Pass

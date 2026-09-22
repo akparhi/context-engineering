@@ -188,12 +188,12 @@ test('setup renames the launch command, persists picker models, and keeps them a
   const stateFile = path.join(f.home, '.local/share/switchboard/state.json');
   const shim = (name: string) =>
     path.join(f.home, '.local/share/switchboard/bin', f.windows ? `${name}.cmd` : name);
-  const first = await f.install(['--command', 'mc', '--models', 'switchboard/openai/gpt-6-astra']);
+  const first = await f.install(['--command', 'mc', '--models', 'switchboard/zen/kimi-k2.5']);
   assert.match(first.stdout, /start mc\./);
-  assert.match(first.stdout, /shows only: switchboard\/openai\/gpt-6-astra/);
+  assert.match(first.stdout, /shows only: switchboard\/zen\/kimi-k2\.5/);
   await assert.rejects(access(shim('switchboard')), /ENOENT/);
   const custom = JSON.parse((await f.invoke('mc', [])).stdout);
-  assert.equal(custom.models, 'switchboard/openai/gpt-6-astra');
+  assert.equal(custom.models, 'switchboard/zen/kimi-k2.5');
   assert.equal(custom.providers, 'openai,zen');
   // An explicit environment selection still wins for one launch.
   const explicit = JSON.parse((await f.invoke('mc', [], { SWITCHBOARD_MODELS: '' })).stdout);
@@ -201,11 +201,11 @@ test('setup renames the launch command, persists picker models, and keeps them a
   // Re-running setup without flags keeps the customization.
   await f.install();
   assert.equal(JSON.parse(await readFile(stateFile, 'utf8')).command, 'mc');
-  assert.equal(JSON.parse((await f.invoke('mc', [])).stdout).models, 'switchboard/openai/gpt-6-astra');
-  await f.install(['--models', '+switchboard/openai/gpt-5.6-luna']);
+  assert.equal(JSON.parse((await f.invoke('mc', [])).stdout).models, 'switchboard/zen/kimi-k2.5');
+  await f.install(['--models', '+switchboard/zen/glm-5.2']);
   assert.equal(
     JSON.parse((await f.invoke('mc', [])).stdout).models,
-    'switchboard/openai/gpt-6-astra,switchboard/openai/gpt-5.6-luna',
+    'switchboard/zen/kimi-k2.5,switchboard/zen/glm-5.2',
   );
   // `none` hides external rows; `all` requests the full connected catalog.
   await f.install(['--models', 'none']);
@@ -225,11 +225,11 @@ test('setup renames the launch command, persists picker models, and keeps them a
   // or not the tag is on, and must not persist twice alongside its own plain spelling.
   await f.install([
     '--models',
-    'switchboard/openai/gpt-5.6-luna[1m],switchboard/openai/gpt-5.6-luna',
+    'switchboard/openai/gpt-6-luna[1m],switchboard/openai/gpt-6-luna',
   ]);
   assert.equal(
     JSON.parse(await readFile(stateFile, 'utf8')).models,
-    'switchboard/openai/gpt-5.6-luna',
+    'switchboard/openai/gpt-6-luna',
   );
   await f.invoke('switchboard-ctl', ['uninstall']);
   if (f.windows) {
@@ -282,7 +282,7 @@ test('Windows installation writes quoted PowerShell and cmd shims and uninstalls
   const bin = path.join(home, '.local', 'share', 'switchboard', 'bin');
   const cmd = await readFile(path.join(bin, 'switchboard.cmd'), 'utf8');
   const ps = await readFile(path.join(bin, 'switchboard.ps1'), 'utf8');
-  assert.match(cmd, /".*" ".*bootstrap\.ts"(?: --multi)? %\*/);
+  assert.match(cmd, /".*" ".*bootstrap\.ts"(?: --switchboard)? %\*/);
   assert.equal(cmd.split('\r\n').filter(Boolean).length, 1, 'single-line shim survives uninstall');
   assert.match(cmd, /^@goto #_undefined_# 2>NUL \|\| ".*" ".*bootstrap\.ts" %\*\r\n$/);
   assert.match(ps, /''quotes''|quotes/);
@@ -335,7 +335,7 @@ test('Windows executable discovery uses PATHEXT and does not require mode bits',
 test('provider selection and native settings arguments preserve explicit disablement', () => {
   assert.equal(providerSelection(undefined), undefined);
   assert.deepEqual(providerSelection(''), []);
-  assert.deepEqual(providerSelection('openai,openai,zen'), ['openai', 'zen']);
+  assert.deepEqual(providerSelection('zen,zen,openai'), ['zen', 'openai']);
   assert.throws(() => providerSelection('typo'), /Unknown Switchboard provider/);
   assert.deepEqual(
     settingsArguments([

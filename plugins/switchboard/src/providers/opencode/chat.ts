@@ -10,7 +10,7 @@ import type {
 import { callId, toolName } from '../../gateway/tools.ts';
 import { prefixSafeLength, readSse } from '../codex/responses.ts';
 
-const SIGNATURE_PREFIX = 'switchboard-zen-chat:';
+const SIGNATURE_PREFIX = 'switchboard-chat:';
 const IMAGE_MEDIA_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 
 export interface ChatRequest {

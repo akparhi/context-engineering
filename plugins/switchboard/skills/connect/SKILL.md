@@ -1,6 +1,6 @@
 ---
 name: connect
-description: Save an OpenCode API key without exposing it in chat.
+description: Save an OpenCode Zen API key without exposing it in chat.
 disable-model-invocation: true
 allowed-tools: Bash
 ---

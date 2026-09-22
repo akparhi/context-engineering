@@ -45,8 +45,8 @@ export interface InstallationOptions {
 }
 
 export const DEFAULT_COMMAND = 'switchboard';
-/** The management shim; `switchboard-ctl` and `<command> --multi` reach the same dispatcher. */
-export const MANAGEMENT_COMMAND = 'switchboard-ctl';
+/** The management shim; `<command> --switchboard` and `switchboard-ctl` reach the same dispatcher. */
+const MANAGEMENT_COMMAND = 'switchboard-ctl';
 
 type DeferDeletion = (command: string, args: string[], options: SpawnOptions) => void;
 
@@ -64,7 +64,7 @@ function optionsFor(options: InstallationOptions = {}) {
   };
 }
 
-export function installationDirectory(homedir = os.homedir()) {
+function installationDirectory(homedir = os.homedir()) {
   return path.join(homedir, '.local', 'share', 'switchboard');
 }
 
@@ -287,7 +287,7 @@ async function writeShim(
   name: string,
   platform: Platform,
 ) {
-  const suffix = name === MANAGEMENT_COMMAND ? ' --multi' : '';
+  const suffix = name === MANAGEMENT_COMMAND ? ' --switchboard' : '';
   if (platform === 'win32') {
     // Same trick as npm's cmd shims: a goto to an undefined label ends batch
     // processing, so the `||` branch runs Node as a top-level command. cmd.exe

@@ -2,6 +2,7 @@ import type { EngineInterface, Register } from 'claude-code';
 import { register as registerCompaction } from './compact.ts';
 import { register as registerLifecycle } from './lifecycle.ts';
 import { type PolicyClient, type PolicyState, recordPrompt } from './policy.ts';
+import { isHarnessModel } from './provider.ts';
 import { register as registerUsage } from './usage.ts';
 import { register as registerWorkers } from './workers.ts';
 
@@ -70,7 +71,8 @@ export const register: Register = (on, options) => {
         policyState.prompt,
         policyState.generation,
       );
-      policyState.harnessReady = false;
+      policyState.harnessReady =
+        policyState.generation !== undefined && isHarnessModel(await $.session.model());
     }
     return next(event);
   });
@@ -84,7 +86,8 @@ export const register: Register = (on, options) => {
         policyState.prompt,
         policyState.generation,
       );
-      policyState.harnessReady = false;
+      policyState.harnessReady =
+        policyState.generation !== undefined && isHarnessModel(await $.session.model());
     }
     return next(event);
   });

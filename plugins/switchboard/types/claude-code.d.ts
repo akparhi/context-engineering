@@ -30,6 +30,9 @@ declare module 'claude-code' {
     text: string;
   }
 
+  /** A transcript message a compaction hook may return. Host owns the real shape. */
+  type SessionMessage = Record<string, unknown>;
+
   /** The engine interface injected as $ into every hook handler and test function. */
   interface EngineInterface {
     session: {

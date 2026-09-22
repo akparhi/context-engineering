@@ -21,13 +21,13 @@ async function dispatch(state: Installation, args: string[], management: boolean
     return run(state.claude, args);
   }
   if (!root) {
-    throw new Error('Enable the switchboard plugin at user scope before using Switchboard commands.');
+    throw new Error('Enable switchboard at user scope before using Switchboard commands.');
   }
   const manifest = JSON.parse(
     await readFile(path.join(root, '.claude-plugin', 'plugin.json'), 'utf8'),
   );
   if (manifest.name !== 'switchboard') {
-    throw new Error('Installed manifest does not identify switchboard');
+    throw new Error('Installed core manifest does not identify switchboard');
   }
   const env = {
     ...process.env,
@@ -47,7 +47,7 @@ async function main() {
   const directory = path.dirname(fileURLToPath(import.meta.url));
   const state = await readInstallation(directory);
   const args = process.argv.slice(2);
-  if (args[0] === '--multi') {
+  if (args[0] === '--switchboard') {
     if (args[1] !== 'uninstall') {
       return dispatch(state, args.slice(1), true);
     }

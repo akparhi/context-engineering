@@ -55,7 +55,7 @@ const signal = () => new AbortController().signal;
 
 test('permission hook keeps native admission when gateway attribution is unreachable', async () => {
   const hook = fileURLToPath(
-    new URL('../../src/gateway/permission-hook.ts', import.meta.url),
+    new URL('../src/gateway/permission-hook.ts', import.meta.url),
   );
   const result = await new Promise<string>((resolve, reject) => {
     const child = spawn(process.execPath, [hook], {
@@ -219,7 +219,7 @@ test('opt-in gateway review never forwards Anthropic traffic; authentication sti
   assert.equal(response.status, 200);
   assert.equal(((await response.json()) as { model: string }).model, 'codex-auto-review');
   // Claude retries a failed Sonnet classifier using the working model ID.
-  assert.equal((await send({ ...request(), model: 'switchboard/openai/gpt-5.6-luna' })).status, 200);
+  assert.equal((await send({ ...request(), model: 'switchboard/openai/gpt-6-luna' })).status, 200);
   assert(
     (await send({ model: 'sonnet', messages: [{ role: 'user', content: 'hello' }] })).status >= 400,
   );
@@ -253,7 +253,7 @@ test('Claude-authenticated review cannot retry through ordinary external inferen
       headers: { 'content-type': 'application/json', 'x-switchboard-gateway-token': 'test-token' },
       body: JSON.stringify({ ...request(), model }),
     });
-  for (const model of ['switchboard/openai/gpt-5.6-luna', 'switchboard/cursor/composer-2.5']) {
+  for (const model of ['switchboard/openai/gpt-6-luna', 'switchboard/cursor/composer-2.5']) {
     const response = await send(model);
     assert.equal(response.status, 400);
     assert.match(await response.text(), /cannot use ordinary external inference/);
@@ -296,7 +296,7 @@ test('gateway isolates review context by worker and blocks classifier fallback f
       body: JSON.stringify(body),
     });
   const inference = {
-    model: 'switchboard/openai/gpt-5.6-luna',
+    model: 'switchboard/openai/gpt-6-luna',
     metadata: { user_id: 'session-one' },
     messages: [{ role: 'user', content: 'Work' }],
     tools: [{ name: 'Bash', input_schema: { type: 'object', properties: {} } }],
@@ -392,7 +392,7 @@ test('headerless classifier uses pending worker context and rejects ambiguous ac
     next = { id: `tool-${worker}`, command: pendingCommand };
     const inference = await send(
       {
-        model: 'switchboard/openai/gpt-5.6-luna',
+        model: 'switchboard/openai/gpt-6-luna',
         metadata: { user_id: session },
         messages: [{ role: 'user', content: worker }],
         tools: [
@@ -479,18 +479,6 @@ function providerToolResponse(url: string, id: string, command: string, stream: 
         },
       }),
       { headers: { 'content-type': 'text/event-stream', 'x-provider-test': 'preserved' } },
-    );
-  }
-  // Zen DeepSeek uses chat/completions; respond with OpenAI chat SSE tool-call format.
-  if (url.includes('opencode.ai/zen')) {
-    const args = JSON.stringify({ command });
-    return new Response(
-      [
-        `data: ${JSON.stringify({ id: 'chatcmpl-zen', choices: [{ index: 0, delta: { role: 'assistant', tool_calls: [{ index: 0, id, type: 'function', function: { name: 'Bash', arguments: '' } }] }, finish_reason: null }] })}\n\n`,
-        `data: ${JSON.stringify({ id: 'chatcmpl-zen', choices: [{ index: 0, delta: { tool_calls: [{ index: 0, function: { arguments: args } }] }, finish_reason: null }] })}\n\n`,
-        `data: ${JSON.stringify({ id: 'chatcmpl-zen', choices: [{ index: 0, delta: {}, finish_reason: 'tool_calls' }], usage: { prompt_tokens: 10, completion_tokens: 5 } })}\n\n`,
-        'data: [DONE]\n\n',
-      ].join(''),
     );
   }
   const item = {
@@ -650,7 +638,7 @@ test('authenticated mixed-provider review follows main and headerless worker ori
   const gateway = await mixedReviewGateway(t);
   const claude = 'claude-sonnet-5';
   const gpt = 'switchboard/openai/gpt-6-astra';
-  const zen = 'switchboard/zen/deepseek-v4.1-flash';
+  const zen = 'switchboard/zen/gpt-5.6-luna';
   assert.deepEqual(
     await (await gateway.prepare(claude, 'node parent.js', undefined, true)).json(),
     {},
@@ -708,7 +696,7 @@ test('Claude-only Auto passes native classifier formats and fallback models thro
 test('native Claude classifier retries survive an unrelated Zen context', async (t) => {
   const gateway = await mixedReviewGateway(t);
   await gateway.prepare('claude-sonnet-5', 'node claude-worker.js', 'claude-worker');
-  await gateway.prepare('switchboard/zen/deepseek-v4.1-flash', 'node zen.js');
+  await gateway.prepare('switchboard/zen/gpt-5.6-luna', 'node zen.js');
   const body = request(1, JSON.stringify({ session_id: 'mixed' }), 'node claude-worker.js');
   const instruction = body.messages[0].content.at(-1);
   assert(instruction);

@@ -11,20 +11,16 @@ import type {
 import { callId, toolName } from '../../gateway/tools.ts';
 
 // Anthropic Messages <-> OpenAI Responses, for native Claude Code workers.
-const SIGNATURE_PREFIX = 'switchboard-openai:';
+const SIGNATURE_PREFIX = 'switchboard:';
 const IMAGE_MEDIA_TYPES: readonly unknown[] = [
   'image/png',
   'image/jpeg',
   'image/gif',
   'image/webp',
 ];
-const EFFORTS = ['none', 'low', 'medium', 'high'] as const;
+const EFFORTS = ['none', 'low', 'medium', 'high', 'xhigh', 'max'] as const;
 
 export type Effort = (typeof EFFORTS)[number];
-
-export function isEffort(value: string): value is Effort {
-  return (EFFORTS as readonly string[]).includes(value);
-}
 
 // ---------------------------------------------------------------------------
 // OpenAI Responses, as the gateway sends and reads them.
@@ -252,6 +248,10 @@ function isReasoningState(value: unknown): value is ReasoningState {
   );
 }
 
+function isEffort(value: string): value is Effort {
+  return (EFFORTS as readonly string[]).includes(value);
+}
+
 // Only rewrite Claude-bound history when it contains our provider's opaque state.
 export function forAnthropic(body: MessagesRequest): MessagesRequest {
   let changed = false;
@@ -263,7 +263,7 @@ export function forAnthropic(body: MessagesRequest): MessagesRequest {
       const content = message.content.filter((block) => {
         const foreign =
           block.type === 'thinking' &&
-          [SIGNATURE_PREFIX, 'switchboard-zen-responses:', 'switchboard-zen-chat:'].some((prefix) =>
+          [SIGNATURE_PREFIX, 'switchboard-responses:', 'switchboard-chat:'].some((prefix) =>
             block.signature?.startsWith(prefix),
           );
         changed ||= Boolean(foreign);
@@ -487,11 +487,9 @@ function toolChoice(
   }
 }
 
-export function budgetEffort(thinking: MessagesRequest['thinking']): Effort {
-  // `none` is honored by the Responses API (0 reasoning tokens, no summary) but is
-  // absent from every model's advertised levels, so only the catalog can surface it.
+function budgetEffort(thinking: MessagesRequest['thinking']): Effort {
   if (thinking?.type === 'disabled') {
-    return 'none';
+    return 'low';
   }
   const budget = thinking?.budget_tokens;
   if (budget === undefined) {
@@ -503,7 +501,10 @@ export function budgetEffort(thinking: MessagesRequest['thinking']): Effort {
   if (budget <= 8192) {
     return 'medium';
   }
-  return 'high';
+  if (budget <= 24576) {
+    return 'high';
+  }
+  return 'xhigh';
 }
 
 function reasoningEffort(body: MessagesRequest): Effort {
@@ -515,8 +516,10 @@ function reasoningEffort(body: MessagesRequest): Effort {
   if (budget !== undefined && (!Number.isSafeInteger(budget) || budget < 0)) {
     throw new Error('Invalid thinking budget');
   }
-  const requested = body.output_config?.effort ?? budgetEffort(thinking);
-  const effort: Effort = isEffort(requested) ? requested : 'high';
+  const effort = body.output_config?.effort ?? budgetEffort(thinking);
+  if (!isEffort(effort)) {
+    throw new Error(`Unsupported reasoning effort: ${effort}`);
+  }
   return effort;
 }
 

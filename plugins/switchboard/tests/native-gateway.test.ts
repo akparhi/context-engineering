@@ -377,7 +377,7 @@ test('switching back to Claude removes OpenAI reasoning while preserving message
   assert.deepEqual(cleaned[0], stored[0]);
   assert.deepEqual(cleaned[1].content, [tool]);
   assert.deepEqual(cleaned[2], stored[3]);
-  assert(!JSON.stringify(cleaned).includes('switchboard-openai:'));
+  assert(!JSON.stringify(cleaned).includes('switchboard:'));
   const untouched = stored[2].content;
   assert.equal(
     Array.isArray(untouched) && untouched.length,
@@ -591,7 +591,7 @@ test('OpenAI cache keys survive history changes and restart, isolating sessions,
     await call({ ...body, metadata: { user_id: JSON.stringify({ session_id: 'session-b' }) } })
   ).text();
   await (await call(payload, { 'x-claude-code-agent-id': 'worker-a' })).text();
-  await (await call({ ...payload, model: 'switchboard/openai/gpt-5.6-luna' })).text();
+  await (await call({ ...payload, model: 'switchboard/openai/gpt-6-luna' })).text();
   await (await call(body)).text();
   await (await call(body)).text();
   await (await restarted(body)).text();
@@ -610,11 +610,11 @@ test('OpenAI main and worker requests adapt instructions without losing runtime 
     seen.push(JSON.parse(String(options.body)));
     return new Response(sse(textEvents));
   });
-  for (const name of ['gpt-6-astra', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna']) {
+  for (const name of ['gpt-6-astra', 'gpt-6-sol', 'gpt-6-luna']) {
     await (await call({ ...payload, model: `switchboard/openai/${name}` })).text();
   }
   await (await call(payload, { 'x-claude-code-agent-id': 'worker-a' })).text();
-  assert.equal(seen.length, 5);
+  assert.equal(seen.length, 4);
   for (const request of seen) {
     assert.equal(request.instructions, openaiInstructions(runtime));
     assert(request.instructions.startsWith(runtime));
@@ -717,7 +717,7 @@ test('external route isolates provider credentials and handles simultaneous work
     models.push(request.model);
     return new Response(sse(textEvents), { headers: { 'content-type': 'text/event-stream' } });
   });
-  const slugs = ['gpt-6-astra', 'gpt-5.6-luna'];
+  const slugs = ['gpt-6-astra', 'gpt-6-luna'];
   const responses = await Promise.all(
     slugs.map((slug, i) =>
       call(
@@ -778,9 +778,8 @@ test('all registered model and reasoning choices reach OpenAI without substituti
   });
   for (const [name, slug] of [
     ['openai-native', 'gpt-6-astra'],
-    ['openai-sol', 'gpt-5.6-sol'],
-    ['openai-terra', 'gpt-5.6-terra'],
-    ['openai-luna', 'gpt-5.6-luna'],
+    ['openai-sol', 'gpt-6-sol'],
+    ['openai-luna', 'gpt-6-luna'],
   ]) {
     assert.deepEqual(OPENAI_WORKERS[name], { model: slug, effort: 'medium' });
     for (const effort of ['low', 'medium', 'high', 'xhigh', 'max']) {

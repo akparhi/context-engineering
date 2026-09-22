@@ -1,3 +1,5 @@
+import { isHarnessModel } from './provider.ts';
+
 export type PolicyResponse = {
   refused?: true;
   httpStatus?: number;
@@ -63,9 +65,12 @@ export async function admitPrompt(
 export async function recordPrompt(
   client: PolicyClient,
   snapshot: PromptSnapshot,
-  _generation: number | undefined,
+  generation: number | undefined,
 ): Promise<number | undefined> {
   const model = client.model;
+  if (isHarnessModel(model)) {
+    return admitPrompt(client, snapshot, generation);
+  }
   const response = await client.request('/switchboard/mod/session', {
     ...snapshot,
     model,

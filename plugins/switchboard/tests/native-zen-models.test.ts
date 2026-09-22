@@ -13,6 +13,8 @@ import {
 import {
   ZEN_MODELS,
   ZEN_WORKERS,
+  zenModelOptions,
+  zenPickerOptions,
 } from '../src/providers/opencode/models.ts';
 import { removeTemporary } from './temporary.ts';
 
@@ -170,10 +172,53 @@ test('Zen auth rejects malformed saved credentials without including secrets', a
 test('Zen catalog exposes bounded protocols and only supported effort workers', () => {
   assert.deepEqual(
     ZEN_MODELS.map((model) => [model.id, model.protocol]),
-    [['deepseek-v4.1-flash', 'chat']],
+    [
+      ['gpt-5.6-luna', 'responses'],
+      ['gpt-5.6-terra', 'responses'],
+      ['gpt-5.6-sol', 'responses'],
+      ['kimi-k2.7-code', 'chat'],
+      ['glm-5.2', 'chat'],
+      ['minimax-m2.7', 'chat'],
+      ['big-pickle', 'chat'],
+      ['mimo-v2.5-free', 'chat'],
+      ['ling-3.0-flash-fin-free', 'chat'],
+      ['nemotron-3-ultra-free', 'chat'],
+      ['nemotron-3.5-lightning-free', 'chat'],
+      ['muse-spark-1.3-contributor-free', 'responses'],
+      ['muse-spark-1.2-contributor-free', 'responses'],
+      ['deepseek-v4-pro', 'chat'],
+      ['deepseek-v4-flash', 'chat'],
+      ['kimi-k3', 'chat'],
+      ['glm-5.3', 'chat'],
+      ['glm-5.3-flash', 'chat'],
+      ['muse-spark-1.3', 'responses'],
+    ],
   );
-  assert.equal(ZEN_WORKERS['zen-deepseek-v4.1-flash'].effort, undefined);
-  assert.equal(ZEN_WORKERS['zen-deepseek-v4.1-flash-impossible'], undefined);
+  assert.equal(zenModelOptions(['big-pickle'])[0].model, 'switchboard/zen/big-pickle');
+  assert.equal(ZEN_WORKERS['zen-big-pickle'].effort, undefined);
+  assert.equal(ZEN_WORKERS['zen-gpt-5.6-luna'].effort, 'medium');
+  assert.equal(ZEN_WORKERS['zen-gpt-5.6-luna-high'].effort, 'high');
+  assert.equal(ZEN_WORKERS['zen-gpt-5.6-luna-impossible'], undefined);
+});
+
+test('Zen picker allowlist preserves order and validates model IDs', () => {
+  assert.deepEqual(
+    zenPickerOptions(undefined).map((model) => model.id),
+    [
+      'deepseek-v4-pro',
+      'deepseek-v4-flash',
+      'kimi-k3',
+      'glm-5.3',
+      'glm-5.3-flash',
+      'muse-spark-1.3',
+    ],
+  );
+  assert.deepEqual(zenPickerOptions(''), []);
+  assert.deepEqual(
+    zenPickerOptions(' mimo-v2.5-free, big-pickle,mimo-v2.5-free ').map((model) => model.id),
+    ['mimo-v2.5-free', 'big-pickle'],
+  );
+  assert.throws(() => zenPickerOptions('typo'), /SWITCHBOARD_ZEN_MODELS: unknown Zen model/);
 });
 
 test('Zen local key entry preserves other accounts and writes a private auth file', async (t) => {

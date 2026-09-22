@@ -49,7 +49,7 @@ test('toChat keeps assistant call groups and only replays own model reasoning', 
   const own = {
     type: 'thinking',
     thinking: '',
-    signature: 'switchboard-zen-chat:kimi-k2.7-code:eyJyZWFzb25pbmciOiIifQ',
+    signature: 'switchboard-chat:kimi-k2.7-code:eyJyZWFzb25pbmciOiIifQ',
   };
   const body = toChat(
     {
@@ -68,7 +68,7 @@ test('toChat keeps assistant call groups and only replays own model reasoning', 
         {
           role: 'assistant',
           content: [
-            { type: 'thinking', thinking: 'foreign', signature: 'switchboard-openai:x' },
+            { type: 'thinking', thinking: 'foreign', signature: 'switchboard:x' },
             { type: 'text', text: 'done' },
           ],
         },
@@ -91,7 +91,7 @@ test('toChat keeps assistant call groups and only replays own model reasoning', 
       messages: [
         {
           role: 'assistant',
-          content: [{ type: 'thinking', thinking: 'foreign', signature: 'switchboard-openai:x' }],
+          content: [{ type: 'thinking', thinking: 'foreign', signature: 'switchboard:x' }],
         },
         { role: 'user', content: 'next' },
       ],
@@ -107,7 +107,7 @@ test('toChat keeps assistant call groups and only replays own model reasoning', 
             {
               role: 'assistant',
               content: [
-                { type: 'thinking', signature: 'switchboard-zen-chat:kimi-k2.7-code:not-base64' },
+                { type: 'thinking', signature: 'switchboard-chat:kimi-k2.7-code:not-base64' },
               ],
             },
           ],

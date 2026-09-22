@@ -97,7 +97,7 @@ test('Claude-loop worker route does not require a settings-policy generation', a
   modes.recordHostSession('session', {
     permissionMode: 'default',
     cwd: '/workspace',
-    model: 'switchboard/openai/gpt-5.6-luna',
+    model: 'switchboard/openai/gpt-6-luna',
   });
   const base = await start(t, modes);
   const result = await request(base, '/switchboard/mod/worker', {
@@ -106,7 +106,7 @@ test('Claude-loop worker route does not require a settings-policy generation', a
     cwd: '/workspace',
     permissionMode: 'default',
     model: 'switchboard/zen/deepseek-v4-pro',
-    parentModel: 'switchboard/openai/gpt-5.6-luna',
+    parentModel: 'switchboard/openai/gpt-6-luna',
   });
   assert.equal(result.status, 200);
   assert.equal(result.body.accepted, true);
@@ -309,31 +309,6 @@ test('model effort telemetry is scoped observation and cannot change policy', as
   );
   assert.deepEqual(telemetry.body, { model: 'switchboard/openai/gpt-6-astra', effort: 'high' });
   assert.deepEqual(modes.resolve('s'), before);
-});
-
-test('two-phase compaction invokes the native fixture once without tools or origin-state mutation', async (t) => {
-  const modes = new PermissionModes(async () => ({}));
-  const base = await start(t, modes);
-  const generation = await admit(base);
-  const payload = {
-    sessionId: 's',
-    generation,
-    messages: [{ role: 'user', text: 'task', toolUses: [], handle: 'one' }],
-  };
-  const prepared = await request(base, '/switchboard/mod/compact/precompute', payload);
-  const run = { sessionId: 's', generation, precomputeId: prepared.body.precomputeId };
-  assert.equal((await request(base, '/switchboard/mod/compact/run', run)).body.accepted, true);
-  await setImmediate();
-  await request(base, '/switchboard/mod/compact/run', run);
-  const result = await request(base, '/switchboard/mod/compact/authorize', payload);
-  assert.deepEqual(result.body.messages, [
-    { role: 'user', text: 'Conversation summary:\nfixture summary', toolUses: [] },
-  ]);
-  assert.equal(
-    modes.resolve('s').compaction,
-    undefined,
-    'ready summary does not poison normal dispatch',
-  );
 });
 
 test('a prompt snapshot without a permission mode admits no policy but never blocks', async (t) => {

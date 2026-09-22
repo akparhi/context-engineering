@@ -42,7 +42,7 @@ export function zenRequest(body: MessagesRequest, cacheKey: string) {
   ) {
     throw new Error(`Zen max_tokens must be between 1 and ${model.maxOutputTokens}`);
   }
-  const signaturePrefix = `switchboard-zen-responses:${model.id}:`;
+  const signaturePrefix = `switchboard-responses:${model.id}:`;
   const normalized = toResponses(body, model.id, signaturePrefix);
   validateMedia(normalized, model);
   const effort = body.output_config?.effort;
