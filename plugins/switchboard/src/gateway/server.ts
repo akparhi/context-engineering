@@ -883,6 +883,16 @@ function prepareZenRequest(exchange: ProviderRequest, fallbackSession: string) {
   }
 }
 
+/**
+ * Claude Code's session-title call asks for `{title}` JSON at high effort, which is
+ * wasted reasoning on OpenAI. No header marks it, so match its output schema.
+ */
+// yagni: exact schema match; if Claude Code renames the field the call falls back to its own effort.
+function isTitleRequest(body: MessagesRequest): boolean {
+  const schema = body.output_config?.format?.schema as { properties?: object } | undefined;
+  return Object.keys(schema?.properties ?? {}).join() === 'title';
+}
+
 function openaiRequest(exchange: ProviderRequest, externalModel: string): ResponsesRequest {
   const { req, body, url } = exchange;
   try {
@@ -896,7 +906,7 @@ function openaiRequest(exchange: ProviderRequest, externalModel: string): Respon
     ) {
       throw new Error('External models require POST /v1/messages or /v1/messages/count_tokens');
     }
-    const request = toResponses(body, model);
+    const request = toResponses(isTitleRequest(body) ? { ...body, output_config: { ...body.output_config, effort: 'low' } } : body, model);
     return { ...request, instructions: openaiInstructions(request.instructions) };
   } catch (error) {
     throw new BadRequest(reason(error));

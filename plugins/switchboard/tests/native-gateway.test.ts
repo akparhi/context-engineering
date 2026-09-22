@@ -795,6 +795,24 @@ test('all registered model and reasoning choices reach OpenAI without substituti
   }
 });
 
+test("Claude Code's session-title request runs at low effort on OpenAI", async (t) => {
+  const efforts: string[] = [];
+  const call = await gateway(t, async (_url, options) => {
+    efforts.push(JSON.parse(String(options.body)).reasoning.effort);
+    return new Response(sse(textEvents));
+  });
+  const title = {
+    type: 'json_schema',
+    schema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] },
+  };
+  for (const output_config of [{ effort: 'high', format: title }, { effort: 'high' }]) {
+    const response = await call({ ...body, model: 'switchboard/openai/gpt-6-luna', output_config });
+    assert.equal(response.status, 200);
+    await readMessage(response);
+  }
+  assert.deepEqual(efforts, ['low', 'high']);
+});
+
 test('a dropped downstream connection aborts external inference', async (t) => {
   const started = Promise.withResolvers<AbortSignal>();
   const call = await gateway(t, async (_url, options) => {
