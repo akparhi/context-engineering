@@ -173,7 +173,7 @@ test('wrapper follows installed core updates and enables only selected providers
   const args = ['--settings', '{"model":"sonnet"}', '--', 'literal $() and spaces'];
   const first = JSON.parse((await f.invoke('switchboard', args)).stdout);
   assert.deepEqual(first.args, args);
-  assert.equal(first.providers, 'codex,opencode');
+  assert.equal(first.providers, 'openai,zen');
   assert.equal(first.claude, f.real);
   const next = path.join(f.directory, 'core-v2');
   await cp(old, next, { recursive: true });
@@ -195,7 +195,7 @@ test('setup renames the launch command, persists picker models, and keeps them a
   await assert.rejects(access(shim('switchboard')), /ENOENT/);
   const custom = JSON.parse((await f.invoke('mc', [])).stdout);
   assert.equal(custom.models, 'switchboard/openai/gpt-6-astra');
-  assert.equal(custom.providers, 'codex,opencode');
+  assert.equal(custom.providers, 'openai,zen');
   // An explicit environment selection still wins for one launch.
   const explicit = JSON.parse((await f.invoke('mc', [], { SWITCHBOARD_MODELS: '' })).stdout);
   assert.equal(explicit.models, '');
@@ -217,7 +217,7 @@ test('setup renames the launch command, persists picker models, and keeps them a
   // Renaming removes the previous shim and uninstall removes the current one.
   await f.install(['--command', 'switchboard']);
   await assert.rejects(access(shim('mc')), /ENOENT/);
-  assert.equal(JSON.parse((await f.invoke('switchboard', [])).stdout).providers, 'codex,opencode');
+  assert.equal(JSON.parse((await f.invoke('switchboard', [])).stdout).providers, 'openai,zen');
   await assert.rejects(f.install(['--command', 'switchboard-ctl']), /reserved/);
   await assert.rejects(f.install(['--command', 'bad name']), /Invalid launch command/);
   await assert.rejects(f.install(['--models', 'gpt-6-astra']), /Invalid picker model/);
@@ -246,7 +246,7 @@ test('a launch command named claude passes nested runs through to the real execu
   await writeFile(f.listing, JSON.stringify(plugins(root)));
   const install = await f.install(['--command', 'claude']);
   assert.match(install.stderr, /shadows the plain claude command/);
-  assert.equal(JSON.parse((await f.invoke('claude', [])).stdout).providers, 'codex,opencode');
+  assert.equal(JSON.parse((await f.invoke('claude', [])).stdout).providers, 'openai,zen');
   const nested = JSON.parse(
     (await f.invoke('claude', ['-p', 'hi'], { SWITCHBOARD_GATEWAY_TOKEN: 'token' })).stdout,
   );
@@ -336,7 +336,7 @@ test('Windows executable discovery uses PATHEXT and does not require mode bits',
 test('provider selection and native settings arguments preserve explicit disablement', () => {
   assert.equal(providerSelection(undefined), undefined);
   assert.deepEqual(providerSelection(''), []);
-  assert.deepEqual(providerSelection('codex,codex,opencode'), ['codex', 'opencode']);
+  assert.deepEqual(providerSelection('openai,openai,zen'), ['openai', 'zen']);
   assert.throws(() => providerSelection('typo'), /Unknown Switchboard provider/);
   assert.deepEqual(
     settingsArguments([
