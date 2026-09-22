@@ -4,13 +4,7 @@
   "env": { "builtin": true },
   "ignorePatterns": ["node_modules/**"],
   "rules": {
-    "unicorn/consistent-function-scoping": "off",
     "unicorn/no-useless-spread": "off",
-    "unicorn/no-array-sort": "off",
-    "unicorn/no-array-reverse": "off",
-    "eslint/no-shadow": "off",
-    "eslint/no-underscore-dangle": "off",
-    "unicorn/no-invalid-fetch-options": "off",
-    "eslint/no-unmodified-loop-condition": "off"
+    "unicorn/no-invalid-fetch-options": "off"
   }
 }
