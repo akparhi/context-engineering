@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing';
-import { compactionModel, register } from '../compact.ts';
+import { compactionModel, register } from '../../hooks/compact.ts';
 
 test('registers the compaction boundary hook', () => {
   expect(typeof register).toBe('function');

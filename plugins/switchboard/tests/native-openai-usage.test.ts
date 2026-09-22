@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { normalizeCodexUsage, readCodexUsage } from '../../plugins/multi-openai/src/usage.ts';
+import { normalizeCodexUsage, readCodexUsage } from '../src/providers/codex/usage.ts';
 
 test('normalizes every primary and secondary Codex quota bucket', () => {
   const result = normalizeCodexUsage({

@@ -9,6 +9,10 @@
     "lint": "oxlint --deny-warnings .",
     "test": "bun test"
   },
+  "alias": {
+    "claude-code": "./types/claude-code-shim.js",
+    "claude-code/testing": "./types/claude-code-testing-shim.js"
+  },
   "dependencies": {
     "js-tiktoken": "1.0.21",
     "yaml": "2.9.0"

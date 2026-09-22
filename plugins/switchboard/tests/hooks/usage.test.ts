@@ -98,6 +98,7 @@ test('worker completion awaits accounting and preserves the engine answer', asyn
       usage: null,
     };
   });
+  // eslint-disable-next-line no-underscore-dangle
   for await (const _chunk of $.turn.step({
     turnId: 'turn',
     index: 0,

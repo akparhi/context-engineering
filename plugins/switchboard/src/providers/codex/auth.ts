@@ -5,8 +5,8 @@ import { createInterface } from 'node:readline';
 import {
   executableInvocation,
   resolveExecutable,
-} from '../../multi-core/src/gateway/executable.ts';
-import { terminateProcessTree } from '../../multi-core/src/gateway/process-tree.ts';
+} from '../../gateway/executable.ts';
+import { terminateProcessTree } from '../../gateway/process-tree.ts';
 
 /** Codex's saved ChatGPT login, forwarded as OpenAI request headers. */
 export interface CodexAuthHeaders {
@@ -103,6 +103,7 @@ export async function codexRequest(
 }
 
 async function waitForAuth(pending: Promise<CodexAuthHeaders>, signal: AbortSignal) {
+  // eslint-disable-next-line unicorn/consistent-function-scoping
   let onAbort = () => {};
   const aborted = new Promise<never>((_, reject) => {
     onAbort = () => reject(signal.reason);

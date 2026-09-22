@@ -6,9 +6,9 @@ import type {
   ApprovalAction,
   ApprovalContext,
   ApprovalVerdict,
-} from '../../multi-core/src/gateway/approval.ts';
-import { NativeApprovalBridge } from '../../multi-core/src/gateway/approval.ts';
-import type { GatewayFetch } from '../../multi-core/src/gateway/fetch.ts';
+} from '../../gateway/approval.ts';
+import { NativeApprovalBridge } from '../../gateway/approval.ts';
+import type { GatewayFetch } from '../../gateway/fetch.ts';
 import { codexRequest } from './auth.ts';
 import { readSse } from './responses.ts';
 
@@ -25,7 +25,8 @@ const record = (value: unknown): value is Record<string, unknown> =>
 /** Discover the subscription reviewer; never substitute the working model. */
 export async function discoverOpenAIReviewer(
   authFile: string,
-  fetchImpl: GatewayFetch = fetch,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  fetchImpl: GatewayFetch = fetch as any,
 ): Promise<boolean> {
   const signal = AbortSignal.timeout(10000);
   const response = await codexRequest(authFile, signal, (headers) =>
@@ -108,7 +109,8 @@ export async function inspectApprovalPath(
 export async function createOpenAIApproval(
   authFile: string,
   cwd: string,
-  fetchImpl: GatewayFetch = fetch,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  fetchImpl: GatewayFetch = fetch as any,
 ) {
   const [policy, template] = await Promise.all([
     readFile(new URL('./guardian/policy.md', import.meta.url), 'utf8'),

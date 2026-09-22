@@ -3,9 +3,9 @@ import test from 'node:test';
 import {
   ProviderUsageDashboard,
   type ProviderUsageView,
-} from '../../plugins/multi-core/src/gateway/provider-usage.ts';
-import { ReceiptLedger } from '../../plugins/multi-core/src/gateway/receipts.ts';
-import { createNativeGateway } from '../../plugins/multi-core/src/gateway/server.ts';
+} from '../src/gateway/provider-usage.ts';
+import { ReceiptLedger } from '../src/gateway/receipts.ts';
+import { createNativeGateway } from '../src/gateway/server.ts';
 
 const empty = () => new ReceiptLedger().snapshot();
 test('provider dashboard reads every enabled provider and preserves unavailable quota status', async () => {
@@ -26,7 +26,7 @@ test('provider dashboard reads every enabled provider and preserves unavailable 
     }),
   });
   const result = await dashboard.read('owned', empty());
-  assert.deepEqual(calls.sort(), ['cursor:owned', 'openai:owned', 'zen:owned']);
+  assert.deepEqual(calls.toSorted(), ['cursor:owned', 'openai:owned', 'zen:owned']);
   assert.deepEqual(
     result.providers.map((row) => row.status),
     ['ready', 'ready', 'ready', 'unavailable', 'disabled'],
@@ -58,7 +58,7 @@ test('provider dashboard coalesces reads, caches account data, refreshes and kee
   const dashboard = new ProviderUsageDashboard({
     enabled: ['cursor'],
     now: () => now,
-    cursor: async (session) => {
+    cursor: async (session: string) => {
       calls++;
       return { summary: session, details: [] };
     },
@@ -88,7 +88,7 @@ test('provider menu route is authenticated, session scoped and read-only', async
   let reads = 0;
   const dashboard = new ProviderUsageDashboard({
     enabled: ['cursor'],
-    cursor: async (session) => {
+    cursor: async (session: string) => {
       reads++;
       return { summary: session, details: [] };
     },

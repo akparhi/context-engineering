@@ -4,8 +4,8 @@ import { setImmediate } from 'node:timers/promises';
 import {
   ModPolicies,
   type PreparedPolicy,
-} from '../../plugins/multi-core/src/gateway/mod-policy.ts';
-import { PermissionModes } from '../../plugins/multi-core/src/gateway/mode-hook.ts';
+} from '../src/gateway/mod-policy.ts';
+import { PermissionModes } from '../src/gateway/mode-hook.ts';
 
 const policy: PreparedPolicy = {
   cwd: '/workspace',

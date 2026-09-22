@@ -4,8 +4,8 @@ import { createInterface } from 'node:readline';
 import {
   executableInvocation,
   resolveExecutable,
-} from '../../multi-core/src/gateway/executable.ts';
-import { terminateProcessTree } from '../../multi-core/src/gateway/process-tree.ts';
+} from '../../gateway/executable.ts';
+import { terminateProcessTree } from '../../gateway/process-tree.ts';
 
 interface CodexQuotaWindow {
   label: string;

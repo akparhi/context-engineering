@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from 'node:util';
-import { isDirectToolAvailable } from '../../multi-core/src/gateway/direct-tools.ts';
+import { isDirectToolAvailable } from '../../gateway/direct-tools.ts';
 import type {
   ContentBlock,
   Emit,
@@ -7,8 +7,8 @@ import type {
   MessagesResponse,
   ResponseContentBlock,
   StopReason,
-} from '../../multi-core/src/gateway/messages.ts';
-import { callId, toolName } from '../../multi-core/src/gateway/tools.ts';
+} from '../../gateway/messages.ts';
+import { callId, toolName } from '../../gateway/tools.ts';
 
 // Anthropic Messages <-> OpenAI Responses, for native Claude Code workers.
 const SIGNATURE_PREFIX = 'multi-openai:';
@@ -181,17 +181,19 @@ function validResponse(value: unknown): boolean {
   if (!isRecord(value.usage)) {
     return false;
   }
-  const count = (v: unknown) =>
-    v === undefined || (typeof v === 'number' && Number.isSafeInteger(v) && v >= 0);
   const usage = value.usage;
   return (
-    count(usage.input_tokens) &&
-    count(usage.output_tokens) &&
+    isValidCount(usage.input_tokens) &&
+    isValidCount(usage.output_tokens) &&
     (usage.input_tokens_details === undefined ||
       (isRecord(usage.input_tokens_details) &&
-        count(usage.input_tokens_details.cached_tokens) &&
-        count(usage.input_tokens_details.cache_write_tokens)))
+        isValidCount(usage.input_tokens_details.cached_tokens) &&
+        isValidCount(usage.input_tokens_details.cache_write_tokens)))
   );
+}
+
+function isValidCount(v: unknown) {
+  return v === undefined || (typeof v === 'number' && Number.isSafeInteger(v) && v >= 0);
 }
 
 /** Ignore new event types; validate every known field before narrowing JSON. */

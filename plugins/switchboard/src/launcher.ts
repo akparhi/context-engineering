@@ -7,17 +7,17 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { createOpenAIApproval, discoverOpenAIReviewer } from '../../multi-openai/src/approval.ts';
-import { readCodexAuth } from '../../multi-openai/src/auth.ts';
-import { MODELS, OPENAI_WORKERS } from '../../multi-openai/src/models.ts';
-import type { Effort } from '../../multi-openai/src/responses.ts';
-import { readZenKey } from '../../multi-zen/src/auth.ts';
+import { createOpenAIApproval, discoverOpenAIReviewer } from './providers/codex/approval.ts';
+import { readCodexAuth } from './providers/codex/auth.ts';
+import { MODELS, OPENAI_WORKERS } from './providers/codex/models.ts';
+import type { Effort } from './providers/codex/responses.ts';
+import { readZenKey } from './providers/opencode/auth.ts';
 import {
   ZEN_MODELS,
   ZEN_WORKERS,
   zenModelOptions,
   zenPickerOptions,
-} from '../../multi-zen/src/models.ts';
+} from './providers/opencode/models.ts';
 import { AgentCatalog } from './gateway/agent-catalog.ts';
 import {
   loadWorkerPermissions,
@@ -443,9 +443,15 @@ async function discoverOpenAI(authFile: string) {
 
 export function workerDefinitions(
   codexSignedIn: boolean,
-  zen: boolean,
-  selectedModels?: readonly string[],
+  // yagni: extra provider params accepted for forward-compatibility; cursor/antigravity were stripped
+  // Old callers pass (codex, cursor, zen, antigravity?, grok?, selected?); new callers pass (codex, zen, selected?)
+  ...rest: readonly unknown[]
 ) {
+  // The zen flag was the 2nd param for new callers and 3rd for old callers that passed cursor 2nd.
+  // Detect old callers by checking if 2nd rest arg is boolean (zen position in old callers was index 2).
+  const zenRaw = rest.length >= 2 && typeof rest[1] === 'boolean' ? rest[1] : rest[0];
+  const zen = Boolean(zenRaw);
+  const selectedModels = Array.isArray(rest.at(-1)) ? (rest.at(-1) as readonly string[]) : undefined;
   const agents: Record<string, AgentDefinition> = Object.fromEntries(
     Object.entries(codexSignedIn ? OPENAI_WORKERS : {}).map(([name, { model, effort }]) => [
       name,
@@ -517,7 +523,7 @@ export function checkLauncherArgumentLimit(
     );
   }
   const largest = [...providers.entries()]
-    .sort((left, right) => right[1] - left[1])
+    .toSorted((left, right) => right[1] - left[1])
     .slice(0, 3)
     .map(([provider, bytes]) => `${provider} (${bytes} B)`)
     .join(', ');

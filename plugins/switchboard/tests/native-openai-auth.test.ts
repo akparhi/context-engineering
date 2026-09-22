@@ -8,7 +8,7 @@ import {
   CodexAuthError,
   codexRequest,
   readCodexAuth,
-} from '../../plugins/multi-openai/src/auth.ts';
+} from '../src/providers/codex/auth.ts';
 import { removeTemporary } from '../temporary.ts';
 
 const jwt = (exp: number) =>

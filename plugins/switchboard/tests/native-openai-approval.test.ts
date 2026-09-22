@@ -4,12 +4,12 @@ import os from 'node:os';
 import path from 'node:path';
 import type { TestContext } from 'node:test';
 import test from 'node:test';
-import type { GatewayFetch } from '../../plugins/multi-core/src/gateway/fetch.ts';
+import type { GatewayFetch } from '../src/gateway/fetch.ts';
 import {
   createOpenAIApproval,
   discoverOpenAIReviewer,
   inspectApprovalPath,
-} from '../../plugins/multi-openai/src/approval.ts';
+} from '../src/providers/codex/approval.ts';
 import { removeTemporary } from '../temporary.ts';
 
 const request = (model = 'claude-sonnet-5') => ({

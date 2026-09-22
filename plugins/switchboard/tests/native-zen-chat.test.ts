@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { Emit, StreamEventBody } from '../../plugins/multi-core/src/gateway/messages.ts';
-import { toolName } from '../../plugins/multi-core/src/gateway/tools.ts';
-import { fromChat, toChat } from '../../plugins/multi-zen/src/chat.ts';
+import type { Emit, StreamEventBody } from '../src/gateway/messages.ts';
+import { toolName } from '../src/gateway/tools.ts';
+import { fromChat, toChat } from '../src/providers/opencode/chat.ts';
 
 const model = 'multi/zen/kimi-k2.7-code';
 const tools = [{ name: 'Read File', description: 'read', input_schema: { type: 'object' } }];
@@ -236,13 +236,14 @@ test('fromChat rejects unknown tools, malformed terminal calls and an interrupte
     ),
     /invalid tool arguments/,
   );
-  async function* interrupted() {
-    yield Buffer.from(
-      'data: {"id":"chat-1","choices":[{"index":0,"delta":{"content":"x"},"finish_reason":null}]}\n\n',
-    );
-  }
-  await assert.rejects(fromChat(interrupted(), model), /ended before completion/);
+  await assert.rejects(fromChat(interruptedChat(), model), /ended before completion/);
 });
+
+async function* interruptedChat() {
+  yield Buffer.from(
+    'data: {"id":"chat-1","choices":[{"index":0,"delta":{"content":"x"},"finish_reason":null}]}\n\n',
+  );
+}
 
 test('fromChat keeps fragmented interleaved tool arguments and rejects data after finish', async () => {
   const seen = capture();
@@ -383,14 +384,15 @@ test('fromChat rejects impossible cache counts and propagates an aborted iterabl
     ),
     /usage/,
   );
-  async function* aborted() {
-    yield Buffer.from(
-      'data: {"id":"chat-5","choices":[{"index":0,"delta":{"content":"partial"},"finish_reason":null}]}\n\n',
-    );
-    throw new Error('aborted by caller');
-  }
-  await assert.rejects(fromChat(aborted(), model), /aborted by caller/);
+  await assert.rejects(fromChat(abortedChat(), model), /aborted by caller/);
 });
+
+async function* abortedChat() {
+  yield Buffer.from(
+    'data: {"id":"chat-5","choices":[{"index":0,"delta":{"content":"partial"},"finish_reason":null}]}\n\n',
+  );
+  throw new Error('aborted by caller');
+}
 
 test('toChat preserves image bearing tool output as OpenAI content parts', () => {
   const body = toChat(

@@ -3,7 +3,7 @@ import type { EngineInterface, Register } from 'claude-code';
 export const register = (
   on: Parameters<Register>[0],
   _options: Parameters<Register>[1],
-  agentModels: ReadonlyMap<string, string> = new Map(),
+  _agentModels: ReadonlyMap<string, string> = new Map(),
 ) => {
   on('session.compact', async ($, event, next) => {
     return next(event);

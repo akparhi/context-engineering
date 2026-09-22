@@ -1,5 +1,4 @@
-import { fileURLToPath } from 'node:url';
-import { readZenKey, saveZenKey } from '../../multi-zen/src/auth.ts';
+import { readZenKey, saveZenKey } from './providers/opencode/auth.ts';
 import { providerSelection } from './install/plugins.ts';
 import { run } from './install/process.ts';
 

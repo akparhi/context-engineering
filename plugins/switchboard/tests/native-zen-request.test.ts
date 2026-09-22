@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { MessagesRequest } from '../../plugins/multi-core/src/gateway/messages.ts';
-import type { ResponsesInputItem } from '../../plugins/multi-openai/src/responses.ts';
-import { fromResponses } from '../../plugins/multi-openai/src/responses.ts';
-import { toChat } from '../../plugins/multi-zen/src/chat.ts';
-import { zenRequest } from '../../plugins/multi-zen/src/request.ts';
+import type { MessagesRequest } from '../src/gateway/messages.ts';
+import type { ResponsesInputItem } from '../src/providers/codex/responses.ts';
+import { fromResponses } from '../src/providers/codex/responses.ts';
+import { toChat } from '../src/providers/opencode/chat.ts';
+import { zenRequest } from '../src/providers/opencode/request.ts';
 
 const responsesModel = 'multi/zen/gpt-5.6-luna';
 const chatModel = 'multi/zen/kimi-k2.7-code';

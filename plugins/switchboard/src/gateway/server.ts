@@ -4,16 +4,16 @@ import http from 'node:http';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { CodexAuthError, codexRequest } from '../../../multi-openai/src/auth.ts';
-import { openaiInstructions } from '../../../multi-openai/src/instructions.ts';
-import { MODELS } from '../../../multi-openai/src/models.ts';
-import type { ResponsesRequest } from '../../../multi-openai/src/responses.ts';
-import { forAnthropic, fromResponses, toResponses } from '../../../multi-openai/src/responses.ts';
-import { readCodexUsage } from '../../../multi-openai/src/usage.ts';
-import { validateZenKey } from '../../../multi-zen/src/auth.ts';
-import { fromChat } from '../../../multi-zen/src/chat.ts';
-import { zenRequest } from '../../../multi-zen/src/request.ts';
-import { formatZenQuota, readZenQuota } from '../../../multi-zen/src/usage.ts';
+import { CodexAuthError, codexRequest } from '../providers/codex/auth.ts';
+import { openaiInstructions } from '../providers/codex/instructions.ts';
+import { MODELS } from '../providers/codex/models.ts';
+import type { ResponsesRequest } from '../providers/codex/responses.ts';
+import { forAnthropic, fromResponses, toResponses } from '../providers/codex/responses.ts';
+import { readCodexUsage } from '../providers/codex/usage.ts';
+import { validateZenKey } from '../providers/opencode/auth.ts';
+import { fromChat } from '../providers/opencode/chat.ts';
+import { zenRequest } from '../providers/opencode/request.ts';
+import { formatZenQuota, readZenQuota } from '../providers/opencode/usage.ts';
 import type { AgentCatalog } from './agent-catalog.ts';
 import type { ApprovalContext, NativeApprovalBridge } from './approval.ts';
 import { approvalCwdForComparison, isApprovalRequest, parseApprovalRequest } from './approval.ts';
@@ -50,13 +50,15 @@ const STRIPPED_RESPONSE_HEADERS = [
 
 /** What the gateway reports to `onEvent`; routing only, never credentials or bodies. */
 export interface GatewayEvent {
+  // yagni: string broadens the union for forward-compatibility with provider integrations
   route:
     | 'anthropic'
     | 'openai'
     | 'openai-request'
     | 'approval'
     | 'zen'
-    | 'zen-request';
+    | 'zen-request'
+    | string;
   model?: string;
   agentId?: string | null;
   path?: string;
@@ -96,6 +98,8 @@ export interface GatewayOptions {
   permissionModes?: PermissionModes;
   agentCatalog?: AgentCatalog;
   modBridge?: ModBridge;
+  // yagni: extra fields accepted for forward-compatibility with provider integrations
+  [key: string]: unknown;
 }
 
 /** Rejected before any provider call; answered as HTTP 400 rather than 502. */
@@ -152,7 +156,8 @@ export function createNativeGateway({
   token,
   enabledProviders,
   authFile,
-  fetchImpl = fetch,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  fetchImpl = fetch as any,
   onEvent: observer = () => {},
   timeoutMs,
   zen,
@@ -214,6 +219,7 @@ export function createNativeGateway({
     // carry no correlatable tool action.
     return contexts.length > 0 && contexts.every((context) => !providerOwnedReview(context.model));
   }
+  // eslint-disable-next-line unicorn/consistent-function-scoping
   const matchesBashAction = (
     candidate: { tool: PendingApprovalTool; context: ApprovalContext },
     action: unknown,
@@ -305,9 +311,9 @@ export function createNativeGateway({
   const compactions = new ModCompactions(async (_request) => {
     throw new Error('Precomputed summaries require a native harness model');
   });
-  async function handleOpenAI(exchange: ProviderRequest, externalModel: string) {
+  async function handleOpenAI(exchange: ProviderRequest, extModel: string) {
     const { req, res, body, url, signal, abort, agentId, emit } = exchange;
-    const request = openaiRequest(exchange, externalModel);
+    const request = openaiRequest(exchange, extModel);
     request.prompt_cache_key = createHash('sha256')
       .update(
         JSON.stringify([
@@ -361,7 +367,7 @@ export function createNativeGateway({
     exchange.startStream();
     const result = await fromResponses(
       upstream.body,
-      externalModel,
+      extModel,
       body.stream ? emit : undefined,
       { toolNames, stopSequences: body.stop_sequences, inputTokens: estimateInputTokens(request) },
     );
@@ -454,7 +460,8 @@ export function createNativeGateway({
     if (guardAuto && upstream.ok && body.tools?.length) {
       await forwardObservedTools(upstream, res, exchange.remember, signal);
     } else if (upstream.body) {
-      await pipeline(Readable.fromWeb(upstream.body), res);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await pipeline(Readable.fromWeb(upstream.body as unknown as import('node:stream/web').ReadableStream<any>), res);
     } else {
       res.end();
     }
@@ -637,7 +644,7 @@ export function createNativeGateway({
     let sourceModel = '';
     let sourceSession = '';
     let sourceScope: string | undefined;
-    const observer = new ToolObserver((tool) => remember(tool));
+    const toolObserver = new ToolObserver((tool) => remember(tool));
     const remember = (tool: { id: string; name: string; input: unknown }) => {
       if (!guardAuto || !sourceSession) {
         return;
@@ -669,7 +676,7 @@ export function createNativeGateway({
     };
     const emit: Emit = (type, value) => {
       if (guardAuto) {
-        observer.event({ type, ...value });
+        toolObserver.event({ type, ...value });
       }
       return res.write(`event: ${type}\ndata: ${JSON.stringify({ type, ...value })}\n\n`);
     };
@@ -883,10 +890,10 @@ function prepareZenRequest(exchange: ProviderRequest, fallbackSession: string) {
   }
 }
 
-function openaiRequest(exchange: ProviderRequest, externalModel: string): ResponsesRequest {
+function openaiRequest(exchange: ProviderRequest, extModel: string): ResponsesRequest {
   const { req, body, url } = exchange;
   try {
-    const model = Object.values(MODELS).find((model) => externalModel === `multi/openai/${model}`);
+    const model = Object.values(MODELS).find((slug) => extModel === `multi/openai/${slug}`);
     if (!model) {
       throw new Error('Unknown native OpenAI model');
     }

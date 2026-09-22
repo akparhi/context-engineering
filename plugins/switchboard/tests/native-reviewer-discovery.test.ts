@@ -70,7 +70,7 @@ globalThis.fetch = async (url, init) => {
 `,
   );
   const launcher = fileURLToPath(
-    new URL('../../plugins/multi-core/src/launcher.ts', import.meta.url),
+    new URL('../src/launcher.ts', import.meta.url),
   );
   for (const auth of ['yes', 'api', 'no']) {
     for (const review of ['yes', 'no']) {

@@ -4,37 +4,37 @@ import os from 'node:os';
 import path from 'node:path';
 import type { TestContext } from 'node:test';
 import test from 'node:test';
-import { AgentCatalog } from '../../plugins/multi-core/src/gateway/agent-catalog.ts';
-import type { GatewayFetch } from '../../plugins/multi-core/src/gateway/fetch.ts';
+import { AgentCatalog } from '../src/gateway/agent-catalog.ts';
+import type { GatewayFetch } from '../src/gateway/fetch.ts';
 import type {
   MessagesRequest,
   MessagesResponse,
   RequestMessage,
   StreamEventBody,
   StreamEventName,
-} from '../../plugins/multi-core/src/gateway/messages.ts';
-import { ReceiptLedger } from '../../plugins/multi-core/src/gateway/receipts.ts';
-import { createNativeGateway } from '../../plugins/multi-core/src/gateway/server.ts';
-import { estimateInputTokens } from '../../plugins/multi-core/src/gateway/tokens.ts';
+} from '../src/gateway/messages.ts';
+import { ReceiptLedger } from '../src/gateway/receipts.ts';
+import { createNativeGateway } from '../src/gateway/server.ts';
+import { estimateInputTokens } from '../src/gateway/tokens.ts';
 import {
   originalToolNames,
   toolName,
   callId as wireCallId,
-} from '../../plugins/multi-core/src/gateway/tools.ts';
-import { readCodexAuth } from '../../plugins/multi-openai/src/auth.ts';
-import { openaiInstructions } from '../../plugins/multi-openai/src/instructions.ts';
-import { OPENAI_WORKERS } from '../../plugins/multi-openai/src/models.ts';
+} from '../src/gateway/tools.ts';
+import { readCodexAuth } from '../src/providers/codex/auth.ts';
+import { openaiInstructions } from '../src/providers/codex/instructions.ts';
+import { OPENAI_WORKERS } from '../src/providers/codex/models.ts';
 import type {
   ResponsesInputContent,
   ResponsesInputItem,
   ResponsesRequest,
-} from '../../plugins/multi-openai/src/responses.ts';
+} from '../src/providers/codex/responses.ts';
 import {
   forAnthropic,
   fromResponses,
   readSse,
   toResponses,
-} from '../../plugins/multi-openai/src/responses.ts';
+} from '../src/providers/codex/responses.ts';
 import { removeTemporary } from '../temporary.ts';
 
 /** A test double for one OpenAI Responses SSE event; sent as JSON, never typed upstream. */
@@ -60,9 +60,9 @@ const body: MessagesRequest = {
 const sse = (list: SseEvent[]) =>
   list.map((event) => `event: ${event.type}\r\ndata: ${JSON.stringify(event)}\r\n\r\n`).join('');
 const stream = (list: SseEvent[]) => {
-  const body = new Response(sse(list)).body;
-  assert(body, 'Response body');
-  return body;
+  const responseBody = new Response(sse(list)).body;
+  assert(responseBody, 'Response body');
+  return responseBody;
 };
 function events(item: SseEvent, deltas: SseEvent[] = []): SseEvent[] {
   return [
@@ -732,8 +732,8 @@ test('external route isolates provider credentials and handles simultaneous work
     assert.equal(textOf(result), 'Done');
     assert.equal(result.stop_reason, 'end_turn');
   }
-  assert.deepEqual(ids.sort(), ['a', 'b']);
-  assert.deepEqual(models.sort(), [...slugs].sort());
+  assert.deepEqual(ids.toSorted(), ['a', 'b']);
+  assert.deepEqual(models.toSorted(), [...slugs].toSorted());
 });
 
 test('browser, unauthenticated and unregistered external requests never reach a provider', async (t) => {
@@ -1183,6 +1183,10 @@ test('invalid request shapes fail locally and legacy thinking budgets respect ex
   );
 });
 
+async function* oversized() {
+  yield new TextEncoder().encode(`data: ${'x'.repeat(8 * 1024 * 1024)}`);
+}
+
 test('multiple text parts, unknown events, and oversized SSE frames have explicit outcomes', async () => {
   const result = await fromResponses(
     stream(
@@ -1203,9 +1207,6 @@ test('multiple text parts, unknown events, and oversized SSE frames have explici
     model,
   );
   assert.equal(textOf(result), 'firstsecond');
-  async function* oversized() {
-    yield new TextEncoder().encode(`data: ${'x'.repeat(8 * 1024 * 1024)}`);
-  }
   await assert.rejects(async () => {
     for await (const _ of readSse(oversized())) {
     }
@@ -1230,7 +1231,8 @@ test('oversized uploads receive HTTP 413 while the client is still streaming', a
   });
   const address = server.address();
   assert(address && typeof address === 'object');
-  const init: RequestInit = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const init: any = {
     method: 'POST',
     headers: { 'x-multi-gateway-token': 'test' },
     duplex: 'half',
@@ -1252,6 +1254,7 @@ test('OpenAI has no implicit request deadline while explicit limits and Claude p
     durations.push(ms);
     return new AbortController().signal;
   });
+  // eslint-disable-next-line unicorn/consistent-function-scoping
   const upstream: GatewayFetch = async (url) =>
     url.includes('api.anthropic.com')
       ? new Response('{}', { headers: { 'content-type': 'application/json' } })

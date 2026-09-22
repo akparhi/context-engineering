@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { setImmediate } from 'node:timers/promises';
-import { ModBridge } from '../../plugins/multi-core/src/gateway/mod-bridge.ts';
-import { PermissionModes } from '../../plugins/multi-core/src/gateway/mode-hook.ts';
-import { createNativeGateway } from '../../plugins/multi-core/src/gateway/server.ts';
+import { ModBridge } from '../src/gateway/mod-bridge.ts';
+import { PermissionModes } from '../src/gateway/mode-hook.ts';
+import { createNativeGateway } from '../src/gateway/server.ts';
 
 async function start(
   t: test.TestContext,
@@ -33,7 +33,7 @@ async function request(base: string, route: string, body?: unknown, method = 'PO
   const response = await fetch(base + route, {
     method,
     headers: { 'x-multi-gateway-token': 'mod-token', 'content-type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
   return { status: response.status, body: (await response.json()) as Record<string, unknown> };
 }
@@ -317,7 +317,7 @@ test('two-phase compaction invokes the native fixture once without tools or orig
   let calls = 0;
   const base = await start(t, modes, {
     validate: () => 1,
-    handle: async (_body, scope, _signal, _emit, context) => {
+    handle: async (_body: unknown, scope: string, _signal: unknown, _emit: unknown, context: Record<string, unknown> | undefined) => {
       calls++;
       assert.deepEqual(context?.tools, []);
       assert.equal(typeof context?.compaction, 'string');

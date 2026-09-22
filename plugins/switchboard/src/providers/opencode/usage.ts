@@ -22,7 +22,8 @@ export type ZenQuotaResult =
 export interface ZenQuotaOptions extends ZenAuthPathOptions {
   apiKey?: string;
   endpoint?: string;
-  fetch?: typeof globalThis.fetch;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  fetch?: (input: any, init?: any) => Promise<Response>;
   timeoutMs?: number;
 }
 

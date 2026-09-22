@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { formatZenQuota, readZenQuota } from '../../plugins/multi-zen/src/usage.ts';
+import { formatZenQuota, readZenQuota } from '../src/providers/opencode/usage.ts';
 
 const payload = {
   usage: {

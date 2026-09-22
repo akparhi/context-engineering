@@ -9,25 +9,26 @@ import { promisify } from 'node:util';
 import {
   setup as installSetup,
   uninstall as installUninstall,
-} from '../../plugins/multi-core/src/install/installation.ts';
+} from '../src/install/installation.ts';
 import {
   providerSelection,
   settingsArguments,
-} from '../../plugins/multi-core/src/install/plugins.ts';
+} from '../src/install/plugins.ts';
 import { removeTemporary } from '../temporary.ts';
 
 const execute = promisify(execFile);
 
+const quoteForWindows = (value: string) => `"${value.replaceAll('"', '\\"')}"`;
+
 function windowsInvocation(pathname: string, args: string[], env: NodeJS.ProcessEnv) {
-  const quote = (value: string) => `"${value.replaceAll('"', '\\"')}"`;
-  const commandLine = [pathname, ...args].map(quote).join(' ');
+  const commandLine = [pathname, ...args].map(quoteForWindows).join(' ');
   return {
     command: env.ComSpec ?? 'C:\\Windows\\System32\\cmd.exe',
     args: ['/d', '/s', '/c', `"${commandLine}"`],
     windowsVerbatimArguments: true,
   };
 }
-const setup = fileURLToPath(new URL('../../plugins/multi-core/src/setup.ts', import.meta.url));
+const setup = fileURLToPath(new URL('../src/setup.ts', import.meta.url));
 const marketplace = 'cc-multi-cli-plugin';
 
 async function fixture(t: test.TestContext) {

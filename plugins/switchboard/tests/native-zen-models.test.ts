@@ -9,13 +9,13 @@ import {
   validateZenKey,
   ZenAuthError,
   zenAuthFile,
-} from '../../plugins/multi-zen/src/auth.ts';
+} from '../src/providers/opencode/auth.ts';
 import {
   ZEN_MODELS,
   ZEN_WORKERS,
   zenModelOptions,
   zenPickerOptions,
-} from '../../plugins/multi-zen/src/models.ts';
+} from '../src/providers/opencode/models.ts';
 import { removeTemporary } from '../temporary.ts';
 
 function hostAuthOptions(dataHome: string) {

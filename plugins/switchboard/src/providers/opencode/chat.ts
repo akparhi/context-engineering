@@ -1,4 +1,4 @@
-import { isDirectToolAvailable } from '../../multi-core/src/gateway/direct-tools.ts';
+import { isDirectToolAvailable } from '../../gateway/direct-tools.ts';
 import type {
   ContentBlock,
   Emit,
@@ -6,9 +6,9 @@ import type {
   MessagesResponse,
   ResponseContentBlock,
   StopReason,
-} from '../../multi-core/src/gateway/messages.ts';
-import { callId, toolName } from '../../multi-core/src/gateway/tools.ts';
-import { prefixSafeLength, readSse } from '../../multi-openai/src/responses.ts';
+} from '../../gateway/messages.ts';
+import { callId, toolName } from '../../gateway/tools.ts';
+import { prefixSafeLength, readSse } from '../codex/responses.ts';
 
 const SIGNATURE_PREFIX = 'multi-zen-chat:';
 const IMAGE_MEDIA_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
@@ -924,7 +924,7 @@ class ChatAccumulator {
   }
 
   private finishTools() {
-    for (const slot of [...this.slots.values()].sort((left, right) => left.index - right.index)) {
+    for (const slot of [...this.slots.values()].toSorted((left, right) => left.index - right.index)) {
       if (!slot.id || !slot.name) {
         throw new Error('Zen Chat returned an incomplete tool call');
       }

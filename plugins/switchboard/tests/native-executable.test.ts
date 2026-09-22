@@ -3,7 +3,7 @@ import test from 'node:test';
 import {
   executableInvocation,
   resolveExecutable,
-} from '../../plugins/multi-core/src/gateway/executable.ts';
+} from '../src/gateway/executable.ts';
 
 test('resolves Windows npm shims using PATHEXT order', () => {
   const seen: string[] = [];

@@ -11,8 +11,8 @@ import {
   approvalCwdForComparison,
   NativeApprovalBridge,
   parseApprovalRequest,
-} from '../../plugins/multi-core/src/gateway/approval.ts';
-import { createNativeGateway } from '../../plugins/multi-core/src/gateway/server.ts';
+} from '../src/gateway/approval.ts';
+import { createNativeGateway } from '../src/gateway/server.ts';
 import { removeTemporary } from '../temporary.ts';
 
 const request = (stage = 1, session = 'session-one', command = 'node harmless-test.js') => ({
@@ -324,7 +324,6 @@ test('classifier cwd comparison accepts Windows drive and UNC paths on Linux', (
 });
 
 test('headerless classifier uses pending worker context and rejects ambiguous actions', async (t) => {
-  const { mkdtemp, writeFile } = await import('node:fs/promises');
   const dir = await mkdtemp(path.join(os.tmpdir(), 'approval-scope-'));
   t.after(() => removeTemporary(dir));
   await writeFile(

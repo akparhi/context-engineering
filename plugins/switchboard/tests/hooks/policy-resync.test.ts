@@ -6,7 +6,7 @@ import {
   type PolicyState,
   preparePolicy,
   recordPrompt,
-} from '../policy.ts';
+} from '../../hooks/policy.ts';
 
 type Call = { url: string; body: Record<string, unknown> };
 

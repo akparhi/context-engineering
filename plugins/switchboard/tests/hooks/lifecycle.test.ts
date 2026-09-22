@@ -59,6 +59,7 @@ test('Claude completion does not wait on Multi accounting or clear another provi
     };
   });
   on('turn.complete', (_$, event) => ({ text: event.answer }));
+  // eslint-disable-next-line no-underscore-dangle
   for await (const _chunk of $.turn.step({
     turnId: 'native-turn',
     index: 0,
@@ -100,6 +101,7 @@ test('a completed harness child retains its provider for compaction between turn
   });
   on('turn.complete', (_$, event) => ({ text: event.answer }));
   on('session.compact', () => ({ skip: 'core compaction' }));
+  // eslint-disable-next-line no-underscore-dangle
   for await (const _chunk of $.turn.step({
     turnId: 't',
     agentId: 'child',

@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { settleOrAbort } from '../../plugins/multi-core/src/gateway/settle.ts';
+import { settleOrAbort } from '../src/gateway/settle.ts';
 
 test('a running operation has no deadline until its signal aborts', async () => {
   const controller = new AbortController();
+  // eslint-disable-next-line unicorn/consistent-function-scoping
   let resolveRun: (value: string) => void = () => {};
   const run = new Promise<string>((resolve) => {
     resolveRun = resolve;

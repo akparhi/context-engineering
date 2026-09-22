@@ -63,7 +63,7 @@ export async function admitPrompt(
 export async function recordPrompt(
   client: PolicyClient,
   snapshot: PromptSnapshot,
-  generation: number | undefined,
+  _generation: number | undefined,
 ): Promise<number | undefined> {
   const model = client.model;
   const response = await client.request('/multi/mod/session', {

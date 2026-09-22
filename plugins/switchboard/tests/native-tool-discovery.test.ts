@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { toResponses } from '../../plugins/multi-openai/src/responses.ts';
-import { toChat } from '../../plugins/multi-zen/src/chat.ts';
+import { toResponses } from '../src/providers/codex/responses.ts';
+import { toChat } from '../src/providers/opencode/chat.ts';
 
 const body = {
   model: 'multi/openai/gpt-5.6-luna',

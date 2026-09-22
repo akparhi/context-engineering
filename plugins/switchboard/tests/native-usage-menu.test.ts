@@ -3,8 +3,8 @@ import test from 'node:test';
 
 // Load the actual Mod modules without requiring Claude's host-only type package
 // in the offline TypeScript project. All runtime imports in these modules are erased types.
-const hooksUrl = new URL('../../plugins/multi-core/hooks/usage.ts', import.meta.url);
-const viewUrl = new URL('../../plugins/multi-core/hooks/usage-view.ts', import.meta.url);
+const hooksUrl = new URL('../hooks/usage.ts', import.meta.url);
+const viewUrl = new URL('../hooks/usage-view.ts', import.meta.url);
 const dashboard = {
   updatedAt: 'today',
   providers: [
@@ -58,6 +58,7 @@ test('usage client messages refresh props and receipts without losing providers 
   const command = hooks.get('command.run');
   const message = hooks.get('ui.message');
   assert(command && message);
+  // eslint-disable-next-line unicorn/consistent-function-scoping
   const next = async () => ({});
   await command(engine, { args: '' }, next);
   const event = {
@@ -156,6 +157,7 @@ test('quota advice is opt-in, session scoped, advisory and removed on detach', a
   const command = hooks.get('command.run');
   const message = hooks.get('ui.message');
   assert(submit && command && message);
+  // eslint-disable-next-line unicorn/consistent-function-scoping
   const next = async (event: Record<string, unknown>) => ({
     ...event,
     additionalContext: ['existing context'],
