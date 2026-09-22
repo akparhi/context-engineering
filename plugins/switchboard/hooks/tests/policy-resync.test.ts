@@ -93,7 +93,7 @@ test('a prompt whose policy cannot be admitted carries no generation and is neve
   expect(calls.some((call) => call.url === '/switchboard/mod/session')).toBe(true);
 });
 
-for (const model of ['claude-sonnet-5', 'switchboard/openai/gpt-6-astra', 'switchboard/zen/glm-5']) {
+for (const model of ['claude-sonnet-5', 'switchboard/openai/gpt-6-astra', 'switchboard/zen/deepseek-v4.1-flash']) {
   test(`${model} prompts record identity without preparing harness policy`, async () => {
     const calls: Call[] = [];
     const client = { ...gateway(undefined, calls), model };

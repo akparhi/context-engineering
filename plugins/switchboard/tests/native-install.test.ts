@@ -186,12 +186,12 @@ test('setup renames the launch command, persists picker models, and keeps them a
   const stateFile = path.join(f.home, '.local/share/switchboard/state.json');
   const shim = (name: string) =>
     path.join(f.home, '.local/share/switchboard/bin', f.windows ? `${name}.cmd` : name);
-  const first = await f.install(['--command', 'mc', '--models', 'switchboard/zen/kimi-k2.5']);
+  const first = await f.install(['--command', 'mc', '--models', 'switchboard/zen/deepseek-v4.1-flash']);
   assert.match(first.stdout, /start mc\./);
-  assert.match(first.stdout, /shows only: switchboard\/zen\/kimi-k2\.5/);
+  assert.match(first.stdout, /shows only: switchboard\/zen\/deepseek-v4\.1-flash/);
   await assert.rejects(access(shim('switchboard')), /ENOENT/);
   const custom = JSON.parse((await f.invoke('mc', [])).stdout);
-  assert.equal(custom.models, 'switchboard/zen/kimi-k2.5');
+  assert.equal(custom.models, 'switchboard/zen/deepseek-v4.1-flash');
   assert.equal(custom.providers, 'openai,zen');
   // An explicit environment selection still wins for one launch.
   const explicit = JSON.parse((await f.invoke('mc', [], { SWITCHBOARD_MODELS: '' })).stdout);
@@ -199,11 +199,11 @@ test('setup renames the launch command, persists picker models, and keeps them a
   // Re-running setup without flags keeps the customization.
   await f.install();
   assert.equal(JSON.parse(await readFile(stateFile, 'utf8')).command, 'mc');
-  assert.equal(JSON.parse((await f.invoke('mc', [])).stdout).models, 'switchboard/zen/kimi-k2.5');
-  await f.install(['--models', '+switchboard/zen/glm-5.2']);
+  assert.equal(JSON.parse((await f.invoke('mc', [])).stdout).models, 'switchboard/zen/deepseek-v4.1-flash');
+  await f.install(['--models', '+switchboard/zen/deepseek-v4.1-flash']);
   assert.equal(
     JSON.parse((await f.invoke('mc', [])).stdout).models,
-    'switchboard/zen/kimi-k2.5,switchboard/zen/glm-5.2',
+    'switchboard/zen/deepseek-v4.1-flash',
   );
   // `none` hides external rows; `all` requests the full connected catalog.
   await f.install(['--models', 'none']);

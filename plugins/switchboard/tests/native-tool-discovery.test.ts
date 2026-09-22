@@ -53,14 +53,14 @@ test('OpenAI omits deferred declarations and preserves loaded tools and referenc
 
 test('Zen omits deferred declarations and preserves loaded tools and references', () => {
   const initialRequest = toChat(
-    { ...body, model: 'switchboard/zen/glm-5.2', messages: [{ role: 'user', content: 'find a file' }] },
-    'switchboard/zen/glm-5.2',
+    { ...body, model: 'switchboard/zen/deepseek-v4.1-flash', messages: [{ role: 'user', content: 'find a file' }] },
+    'switchboard/zen/deepseek-v4.1-flash',
   );
   assert.deepEqual(
     initialRequest.tools?.map((tool) => tool.function.name),
     ['Read'],
   );
-  const request = toChat({ ...body, model: 'switchboard/zen/glm-5.2' }, 'switchboard/zen/glm-5.2');
+  const request = toChat({ ...body, model: 'switchboard/zen/deepseek-v4.1-flash' }, 'switchboard/zen/deepseek-v4.1-flash');
   assert.deepEqual(
     request.tools?.map((tool) => tool.function.name),
     ['mcp__search', 'Read'],

@@ -4,7 +4,7 @@ import type { Emit, StreamEventBody } from '../src/gateway/messages.ts';
 import { toolName } from '../src/gateway/tools.ts';
 import { fromChat, toChat } from '../src/providers/opencode/chat.ts';
 
-const model = 'switchboard/zen/kimi-k2.7-code';
+const model = 'switchboard/zen/deepseek-v4.1-flash';
 const tools = [{ name: 'Read File', description: 'read', input_schema: { type: 'object' } }];
 const readAlias = toolName('Read File');
 
@@ -49,7 +49,7 @@ test('toChat keeps assistant call groups and only replays own model reasoning', 
   const own = {
     type: 'thinking',
     thinking: '',
-    signature: 'switchboard-chat:kimi-k2.7-code:eyJyZWFzb25pbmciOiIifQ',
+    signature: 'switchboard-chat:deepseek-v4.1-flash:eyJyZWFzb25pbmciOiIifQ',
   };
   const body = toChat(
     {
@@ -74,7 +74,7 @@ test('toChat keeps assistant call groups and only replays own model reasoning', 
         },
       ],
     },
-    'kimi-k2.7-code',
+    'deepseek-v4.1-flash',
   );
   assert.deepEqual(body.messages[1], {
     role: 'assistant',
@@ -96,7 +96,7 @@ test('toChat keeps assistant call groups and only replays own model reasoning', 
         { role: 'user', content: 'next' },
       ],
     },
-    'kimi-k2.7-code',
+    'deepseek-v4.1-flash',
   );
   assert.deepEqual(filtered.messages, [{ role: 'user', content: 'next' }]);
   assert.throws(
@@ -107,12 +107,12 @@ test('toChat keeps assistant call groups and only replays own model reasoning', 
             {
               role: 'assistant',
               content: [
-                { type: 'thinking', signature: 'switchboard-chat:kimi-k2.7-code:not-base64' },
+                { type: 'thinking', signature: 'switchboard-chat:deepseek-v4.1-flash:not-base64' },
               ],
             },
           ],
         },
-        'kimi-k2.7-code',
+        'deepseek-v4.1-flash',
       ),
     /reasoning signature/,
   );
@@ -411,7 +411,7 @@ test('toChat preserves image bearing tool output as OpenAI content parts', () =>
         },
       ],
     },
-    'kimi-k2.7-code',
+    'deepseek-v4.1-flash',
   );
   assert.deepEqual(body.messages[0], {
     role: 'tool',

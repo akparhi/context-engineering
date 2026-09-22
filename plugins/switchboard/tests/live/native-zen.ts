@@ -86,7 +86,7 @@ function option(name: string): string | undefined {
   return index === -1 ? undefined : args[index + 1];
 }
 
-const model = option('--model') ?? 'gpt-5.6-luna';
+const model = option('--model') ?? 'deepseek-v4.1-flash';
 const switchedModel = option('--switch');
 const compaction = args.includes('--compaction');
 const cancellation = args.includes('--cancel');

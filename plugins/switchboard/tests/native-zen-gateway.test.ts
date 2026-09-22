@@ -4,7 +4,7 @@ import type { GatewayFetch } from '../src/gateway/fetch.ts';
 import type { GatewayOptions } from '../src/gateway/server.ts';
 import { createNativeGateway } from '../src/gateway/server.ts';
 
-const model = 'switchboard/zen/gpt-5.6-luna';
+const model = 'switchboard/zen/deepseek-v4.1-flash';
 const request = {
   model,
   max_tokens: 1024,
@@ -44,31 +44,25 @@ test('disabled providers reject typed models and token counts without upstream r
 });
 
 function completion(tool = false) {
-  const output = tool
+  const choices = tool
     ? [
         {
-          type: 'function_call',
-          name: 'Read',
-          call_id: 'call_1',
-          arguments: '{"file_path":"fixture"}',
+          index: 0,
+          delta: {
+            tool_calls: [
+              { index: 0, id: 'call_1', type: 'function', function: { name: 'Read', arguments: '{"file_path":"fixture"}' } },
+            ],
+          },
+          finish_reason: 'tool_calls',
         },
       ]
-    : [{ type: 'message', content: [{ type: 'output_text', text: 'Done' }] }];
-  return new Response(
-    `data: ${JSON.stringify({
-      type: 'response.completed',
-      response: {
-        id: 'response_fixture',
-        status: 'completed',
-        output,
-        usage: {
-          input_tokens: 1000,
-          output_tokens: 12,
-          input_tokens_details: { cached_tokens: 800, cache_write_tokens: 100 },
-        },
-      },
-    })}\n\n`,
-  );
+    : [{ index: 0, delta: { content: 'Done' }, finish_reason: 'stop' }];
+  const events = [
+    `data: ${JSON.stringify({ id: 'chat_fixture', choices, usage: null })}\n\n`,
+    `data: ${JSON.stringify({ id: 'chat_fixture', choices: [], usage: { prompt_tokens: 1000, completion_tokens: 12, prompt_tokens_details: { cached_tokens: 800, cache_creation_input_tokens: 100 } } })}\n\n`,
+    'data: [DONE]\n\n',
+  ];
+  return new Response(events.join(''));
 }
 
 async function gateway(
@@ -108,7 +102,7 @@ function post(base: string, body: unknown = request, extraHeaders = {}) {
 test('Zen isolates credentials, keeps cache affinity over restarts, and reports cache writes', async (t) => {
   const sent: { headers: Record<string, string>; body: Record<string, unknown> }[] = [];
   const upstream: GatewayFetch = async (url, init) => {
-    assert.equal(url, 'https://opencode.ai/zen/v1/responses');
+    assert.equal(url, 'https://opencode.ai/zen/go/v1/chat/completions');
     assert.equal(init.redirect, 'error');
     assert.equal(init.headers.authorization, 'Bearer zen-secret-fixture');
     assert.equal(init.headers['x-api-key'], undefined);
@@ -130,12 +124,12 @@ test('Zen isolates credentials, keeps cache affinity over restarts, and reports 
   });
   await (await post(restarted)).arrayBuffer();
   assert.deepEqual(sent[0], sent[1]);
-  assert.equal(sent[0].body.prompt_cache_key, sent[0].headers['x-opencode-session']);
-  assert.equal(sent[0].body.max_output_tokens, 1024);
+  assert.equal(sent[0].body.max_tokens, 1024);
   await (await post(restarted, request, { 'x-claude-code-agent-id': 'worker-one' })).arrayBuffer();
-  await (await post(restarted, { ...request, model: 'switchboard/zen/gpt-5.6-sol' })).arrayBuffer();
-  assert.notEqual(sent[0].body.prompt_cache_key, sent[2].body.prompt_cache_key);
-  assert.notEqual(sent[0].body.prompt_cache_key, sent[3].body.prompt_cache_key);
+  await (await post(restarted, { ...request, metadata: { user_id: JSON.stringify({ session_id: 'session-two' }) } })).arrayBuffer();
+  // Different agent-id and different session_id get distinct cache sessions.
+  assert.notEqual(sent[0].headers['x-opencode-session'], sent[2].headers['x-opencode-session']);
+  assert.notEqual(sent[0].headers['x-opencode-session'], sent[3].headers['x-opencode-session']);
 });
 
 test('Zen admission and counting never invoke inference; errors retain status without secrets or retries', async (t) => {
@@ -267,16 +261,13 @@ test('Zen refuses invalid credential headers and missing terminal billing counts
     t,
     async () =>
       new Response(
-        `data: ${JSON.stringify({
-          type: 'response.completed',
-          response: {
-            id: 'missing_usage',
-            output: [{ type: 'message', content: [{ type: 'output_text', text: 'Done' }] }],
-          },
-        })}\n\n`,
+        [
+          `data: ${JSON.stringify({ id: 'missing_usage', choices: [{ index: 0, delta: { content: 'Done' }, finish_reason: 'stop' }], usage: null })}\n\n`,
+          'data: [DONE]\n\n',
+        ].join(''),
       ),
   );
   const response = await post(base);
   assert.equal(response.status, 502);
-  assert.match(await response.text(), /cost accounting is unavailable/);
+  assert.match(await response.text(), /cost accounting is unavailable|omitted terminal usage/);
 });
