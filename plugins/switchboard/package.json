@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "bun": ">=1.2" },
+  "engines": {
+    "bun": ">=1.2"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "oxlint .",
@@ -15,7 +17,8 @@
     "test:live:provider-approval": "bun tests/live/native-provider-approval.ts",
     "test:live:reviewer": "bun tests/live/native-reviewer.ts",
     "test:live:approval-worker": "bun tests/live/native-approval-worker.ts",
-    "test:live:permissions": "bun tests/live/native-permissions.ts"
+    "test:live:permissions": "bun tests/live/native-permissions.ts",
+    "reinstall": "claude plugin marketplace update akparhi && claude plugin uninstall switchboard@akparhi && claude plugin install switchboard@akparhi"
   },
   "dependencies": {
     "js-tiktoken": "1.0.21",
