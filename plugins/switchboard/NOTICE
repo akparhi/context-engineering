@@ -1,7 +1,16 @@
-cc-multi-cli-plugin
-Copyright 2026 greenpolo
+switchboard
+Copyright 2026 Anand Parhi
 
-Earlier releases included software developed by:
+This product includes software developed by greenpolo
+(https://github.com/greenpolo/cc-multi-cli-plugin), Copyright 2026 greenpolo,
+licensed under the Apache License, Version 2.0.
+
+Modifications from the upstream work: support reduced to the Codex (OpenAI) and
+OpenCode Zen providers; the Cursor, Antigravity and Grok integrations removed;
+runtime ported from Node to Bun; a curated static model catalog and
+effort-suffixed model ids added.
+
+Upstream acknowledgments, preserved from the original NOTICE:
 
 - OpenAI (https://openai.com), from the codex-plugin-cc project
   (https://github.com/openai/codex-plugin-cc), licensed under Apache 2.0.
@@ -12,32 +21,17 @@ Earlier releases included software developed by:
   (https://github.com/sakibsadmanshajib/gemini-plugin-cc), licensed under
   Apache 2.0. The former ACP transport layer was derived from this work.
 
-- blowmage (https://github.com/blowmage), from the cursor-agent-acp-npm
-  project (https://github.com/blowmage/cursor-agent-acp-npm), licensed under
-  MIT. The former Cursor ACP adapter was informed by this work.
-
 Those companion and CLI/ACP modules, including the vendored ACP SDK bundle,
 have been removed. These acknowledgments preserve their provenance.
 
-This plugin is a community project, not affiliated with Anthropic, OpenAI,
-Google, GitHub, or Cursor.
+The automatic reviewer includes OpenAI Codex Guardian policy assets under
+src/providers/codex/guardian/, from https://github.com/openai/codex, licensed
+under Apache 2.0. Their upstream LICENSE and NOTICE are included there.
 
 The local token estimator uses js-tiktoken (https://github.com/dqbd/tiktoken),
 licensed under MIT, with OpenAI tiktoken encoding data. Translator compatibility
 behavior was researched against CLIProxyAPI; no gateway engine or authentication
 implementation from that project is included.
 
-The Cursor integration depends on the official @cursor/sdk package (Anysphere).
-That dependency has its own LICENSE.md and Cursor terms; this repository's
-Apache 2.0 license does not relicense the SDK. No SDK implementation is vendored.
-
-The automatic reviewer includes OpenAI Codex Guardian policy assets under
-plugins/multi-openai/src/guardian/, from https://github.com/openai/codex,
-licensed under Apache 2.0. Their upstream LICENSE and NOTICE are included there.
-
----
-
-This plugin is derived from cc-multi-cli-plugin
-(https://github.com/greenpolo/cc-multi-cli-plugin), Copyright 2026 greenpolo,
-licensed under Apache 2.0. Modified to support only the Codex and OpenCode Zen
-providers, ported to Bun, with a curated static model catalog.
+This plugin is a community project, not affiliated with Anthropic, OpenAI,
+Google, GitHub, or Cursor.
