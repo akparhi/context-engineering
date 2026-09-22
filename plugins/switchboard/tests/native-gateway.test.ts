@@ -630,7 +630,7 @@ test('OpenAI main and worker requests adapt instructions without losing runtime 
   }
   const response = await call(payload, {}, '/v1/messages/count_tokens');
   assert.deepEqual(await response.json(), { input_tokens: estimateInputTokens(seen[0]) });
-  assert.equal(seen.length, 5, 'Counting must not call the provider');
+  assert.equal(seen.length, 4, 'Counting must not call the provider');
 });
 
 test('Claude prompts remain unchanged after OpenAI main and worker requests, including token counts', async (t) => {

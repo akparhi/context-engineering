@@ -4,9 +4,13 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { setDefaultTimeout } from 'bun:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import { removeTemporary } from './temporary.ts';
+
+// Upstream runs node --test-timeout=120000; these tests spawn real launcher processes.
+setDefaultTimeout(120000);
 
 async function writeClaudeFixture(bin: string, source: string): Promise<void> {
   if (process.platform === 'win32') {
