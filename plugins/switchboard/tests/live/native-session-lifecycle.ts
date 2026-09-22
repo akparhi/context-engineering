@@ -107,7 +107,7 @@ assert.notEqual(launches[0].settingsPath, launches[1].settingsPath);
 for (const entry of launches) {
   assert.equal(entry.settings.disableAgentView, true);
   assert.equal(entry.agentView, '1');
-  assert(Object.hasOwn(entry.agents, 'openai-luna'));
+  assert(Object.hasOwn(entry.agents, 'luna'));
   await assert.rejects(readFile(entry.settingsPath), { code: 'ENOENT' });
 }
 const requests = (await readFile(path.join(root, 'requests.jsonl'), 'utf8'))

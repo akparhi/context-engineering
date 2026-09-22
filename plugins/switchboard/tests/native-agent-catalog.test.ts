@@ -4,12 +4,12 @@ import { AgentCatalog } from '../src/gateway/agent-catalog.ts';
 import type { MessagesRequest } from '../src/gateway/messages.ts';
 
 const workers = {
-  'openai-native': {
+  'astra': {
     model: 'switchboard/openai/gpt-6-astra',
     description: 'Astra',
     tools: ['Read', 'Bash'],
   },
-  'openai-native-high': {
+  'astra-high': {
     model: 'switchboard/openai/gpt-6-astra',
     description: 'Astra high',
     tools: ['Read', 'Bash'],

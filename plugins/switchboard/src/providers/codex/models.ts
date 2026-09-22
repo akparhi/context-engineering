@@ -1,9 +1,9 @@
 import type { Effort } from './responses.ts';
 
 export const MODELS = {
-  'openai-native': 'gpt-6-astra',
-  'openai-sol': 'gpt-6-sol',
-  'openai-luna': 'gpt-6-luna',
+  'astra': 'gpt-6-astra',
+  'sol': 'gpt-6-sol',
+  'luna': 'gpt-6-luna',
 };
 
 export const LABELS: Readonly<Record<string, string>> = {

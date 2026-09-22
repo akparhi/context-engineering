@@ -4,6 +4,7 @@ type ZenProtocol = 'responses' | 'chat';
 
 export interface ZenModel {
   id: string;
+  worker: string;
   protocol: ZenProtocol;
   label: string;
   description: string;
@@ -15,7 +16,6 @@ export interface ZenModel {
 
 export interface ZenModelOption extends ZenModel {
   model: string;
-  worker: string;
   nativeWorker: true;
 }
 
@@ -28,6 +28,7 @@ export interface ZenWorker {
 export const ZEN_MODELS: readonly ZenModel[] = Object.freeze([
   {
     id: 'deepseek-v4.1-flash',
+    worker: 'deepseek',
     protocol: 'chat',
     label: 'DeepSeek V4.1 Flash',
     description: 'OpenCode Go · Chat Completions',
@@ -42,10 +43,6 @@ const DEFAULT_ZEN_MODELS = ['deepseek-v4.1-flash'];
 
 const modelById = new Map(ZEN_MODELS.map((model) => [model.id, model]));
 
-function workerName(id: string): string {
-  return `zen-${id}`;
-}
-
 function route(id: string): string {
   return `switchboard/zen/${id}`;
 }
@@ -56,7 +53,6 @@ export function zenModelOptions(availableIds?: readonly string[]): ZenModelOptio
   return ZEN_MODELS.filter((model) => available?.has(model.id) ?? true).map((model) => ({
     ...model,
     model: route(model.id),
-    worker: workerName(model.id),
     nativeWorker: true,
   }));
 }
@@ -65,10 +61,10 @@ export const ZEN_WORKERS: Readonly<Record<string, ZenWorker>> = Object.freeze(
   Object.fromEntries(
     ZEN_MODELS.flatMap((model) => {
       const base = [
-        [workerName(model.id), { model: route(model.id), effort: defaultEffort(model) }],
+        [model.worker, { model: route(model.id), effort: defaultEffort(model) }],
       ];
       const efforts = (model.efforts ?? []).map((effort) => [
-        `${workerName(model.id)}-${effort}`,
+        `${model.worker}-${effort}`,
         { model: route(model.id), effort },
       ]);
       return [...base, ...efforts];

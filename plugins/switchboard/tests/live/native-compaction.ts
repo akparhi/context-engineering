@@ -31,13 +31,13 @@ interface Trace {
 const args = process.argv.slice(2);
 if (args.includes('--help')) {
   console.log(
-    'Usage: npm run test:live:compaction -- [openai-luna] [--manual-only]\nRuns real manual/repeated/automatic compaction and disk resume using Claude and OpenAI subscriptions. Native Cursor compaction is not supported by this test.',
+    'Usage: npm run test:live:compaction -- [luna] [--manual-only]\nRuns real manual/repeated/automatic compaction and disk resume using Claude and OpenAI subscriptions. Native Cursor compaction is not supported by this test.',
   );
   process.exit(0);
 }
 const manualOnly = args.includes('--manual-only');
 const positional = args.filter((arg) => arg !== '--manual-only');
-const worker = positional[0] ?? 'openai-luna';
+const worker = positional[0] ?? 'luna';
 assert(positional.length <= 1, 'Expected one model/worker and optional --manual-only');
 assert(
   Object.hasOwn(OPENAI_WORKERS, worker),

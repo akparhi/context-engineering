@@ -71,7 +71,7 @@ test('Claude-loop spawn proceeds when gateway is not configured', async ($, on) 
   on('agent.spawn', () => ({ model: 'switchboard/openai/gpt-6-luna', agentId: 'worker' }));
   const result = await $.agent.spawn({
     prompt: 'task',
-    subagentType: 'openai-luna',
+    subagentType: 'luna',
     model: 'switchboard/openai/gpt-6-luna',
   });
   expect(result.agentId).toBe('worker');

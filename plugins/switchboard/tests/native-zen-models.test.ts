@@ -177,8 +177,8 @@ test('Zen catalog exposes bounded protocols and only supported effort workers', 
     ],
   );
   assert.equal(zenModelOptions(['deepseek-v4.1-flash'])[0].model, 'switchboard/zen/deepseek-v4.1-flash');
-  assert.equal(ZEN_WORKERS['zen-deepseek-v4.1-flash'].effort, undefined);
-  assert.equal(ZEN_WORKERS['zen-deepseek-v4.1-flash-medium'], undefined);
+  assert.equal(ZEN_WORKERS['deepseek'].effort, undefined);
+  assert.equal(ZEN_WORKERS['deepseek-medium'], undefined);
 });
 
 test('Zen picker allowlist preserves order and validates model IDs', () => {

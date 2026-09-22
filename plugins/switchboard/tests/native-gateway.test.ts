@@ -777,9 +777,9 @@ test('all registered model and reasoning choices reach OpenAI without substituti
     return new Response(sse(textEvents));
   });
   for (const [name, slug] of [
-    ['openai-native', 'gpt-6-astra'],
-    ['openai-sol', 'gpt-6-sol'],
-    ['openai-luna', 'gpt-6-luna'],
+    ['astra', 'gpt-6-astra'],
+    ['sol', 'gpt-6-sol'],
+    ['luna', 'gpt-6-luna'],
   ]) {
     assert.deepEqual(OPENAI_WORKERS[name], { model: slug, effort: 'medium' });
     for (const effort of ['low', 'medium', 'high', 'xhigh', 'max']) {

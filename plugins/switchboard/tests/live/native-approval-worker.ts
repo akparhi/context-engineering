@@ -12,7 +12,7 @@ import { isolatedEnvironment } from './environment.ts';
 const { values } = parseArgs({
   options: {
     mode: { type: 'string', default: 'auto' },
-    worker: { type: 'string', default: 'openai-luna-high' },
+    worker: { type: 'string', default: 'luna-high' },
     help: { type: 'boolean' },
   },
 });
@@ -21,7 +21,7 @@ assert(mode && ['auto', 'dontAsk', 'bypassPermissions'].includes(mode));
 
 if (values.help) {
   console.log(
-    'Usage: node test/live/native-approval-worker.ts [--mode auto|dontAsk|bypassPermissions] [--worker openai-luna-high]\nReal launcher and provider worker permissions without Anthropic credentials. Creates one temporary append canary.',
+    'Usage: node test/live/native-approval-worker.ts [--mode auto|dontAsk|bypassPermissions] [--worker luna-high]\nReal launcher and provider worker permissions without Anthropic credentials. Creates one temporary append canary.',
   );
   process.exit(0);
 }

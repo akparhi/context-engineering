@@ -12,7 +12,7 @@ import { isolatedEnvironment } from './environment.ts';
 const args = process.argv.slice(2);
 if (args.includes('--help')) {
   console.log(
-    'Usage: node test/live/native-auto-mode.ts [sonnet|openai-luna-high] [--worker]\nDefault: sonnet control, OpenAI main/worker. Uses native logins and real usage. Keeps temporary evidence; no global settings changes.',
+    'Usage: node test/live/native-auto-mode.ts [sonnet|luna-high] [--worker]\nDefault: sonnet control, OpenAI main/worker. Uses native logins and real usage. Keeps temporary evidence; no global settings changes.',
   );
   process.exit(0);
 }
@@ -34,7 +34,7 @@ const cases = names.length
   ? [{ name: names[0], worker: args.includes('--worker') }]
   : [
       { name: 'sonnet', worker: false },
-      ...['openai-luna-high'].flatMap((name) => [
+      ...['luna-high'].flatMap((name) => [
         { name, worker: false },
         { name, worker: true },
       ]),

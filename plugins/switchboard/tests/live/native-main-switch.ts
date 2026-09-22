@@ -127,7 +127,7 @@ try {
   assert(second.result?.includes(nonce));
   assert.equal(await readFile(path.join(cwd, 'fixture.txt'), 'utf8'), `beta ${nonce}\n`);
   const delegated = await turn(
-    'Delegate to openai-luna-low: Read fixture.txt and report its exact contents. Do not read it yourself. Wait for the worker and return its result.',
+    'Delegate to luna-low: Read fixture.txt and report its exact contents. Do not read it yourself. Wait for the worker and return its result.',
   );
   assert(delegated.result?.includes(nonce));
   assert((delegated.subagent_stats?.completed ?? 0) >= 1);

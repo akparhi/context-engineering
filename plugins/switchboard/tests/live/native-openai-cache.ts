@@ -40,20 +40,20 @@ const terminalOnly = process.argv.includes('--terminal-only');
 const cwd = await mkdtemp(path.join(os.tmpdir(), 'native-openai-cache-'));
 console.log(`Artifacts: ${cwd}`);
 const workers = {
-  'openai-native': {
+  'astra': {
     model: 'switchboard/openai/gpt-6-astra',
     description: 'CACHE_VISIBLE_WORKER',
     prompt: 'Follow the task.',
     tools: ['Read'],
   },
-  'openai-native-high': {
+  'astra-high': {
     model: 'switchboard/openai/gpt-6-astra',
     description: 'CACHE_HIDDEN_EFFORT',
     prompt: 'Follow the task.',
     tools: ['Read'],
     effort: 'high',
   },
-  'openai-luna': {
+  'luna': {
     model: 'switchboard/openai/gpt-6-luna',
     description: 'CACHE_HIDDEN_MODEL',
     prompt: 'Follow the task.',

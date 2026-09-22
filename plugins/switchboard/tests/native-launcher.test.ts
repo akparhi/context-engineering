@@ -302,23 +302,23 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
     ['switchboard/zen/deepseek-v4.1-flash'],
   );
   assert.deepEqual(filtered.models, ['switchboard/zen/deepseek-v4.1-flash']);
-  assert.deepEqual(filtered.agents.sort(), ['zen-deepseek-v4.1-flash']);
+  assert.deepEqual(filtered.agents.sort(), ['deepseek']);
   const outsideDefaults = JSON.parse((await launchFiltered('switchboard/zen/deepseek-v4.1-flash')).stdout);
   assert.deepEqual(
     outsideDefaults.settings.modelPicker.options.map((option: { model: string }) => option.model),
     ['switchboard/zen/deepseek-v4.1-flash'],
   );
-  assert.deepEqual(outsideDefaults.agents, ['zen-deepseek-v4.1-flash']);
+  assert.deepEqual(outsideDefaults.agents, ['deepseek']);
   const all = JSON.parse((await launchFiltered('all')).stdout);
   assert(all.settings.modelPicker.options.length >= ZEN_MODELS.length);
-  assert(all.agents.includes('zen-deepseek-v4.1-flash'));
+  assert(all.agents.includes('deepseek'));
   const plus = JSON.parse((await launchFiltered('+switchboard/zen/deepseek-v4.1-flash')).stdout);
   assert(
     plus.settings.modelPicker.options.some(
       (option: { model: string }) => option.model === 'switchboard/zen/deepseek-v4.1-flash',
     ),
   );
-  assert(plus.agents.includes('zen-deepseek-v4.1-flash'));
+  assert(plus.agents.includes('deepseek'));
   const hidden = JSON.parse(
     (await launchFiltered('', ['--model', 'switchboard/zen/gpt-5.6-luna'])).stdout,
   );
@@ -390,9 +390,9 @@ test('worker registration follows selected models and retains their effort alias
   const selected = ['switchboard/openai/gpt-6-luna', 'switchboard/zen/deepseek-v4.1-flash'];
   const agents = workerDefinitions(true, true, selected);
   assert.deepEqual(new Set(Object.values(agents).map((worker) => worker.model)), new Set(selected));
-  assert.equal(agents['openai-luna-high'].effort, 'high');
-  assert.equal(agents['zen-deepseek-v4.1-flash'].effort, undefined);
-  assert.equal(agents['zen-deepseek-v4.1-flash-max'], undefined);
+  assert.equal(agents['luna-high'].effort, 'high');
+  assert.equal(agents['deepseek'].effort, undefined);
+  assert.equal(agents['deepseek-max'], undefined);
   assert.deepEqual(workerDefinitions(true, true, []), {});
 });
 
