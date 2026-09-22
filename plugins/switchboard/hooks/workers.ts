@@ -9,7 +9,7 @@ import { isHarnessModel } from './provider.ts';
 
 const maxBody = 32000;
 const issues =
-  'https://github.com/greenpolo/switchboard/issues/new?template=bug_report.yml';
+  'https://github.com/akparhi/context-engineering/issues/new';
 
 /**
  * A refusal the agent reads, with the invitation to report it.
