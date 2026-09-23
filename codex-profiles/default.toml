@@ -103,7 +103,7 @@ enabled = true
 
 # Keep the separate computer-use plugin disabled.
 [plugins."computer-use@openai-bundled"]
-enabled = false
+enabled = true
 
 # Disable bundled Word/document artifact workflows.
 [plugins."documents@openai-primary-runtime"]
@@ -438,6 +438,9 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/private/tmp/fefeedback"]
+trust_level = "trusted"
+
+[projects."/Users/akparhi/Projects/Alaan/swe"]
 trust_level = "trusted"
 
 # Preserve desktop UI, composer, notifications, Git and worktree preferences for this machine.

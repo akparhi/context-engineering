@@ -13,7 +13,7 @@ claude-profiles/    one settings.json per machine
 claude-shared/      config every profile links to
   CLAUDE.md         how the agent behaves
   output-styles/    terse and reminder
-  agents/           custom subagents (use-codex forwards tasks to Codex)
+  agents/           subagents copied from Anthropic's feature-dev plugin
 codex-profiles/     full Codex config.toml profiles
   default.toml      personal defaults + this machine’s desktop/trust settings
 codex-shared/       AGENTS.md, agent roles and macOS sound hooks
