@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { createOpenAIApproval, discoverOpenAIReviewer } from './providers/codex/approval.ts';
 import { readCodexAuth } from './providers/codex/auth.ts';
-import { LABELS, MODELS, OPENAI_WORKERS } from './providers/codex/models.ts';
+import { DESCRIPTIONS, LABELS, MODELS, OPENAI_WORKERS } from './providers/codex/models.ts';
 import type { Effort } from './providers/codex/responses.ts';
 import { readZenKey } from './providers/opencode/auth.ts';
 import {
@@ -790,7 +790,7 @@ function pickerSettings(codexSignedIn: boolean, zen: boolean, fullCatalog = fals
         ...Object.values(codexSignedIn ? MODELS : {}).map((model) => ({
           model: `switchboard/openai/${model}`,
           label: LABELS[model] ?? model,
-          description: 'OpenAI subscription · native Claude Code harness',
+          description: DESCRIPTIONS[model] ?? 'OpenAI subscription · native Claude Code harness',
           behavesAs: pickerProfile(true),
         })),
         ...zenOptions.map(({ model, label, efforts }) => ({

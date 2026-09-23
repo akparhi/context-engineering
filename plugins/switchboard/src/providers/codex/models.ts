@@ -12,6 +12,13 @@ export const LABELS: Readonly<Record<string, string>> = {
   'gpt-6-luna': 'Luna',
 };
 
+/** Picker descriptions, verbatim from Codex's own model picker. */
+export const DESCRIPTIONS: Readonly<Record<string, string>> = {
+  'gpt-6-astra': 'Frontier intelligence for the most demanding work.',
+  'gpt-6-sol': 'Workhorse model for coding and everyday work.',
+  'gpt-6-luna': 'Fast and affordable model for easier tasks.',
+};
+
 /** A registered native worker: the OpenAI model it runs on and its reasoning effort. */
 export interface Worker {
   model: string;
