@@ -790,7 +790,7 @@ function pickerSettings(codexSignedIn: boolean, zen: boolean, fullCatalog = fals
         ...Object.values(codexSignedIn ? MODELS : {}).map((model) => ({
           model: `switchboard/openai/${model}`,
           label: LABELS[model] ?? model,
-          description: DESCRIPTIONS[model] ?? 'OpenAI subscription · native Claude Code harness',
+          description: `OpenAI · GPT-6 ${LABELS[model]} · ${DESCRIPTIONS[model]}`,
           behavesAs: pickerProfile(true),
         })),
         ...zenOptions.map(({ model, label, efforts }) => ({
