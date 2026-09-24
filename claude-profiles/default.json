@@ -52,7 +52,8 @@
     "context-mode:ctx-insight": "off",
     "context-mode:ctx-stats": "off",
     "superpowers:using-git-worktrees": "off",
-    "context-mode:ctx-upgrade": "off"
+    "context-mode:ctx-upgrade": "off",
+    "claude-api": "off"
   },
   "hooks": {
     "Notification": [],
@@ -171,6 +172,7 @@
   "verbose": true,
   "switchModelsOnFlag": false,
   "fileCheckpointingEnabled": true,
+  "bashEditDiffEnabled": true,
   "terminalProgressBarEnabled": false,
   "tipsEnabled": false
 }
