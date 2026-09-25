@@ -9,6 +9,7 @@
 
 - Once you have answered something, treat that answer as done. On later turns, focus your thinking on what the user is asking now, and don't go back over an earlier answer unless the user asks about it or points out a problem with it.
 - Always kill processes you started (dev servers etc.) once no longer needed.
+- Research docs, reports and scratch output go in `.tmp/` at repo root; if missing, create it with a `.gitignore` containing `*`.
 
 <important if="you are planning, writing a spec, or writing an implementation plan">
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.

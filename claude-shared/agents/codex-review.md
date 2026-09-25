@@ -1,7 +1,7 @@
 ---
 name: codex-review
 description: Code review of a code change before merge; returns JSON findings with P0-P3 priorities. Give the git scope (working tree or <base>...HEAD) in the prompt.
-tools: Glob, LS, Read, Grep, Glob, Bash, WebSearch, KillShell, BashOutput
+tools: LS, Read, Grep, Glob, Bash, BashOutput
 model: switchboard/openai/gpt-6-sol
 color: red
 ---
