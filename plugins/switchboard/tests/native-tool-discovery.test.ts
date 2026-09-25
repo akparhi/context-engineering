@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { ResponsesRequest } from '../src/providers/codex/responses.ts';
 import { toResponses } from '../src/providers/codex/responses.ts';
-import { toChat } from '../src/providers/opencode/chat.ts';
 
 const functionTools = (request: ResponsesRequest) =>
   request.tools.flatMap((tool) => (tool.type === 'function' ? [tool] : []));
@@ -53,23 +52,6 @@ test('OpenAI omits deferred declarations and preserves loaded tools and referenc
   const output = request.input.at(-1);
   assert(output && 'output' in output);
   assert.match(JSON.stringify(output.output), /Available tool: mcp__search/);
-});
-
-test('Zen omits deferred declarations and preserves loaded tools and references', () => {
-  const initialRequest = toChat(
-    { ...body, model: 'switchboard/zen/deepseek-v4.1-flash', messages: [{ role: 'user', content: 'find a file' }] },
-    'switchboard/zen/deepseek-v4.1-flash',
-  );
-  assert.deepEqual(
-    initialRequest.tools?.map((tool) => tool.function.name),
-    ['Read'],
-  );
-  const request = toChat({ ...body, model: 'switchboard/zen/deepseek-v4.1-flash' }, 'switchboard/zen/deepseek-v4.1-flash');
-  assert.deepEqual(
-    request.tools?.map((tool) => tool.function.name),
-    ['mcp__search', 'Read'],
-  );
-  assert.match(String(request.messages.at(-1)?.content), /Available tool: mcp__search/);
 });
 
 test('named tool choices retain the requested deferred declaration', () => {

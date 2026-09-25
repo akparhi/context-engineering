@@ -12,7 +12,6 @@
     "test": "bun test --timeout=120000",
     "test:mod": "d=$(mktemp -d) && cp -R hooks \"$d/\" && CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test \"$d\"; s=$?; rm -rf \"$d\"; exit $s",
     "test:live:compaction": "bun tests/live/native-compaction.ts",
-    "test:live:zen": "bun tests/live/native-zen.ts",
     "test:live:auto-mode": "bun tests/live/native-auto-mode.ts",
     "test:live:provider-approval": "bun tests/live/native-provider-approval.ts",
     "test:live:reviewer": "bun tests/live/native-reviewer.ts",

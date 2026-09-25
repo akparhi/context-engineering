@@ -27,9 +27,7 @@ test('ledger aggregates an invocation and ignores replayed usage', async () => {
   ledger.observe({
     ...completion,
     invocationId: 'turn-1',
-    route: 'zen',
-    endpoint: 'chat/completions',
-    model: 'zen-model',
+    model: 'gpt-6-luna',
     effort: 'low',
     usage: { input_tokens: 2, output_tokens: 3 },
     usageMetadata: { source: 'provider', replayed: true },

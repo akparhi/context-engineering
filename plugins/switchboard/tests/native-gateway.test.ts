@@ -717,7 +717,7 @@ test('OpenAI main and worker requests adapt instructions without losing runtime 
     const translated = toResponses(payload, request.model);
     assert.deepEqual(request.input, translated.input);
     assert.deepEqual(request.tools, translated.tools);
-    assert.equal(translated.instructions, runtime, 'Shared translation used by Zen is unchanged');
+    assert.equal(translated.instructions, runtime, 'Shared translation is unchanged');
   }
   const response = await call(payload, {}, '/v1/messages/count_tokens');
   assert.deepEqual(await response.json(), { input_tokens: estimateInputTokens(seen[0]) });

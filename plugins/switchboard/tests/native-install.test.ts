@@ -168,7 +168,7 @@ test('wrapper follows installed core updates and enables only selected providers
   const args = ['--settings', '{"model":"sonnet"}', '--', 'literal $() and spaces'];
   const first = JSON.parse((await f.invoke('switchboard', args)).stdout);
   assert.deepEqual(first.args, args);
-  assert.equal(first.providers, 'openai,zen');
+  assert.equal(first.providers, 'openai');
   assert.equal(first.claude, f.real);
   const next = path.join(f.directory, 'core-v2');
   await cp(old, next, { recursive: true });
@@ -186,24 +186,24 @@ test('setup renames the launch command, persists picker models, and keeps them a
   const stateFile = path.join(f.home, '.local/share/switchboard/state.json');
   const shim = (name: string) =>
     path.join(f.home, '.local/share/switchboard/bin', f.windows ? `${name}.cmd` : name);
-  const first = await f.install(['--command', 'mc', '--models', 'switchboard/zen/deepseek-v4.1-flash']);
+  const first = await f.install(['--command', 'mc', '--models', 'switchboard/openai/gpt-6-sol']);
   assert.match(first.stdout, /start mc\./);
-  assert.match(first.stdout, /shows only: switchboard\/zen\/deepseek-v4\.1-flash/);
+  assert.match(first.stdout, /shows only: switchboard\/openai\/gpt-6-sol/);
   await assert.rejects(access(shim('switchboard')), /ENOENT/);
   const custom = JSON.parse((await f.invoke('mc', [])).stdout);
-  assert.equal(custom.models, 'switchboard/zen/deepseek-v4.1-flash');
-  assert.equal(custom.providers, 'openai,zen');
+  assert.equal(custom.models, 'switchboard/openai/gpt-6-sol');
+  assert.equal(custom.providers, 'openai');
   // An explicit environment selection still wins for one launch.
   const explicit = JSON.parse((await f.invoke('mc', [], { SWITCHBOARD_MODELS: '' })).stdout);
   assert.equal(explicit.models, '');
   // Re-running setup without flags keeps the customization.
   await f.install();
   assert.equal(JSON.parse(await readFile(stateFile, 'utf8')).command, 'mc');
-  assert.equal(JSON.parse((await f.invoke('mc', [])).stdout).models, 'switchboard/zen/deepseek-v4.1-flash');
-  await f.install(['--models', '+switchboard/zen/deepseek-v4.1-flash']);
+  assert.equal(JSON.parse((await f.invoke('mc', [])).stdout).models, 'switchboard/openai/gpt-6-sol');
+  await f.install(['--models', '+switchboard/openai/gpt-6-sol']);
   assert.equal(
     JSON.parse((await f.invoke('mc', [])).stdout).models,
-    'switchboard/zen/deepseek-v4.1-flash',
+    'switchboard/openai/gpt-6-sol',
   );
   // `none` hides external rows; `all` requests the full connected catalog.
   await f.install(['--models', 'none']);
@@ -214,7 +214,7 @@ test('setup renames the launch command, persists picker models, and keeps them a
   // Renaming removes the previous shim and uninstall removes the current one.
   await f.install(['--command', 'switchboard']);
   await assert.rejects(access(shim('mc')), /ENOENT/);
-  assert.equal(JSON.parse((await f.invoke('switchboard', [])).stdout).providers, 'openai,zen');
+  assert.equal(JSON.parse((await f.invoke('switchboard', [])).stdout).providers, 'openai');
   await assert.rejects(f.install(['--command', 'switchboard-ctl']), /reserved/);
   await assert.rejects(f.install(['--command', 'bad name']), /Invalid launch command/);
   await assert.rejects(f.install(['--models', 'gpt-6-astra']), /Invalid picker model/);
@@ -243,7 +243,7 @@ test('a launch command named claude passes nested runs through to the real execu
   await writeFile(f.listing, JSON.stringify(plugins(root)));
   const install = await f.install(['--command', 'claude']);
   assert.match(install.stderr, /shadows the plain claude command/);
-  assert.equal(JSON.parse((await f.invoke('claude', [])).stdout).providers, 'openai,zen');
+  assert.equal(JSON.parse((await f.invoke('claude', [])).stdout).providers, 'openai');
   const nested = JSON.parse(
     (await f.invoke('claude', ['-p', 'hi'], { SWITCHBOARD_GATEWAY_TOKEN: 'token' })).stdout,
   );
@@ -267,7 +267,7 @@ test('sessionless commands skip the launcher and reach the real executable', asy
     JSON.parse((await f.invoke('switchboard', [bundled, 'mcp', 'list'])).stdout),
     { native: true, args: ['mcp', 'list'] },
   );
-  assert.equal(JSON.parse((await f.invoke('switchboard', ['-p', 'hi'])).stdout).providers, 'openai,zen');
+  assert.equal(JSON.parse((await f.invoke('switchboard', ['-p', 'hi'])).stdout).providers, 'openai');
 });
 
 test('edited shell blocks and project-only executable cores fail explicitly', async (t) => {
@@ -353,8 +353,8 @@ test('Windows executable discovery uses PATHEXT and does not require mode bits',
 test('provider selection and native settings arguments preserve explicit disablement', () => {
   assert.equal(providerSelection(undefined), undefined);
   assert.deepEqual(providerSelection(''), []);
-  assert.deepEqual(providerSelection('zen,zen,openai'), ['zen', 'openai']);
-  assert.throws(() => providerSelection('typo'), /Unknown Switchboard provider/);
+  assert.deepEqual(providerSelection('zen,openai,openai'), ['openai']);
+  assert.deepEqual(providerSelection('typo'), []);
   assert.deepEqual(
     settingsArguments([
       '--model',

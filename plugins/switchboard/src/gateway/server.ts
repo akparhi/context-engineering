@@ -10,10 +10,6 @@ import { MODELS } from '../providers/codex/models.ts';
 import type { ResponsesRequest } from '../providers/codex/responses.ts';
 import { forAnthropic, fromResponses, toResponses } from '../providers/codex/responses.ts';
 import { readCodexUsage } from '../providers/codex/usage.ts';
-import { validateZenKey } from '../providers/opencode/auth.ts';
-import { fromChat } from '../providers/opencode/chat.ts';
-import { zenRequest } from '../providers/opencode/request.ts';
-import { formatZenQuota, readZenQuota } from '../providers/opencode/usage.ts';
 import type { AgentCatalog } from './agent-catalog.ts';
 import type { ApprovalContext, NativeApprovalBridge } from './approval.ts';
 import { approvalCwdForComparison, isApprovalRequest, parseApprovalRequest } from './approval.ts';
@@ -50,13 +46,7 @@ const STRIPPED_RESPONSE_HEADERS = [
 
 /** What the gateway reports to `onEvent`; routing only, never credentials or bodies. */
 export interface GatewayEvent {
-  route:
-    | 'anthropic'
-    | 'openai'
-    | 'openai-request'
-    | 'approval'
-    | 'zen'
-    | 'zen-request';
+  route: 'anthropic' | 'openai' | 'openai-request' | 'approval';
   model?: string;
   agentId?: string | null;
   path?: string;
@@ -86,7 +76,6 @@ export interface GatewayOptions {
   fetchImpl?: GatewayFetch;
   onEvent?: (event: GatewayEvent) => void;
   timeoutMs?: number;
-  zen?: { apiKey: string };
   /** OpenAI review for GPT-originated actions, independent of Claude authentication. */
   approvalBridge?: Pick<NativeApprovalBridge, 'respond'>;
   approvalProviders?: readonly ('openai')[];
@@ -103,9 +92,8 @@ class BadRequest extends Error {}
 class UpstreamFailure extends Error {
   status: number;
   retryAfter: string | null;
-  constructor(status: number, retryAfter: string | null, provider = 'OpenAI') {
-    const authHelp = provider === 'OpenAI' ? ' Renew the Codex login.' : ' Check the Zen API key.';
-    super(`${provider} returned HTTP ${status}.${status === 401 ? authHelp : ''}`);
+  constructor(status: number, retryAfter: string | null) {
+    super(`OpenAI returned HTTP ${status}.${status === 401 ? ' Renew the Codex login.' : ''}`);
     this.status = status;
     this.retryAfter = retryAfter;
   }
@@ -155,7 +143,6 @@ export function createNativeGateway({
   fetchImpl = fetch as GatewayFetch,
   onEvent: observer = () => {},
   timeoutMs,
-  zen,
   approvalBridge,
   approvalProviders: _approvalProviders = approvalBridge ? ['openai'] : [],
   blockAnthropic,
@@ -169,16 +156,8 @@ export function createNativeGateway({
   const dashboard =
     usageDashboard ??
     new ProviderUsageDashboard({
-      enabled: (enabledProviders ?? ['openai', 'zen']).filter(
-        (provider) => {
-          if (provider === 'zen') {
-            return Boolean(zen);
-          }
-          return provider === 'openai';
-        },
-      ),
+      enabled: enabledProviders ?? ['openai'],
       openai: async () => codexQuotaView(await readCodexUsage(authFile)),
-      zen: zen ? async () => formatZenQuota(await readZenQuota({ apiKey: zen.apiKey })) : undefined,
     });
   const onEvent = (event: GatewayEvent) => {
     receipts.observe(event);
@@ -186,9 +165,6 @@ export function createNativeGateway({
   };
   if (!token) {
     throw new Error('Gateway token required');
-  }
-  if (zen) {
-    validateZenKey(zen.apiKey);
   }
   const fallbackSession = randomUUID();
   const approvalContexts = new Map<string, ApprovalContext>();
@@ -376,60 +352,6 @@ export function createNativeGateway({
     });
     sendResult(exchange, result);
   }
-  async function handleZen(exchange: ProviderRequest) {
-    const { res, body, url, signal, agentId, emit } = exchange;
-    if (!zen?.apiKey) {
-      throw new BadRequest('Zen is not configured. Set OPENCODE_API_KEY or connect OpenCode Zen.');
-    }
-    const prepared = prepareZenRequest(exchange, fallbackSession);
-    if (url.pathname === '/v1/messages/count_tokens') {
-      res.writeHead(200, { 'content-type': 'application/json', 'x-switchboard-token-count': 'estimate' });
-      return res.end(JSON.stringify({ input_tokens: prepared.inputTokens }));
-    }
-    onEvent({ route: 'zen-request', agentId, model: body.model });
-    const upstream = await fetchImpl(`https://opencode.ai/zen/go/v1/${prepared.endpoint}`, {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${zen.apiKey}`,
-        'content-type': 'application/json',
-        accept: 'text/event-stream',
-        'x-opencode-session': prepared.cacheKey,
-        'x-opencode-client': 'cc-multi-cli-plugin',
-      },
-      body: JSON.stringify(prepared.body),
-      signal,
-      redirect: 'error',
-    });
-    if (!upstream.ok) {
-      onEvent({ route: 'zen', agentId, status: upstream.status });
-      await upstream.body?.cancel();
-      throw new UpstreamFailure(upstream.status, upstream.headers.get('retry-after'), 'Zen');
-    }
-    if (!upstream.body) {
-      throw new Error('Zen returned no response stream.');
-    }
-    exchange.startStream();
-    const options = {
-      toolNames: originalToolNames(body),
-      stopSequences: body.stop_sequences,
-      signaturePrefix: prepared.signaturePrefix,
-      requireUsage: true,
-      inputTokens: prepared.inputTokens,
-    };
-    const translate = prepared.endpoint === 'responses' ? fromResponses : fromChat;
-    const result = await translate(
-      upstream.body,
-      String(body.model),
-      body.stream ? emit : undefined,
-      options,
-    );
-    rememberResult(exchange, result);
-    if (result.stop_reason === 'stop_sequence') {
-      exchange.abort.abort();
-    }
-    onEvent(completionEvent(exchange, result, 'zen', prepared.endpoint));
-    sendResult(exchange, result);
-  }
   async function handleAnthropic(exchange: ProviderRequest) {
     const { req, res, body, url, raw, signal } = exchange;
     const headers = anthropicHeaders(req);
@@ -566,8 +488,7 @@ export function createNativeGateway({
     if (approvalBridge && (openai || (!guardAuto && !context))) {
       return handleReview(exchange, context);
     }
-    const nativeClaude =
-      context && (!context.model.startsWith('switchboard/') || context.model.startsWith('switchboard/zen/'));
+    const nativeClaude = context && !context.model.startsWith('switchboard/');
     if (openai || external || blockAnthropic || (context && !nativeClaude)) {
       throw new BadRequest(
         'Automatic review cannot use ordinary external inference. No matching provider reviewer is enabled.',
@@ -620,9 +541,6 @@ export function createNativeGateway({
     });
     if (!external) {
       return handleAnthropic(exchange);
-    }
-    if (external.startsWith('switchboard/zen/')) {
-      return handleZen(exchange);
     }
     return handleOpenAI(exchange, external);
   }
@@ -743,10 +661,7 @@ export function createNativeGateway({
 class RequestTooLarge extends Error {}
 
 function providerSignal(disconnected: AbortSignal, model: string | null, timeoutMs?: number) {
-  if (
-    (model?.startsWith('switchboard/openai/') || model?.startsWith('switchboard/zen/')) &&
-    timeoutMs === undefined
-  ) {
+  if (model?.startsWith('switchboard/openai/') && timeoutMs === undefined) {
     return disconnected;
   }
   return AbortSignal.any([disconnected, AbortSignal.timeout(timeoutMs ?? 180000)]);
@@ -778,12 +693,7 @@ async function readRequest(req: http.IncomingMessage, catalog?: AgentCatalog) {
   return { raw: body === parsed ? raw : Buffer.from(JSON.stringify(body)), parsed, body };
 }
 
-function providerRoute(
-  model: string | null,
-): 'openai' | 'anthropic' | 'zen' {
-  if (model?.startsWith('switchboard/zen/')) {
-    return 'zen';
-  }
+function providerRoute(model: string | null): 'openai' | 'anthropic' {
   return model ? 'openai' : 'anthropic';
 }
 
@@ -854,33 +764,6 @@ function requestIdentity(
     session,
     scope: identity ? JSON.stringify([identity, agentId ?? 'main']) : undefined,
   };
-}
-
-function prepareZenRequest(exchange: ProviderRequest, fallbackSession: string) {
-  const { req, body, url, identity, agentId } = exchange;
-  try {
-    if (
-      req.method !== 'POST' ||
-      !['/v1/messages', '/v1/messages/count_tokens'].includes(url.pathname)
-    ) {
-      throw new Error('Zen requires POST /v1/messages or /v1/messages/count_tokens');
-    }
-    // Zen uses this for sticky upstream routing. Claude identity survives restarts;
-    // no per-request nonce is inserted into the prompt or cache key.
-    const cacheKey = createHash('sha256')
-      .update(
-        JSON.stringify([
-          identity.session || fallbackSession,
-          agentId ?? 'main',
-          body.model,
-          process.cwd(),
-        ]),
-      )
-      .digest('hex');
-    return { ...zenRequest(body, cacheKey), cacheKey };
-  } catch (error) {
-    throw new BadRequest(reason(error));
-  }
 }
 
 /**

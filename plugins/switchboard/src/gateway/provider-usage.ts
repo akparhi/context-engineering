@@ -1,7 +1,7 @@
 import type { CodexQuota } from '../providers/codex/usage.ts';
 import type { UsageSnapshot } from './receipts.ts';
 
-type UsageProvider = 'openai' | 'zen';
+type UsageProvider = 'openai';
 interface ProviderUsageRow {
   id: UsageProvider;
   name: string;
@@ -17,7 +17,6 @@ export interface ProviderUsageView {
 interface ProviderUsageOptions {
   enabled: readonly string[];
   openai?: ProviderUsageReader;
-  zen?: ProviderUsageReader;
   now?: () => number;
 }
 type ProviderUsageReader = (session: string) => Promise<{
@@ -27,14 +26,9 @@ type ProviderUsageReader = (session: string) => Promise<{
 }>;
 const providers = [
   { id: 'openai', name: 'OpenAI / Codex', url: 'https://chatgpt.com/codex/settings/usage' },
-  { id: 'zen', name: 'OpenCode Zen', url: 'https://opencode.ai/zen' },
 ] as const;
 const unavailable: Record<UsageProvider, string[]> = {
   openai: ['Sign in with codex login to read account quota windows.'],
-  zen: [
-    'Go subscription quota requires a supported Zen API key.',
-    'Check the Zen billing console for credits and charges.',
-  ],
 };
 
 function sessionLines(snapshot: UsageSnapshot, provider: UsageProvider): string[] {

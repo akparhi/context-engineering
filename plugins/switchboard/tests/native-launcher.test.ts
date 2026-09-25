@@ -4,14 +4,13 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import {
   checkLauncherArgumentLimit,
   workerDefinitions,
 } from '../src/launcher.ts';
 import { LABELS, MODELS } from '../src/providers/codex/models.ts';
-import { ZEN_MODELS } from '../src/providers/opencode/models.ts';
 import { removeTemporary } from './temporary.ts';
 
 async function writeClaudeFixture(bin: string, source: string): Promise<void> {
@@ -67,7 +66,7 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
         launcher,
         '--',
         '--model',
-        'switchboard/zen/gpt-5.6-luna',
+        'switchboard/openai/gpt-6-luna',
         '--settings',
         JSON.stringify({
           disableAgentView: false,
@@ -144,7 +143,7 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
   assert.equal(supplied.args.filter((arg: string) => arg === '--plugin-dir').length, 1);
   for (const auth of ['malformed', 'error', 'missing']) {
     await assert.rejects(
-      promisify(execFile)(process.execPath, [launcher, '--', '--model', 'switchboard/zen/gpt-5.6-luna'], {
+      promisify(execFile)(process.execPath, [launcher, '--', '--model', 'switchboard/openai/gpt-6-luna'], {
         cwd,
         timeout: 20000,
         env: {
@@ -199,13 +198,19 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
   assert.equal(saved.settings.permissions.disableAutoMode, 'disable');
 });
 
-test('Zen credentials add picker models and named workers without leaking the key to Claude', {
+test('OpenAI login adds picker models and named workers, filtered by SWITCHBOARD_MODELS', {
   skip: process.platform === 'win32',
 }, async (t) => {
-  const cwd = await mkdtemp(path.join(os.tmpdir(), 'launcher-zen-test-'));
+  const cwd = await mkdtemp(path.join(os.tmpdir(), 'launcher-openai-test-'));
   t.after(() => removeTemporary(cwd));
   const bin = path.join(cwd, 'bin');
   await mkdir(bin);
+  await writeFile(
+    path.join(cwd, 'auth.json'),
+    JSON.stringify({ auth_mode: 'chatgpt', tokens: { access_token: 'codex-fixture', account_id: 'fixture' } }),
+  );
+  const preload = path.join(cwd, 'preload.mjs');
+  await writeFile(preload, 'globalThis.fetch = async () => Response.json({ models: [] });\n');
   await writeClaudeFixture(
     bin,
     `#!/usr/bin/env node
@@ -216,186 +221,93 @@ const result=(value)=>{const base=process.env.SWITCHBOARD_MOD_GATEWAY_URL;if(!ba
 if(args[0]==='auth'){process.stdout.write(JSON.stringify({loggedIn:false}));process.exitCode=1}else{
 const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'utf8'));
 const agents=JSON.parse(args[args.indexOf('--agents')+1]);
-result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=>x.startsWith('switchboard/')),zenKeyInChild:process.env.OPENCODE_API_KEY,args}));}
+result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=>x.startsWith('switchboard/')),args}));}
 `,
   );
   const launcher = fileURLToPath(
     new URL('../src/launcher.ts', import.meta.url),
   );
-  const { stdout } = await promisify(execFile)(
-    process.execPath,
-    [launcher, '--', '--model', 'switchboard/zen/gpt-5.6-luna', '--dangerously-skip-permissions'],
-    {
+  const launch = (env: NodeJS.ProcessEnv, args: string[] = []) =>
+    promisify(execFile)(process.execPath, ['--import', pathToFileURL(preload).href, launcher, ...args], {
       cwd,
       timeout: 20000,
       env: {
         PATH: `${bin}${path.delimiter}${process.env.PATH}`,
         HOME: cwd,
         ...windowsHome(cwd),
-        XDG_DATA_HOME: path.join(cwd, 'data'),
         CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
         CODEX_HOME: cwd,
-        OPENCODE_API_KEY: 'zen-fixture-key',
+        ...env,
       },
-    },
+    });
+  const result = JSON.parse(
+    (await launch({}, ['--', '--model', 'switchboard/openai/gpt-6-sol', '--dangerously-skip-permissions'])).stdout,
   );
-  const result = JSON.parse(stdout);
   const pickerModels = result.settings.modelPicker.options.map(
     (option: { model: string }) => option.model,
   );
-  assert(pickerModels.includes('switchboard/zen/deepseek-v4.1-flash'));
-  assert.equal(
-    result.settings.modelPicker.options.find(
-      (row: { model: string }) => row.model === 'switchboard/zen/deepseek-v4.1-flash',
-    ).behavesAs,
-    'claude-haiku-4-5',
-  );
-  assert.match(
-    result.settings.modelPicker.options.find(
-      (row: { model: string }) => row.model === 'switchboard/zen/deepseek-v4.1-flash',
-    ).description,
-    /effort not applicable/,
-  );
-  assert.equal(result.zenKeyInChild, undefined);
+  assert.deepEqual(pickerModels, Object.values(MODELS).map((model) => `switchboard/openai/${model}`));
+  assert(result.settings.modelPicker.options.every((row: { behavesAs: string }) => row.behavesAs === 'claude-sonnet-4-6'));
+  assert.deepEqual(result.agents.sort(), ['astra', 'luna', 'sol']);
   assert.equal(result.settings.permissions.disableAutoMode, 'disable');
   assert(result.args.includes('--dangerously-skip-permissions'));
-  assert.deepEqual(result.models, ['switchboard/zen/gpt-5.6-luna']);
-  const disabled = await promisify(execFile)(process.execPath, [launcher], {
-    cwd,
-    timeout: 20000,
-    env: {
-      PATH: `${bin}${path.delimiter}${process.env.PATH}`,
-      HOME: cwd,
-      ...windowsHome(cwd),
-      XDG_DATA_HOME: path.join(cwd, 'data'),
-      CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
-      CODEX_HOME: cwd,
-      OPENCODE_API_KEY: 'invalid key must not be read',
-      SWITCHBOARD_ENABLED_PROVIDERS: '',
-    },
-  });
-  const withoutProviders = JSON.parse(disabled.stdout);
+  assert.deepEqual(result.models, ['switchboard/openai/gpt-6-sol']);
+  const withoutProviders = JSON.parse((await launch({ SWITCHBOARD_ENABLED_PROVIDERS: '' })).stdout);
   assert.deepEqual(withoutProviders.settings.modelPicker.options, []);
   assert.deepEqual(withoutProviders.agents, []);
+  // Older installs may still enable the retired zen provider; it is ignored, not fatal.
+  const retired = JSON.parse((await launch({ SWITCHBOARD_ENABLED_PROVIDERS: 'openai,zen' })).stdout);
+  assert.deepEqual(retired.agents.sort(), ['astra', 'luna', 'sol']);
 
   const launchFiltered = (selection: string, args: string[] = []) =>
-    promisify(execFile)(process.execPath, [launcher, ...args], {
-      cwd,
-      timeout: 20000,
-      env: {
-        PATH: `${bin}${path.delimiter}${process.env.PATH}`,
-        HOME: cwd,
-        ...windowsHome(cwd),
-        XDG_DATA_HOME: path.join(cwd, 'data'),
-        CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
-        CODEX_HOME: cwd,
-        OPENCODE_API_KEY: 'zen-fixture-key',
-        SWITCHBOARD_MODELS: selection,
-        SWITCHBOARD_ZEN_MODELS: 'deepseek-v4.1-flash',
-      },
-    });
+    launch({ SWITCHBOARD_MODELS: selection }, args);
   const filtered = JSON.parse(
-    (await launchFiltered(' switchboard/zen/deepseek-v4.1-flash,switchboard/zen/deepseek-v4.1-flash ')).stdout,
+    (await launchFiltered(' switchboard/openai/gpt-6-sol,switchboard/openai/gpt-6-sol ')).stdout,
   );
   assert.deepEqual(
     filtered.settings.modelPicker.options.map((option: { model: string }) => option.model),
-    ['switchboard/zen/deepseek-v4.1-flash'],
+    ['switchboard/openai/gpt-6-sol'],
   );
-  assert.deepEqual(filtered.models, ['switchboard/zen/deepseek-v4.1-flash']);
-  assert.deepEqual(filtered.agents.sort(), ['deepseek']);
-  const outsideDefaults = JSON.parse((await launchFiltered('switchboard/zen/deepseek-v4.1-flash')).stdout);
-  assert.deepEqual(
-    outsideDefaults.settings.modelPicker.options.map((option: { model: string }) => option.model),
-    ['switchboard/zen/deepseek-v4.1-flash'],
-  );
-  assert.deepEqual(outsideDefaults.agents, ['deepseek']);
+  assert.deepEqual(filtered.models, ['switchboard/openai/gpt-6-sol']);
+  assert.deepEqual(filtered.agents, ['sol']);
   const all = JSON.parse((await launchFiltered('all')).stdout);
-  assert(all.settings.modelPicker.options.length >= ZEN_MODELS.length);
-  assert(all.agents.includes('deepseek'));
-  const plus = JSON.parse((await launchFiltered('+switchboard/zen/deepseek-v4.1-flash')).stdout);
-  assert(
-    plus.settings.modelPicker.options.some(
-      (option: { model: string }) => option.model === 'switchboard/zen/deepseek-v4.1-flash',
-    ),
+  assert.equal(all.settings.modelPicker.options.length, Object.keys(MODELS).length);
+  const plus = JSON.parse((await launchFiltered('+switchboard/openai/gpt-6-sol')).stdout);
+  assert.deepEqual(plus.agents.sort(), ['astra', 'luna', 'sol']);
+  // A saved selection may still name retired zen models; they are skipped.
+  const saved = JSON.parse(
+    (await launchFiltered('switchboard/zen/deepseek-v4.1-flash,switchboard/openai/gpt-6-luna')).stdout,
   );
-  assert(plus.agents.includes('deepseek'));
+  assert.deepEqual(
+    saved.settings.modelPicker.options.map((option: { model: string }) => option.model),
+    ['switchboard/openai/gpt-6-luna'],
+  );
   const hidden = JSON.parse(
-    (await launchFiltered('', ['--model', 'switchboard/zen/gpt-5.6-luna'])).stdout,
+    (await launchFiltered('', ['--', '--model', 'switchboard/openai/gpt-6-sol'])).stdout,
   );
   assert.deepEqual(hidden.settings.modelPicker.options, []);
   assert.deepEqual(hidden.agents, []);
-  assert.deepEqual(hidden.models, ['switchboard/zen/gpt-5.6-luna']);
-  await assert.rejects(launchFiltered('switchboard/zen/typo'), /SWITCHBOARD_MODELS: model is not available/);
-});
-
-test('Zen saved auth supplies the no-login fallback without exposing credentials', {
-  skip: process.platform === 'win32',
-}, async (t) => {
-  const cwd = await mkdtemp(path.join(os.tmpdir(), 'launcher-zen-saved-test-'));
-  t.after(() => removeTemporary(cwd));
-  const bin = path.join(cwd, 'bin');
-  const data = path.join(cwd, 'data', 'opencode');
-  await mkdir(bin);
-  await mkdir(data, { recursive: true });
-  await writeFile(
-    path.join(data, 'auth.json'),
-    JSON.stringify({ opencode: { type: 'api', key: 'saved-zen-fixture-key' } }),
-  );
-  await writeClaudeFixture(
-    bin,
-    `#!/usr/bin/env node
-const fs=require('node:fs');const args=process.argv.slice(2);
-if(args.includes('plugin')&&args.includes('list')){console.log('[]');process.exit(0)}
-if(args[0]==='--version'){console.log(process.env.TEST_CLAUDE_VERSION??'2.1.272');process.exit(0)}
-const result=(value)=>{const base=process.env.SWITCHBOARD_MOD_GATEWAY_URL;if(!base){console.log(value);return}const url=new URL(base+'/switchboard/mod/session');const req=require('node:http').request(url,{method:'POST',headers:{'content-type':'application/json','x-switchboard-gateway-token':process.env.SWITCHBOARD_GATEWAY_TOKEN}},()=>console.log(value));req.on('error',()=>console.log(value));req.end(JSON.stringify({sessionId:'fixture',event:'start'}));};
-if(args[0]==='auth'){process.stdout.write(JSON.stringify({loggedIn:false}));process.exitCode=1}else{
-const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'utf8'));
-result(JSON.stringify({settings,models:args.filter(x=>x.startsWith('switchboard/')),zenKeyInChild:process.env.OPENCODE_API_KEY}));}
-`,
-  );
-  const launcher = fileURLToPath(
-    new URL('../src/launcher.ts', import.meta.url),
-  );
-  const { stdout } = await promisify(execFile)(process.execPath, [launcher], {
-    cwd,
-    timeout: 20000,
-    env: {
-      PATH: `${bin}${path.delimiter}${process.env.PATH}`,
-      HOME: cwd,
-      ...windowsHome(cwd),
-      XDG_DATA_HOME: path.join(cwd, 'data'),
-      CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
-      CODEX_HOME: cwd,
-      SWITCHBOARD_ZEN_MODELS: 'deepseek-v4.1-flash',
-    },
-  });
-  const result = JSON.parse(stdout);
-  assert.deepEqual(result.models, ['switchboard/zen/deepseek-v4.1-flash']);
-  assert.equal(result.zenKeyInChild, undefined);
-  assert.deepEqual(
-    result.settings.modelPicker.options.map((option: { model: string }) => option.model),
-    ['switchboard/zen/deepseek-v4.1-flash'],
-  );
+  assert.deepEqual(hidden.models, ['switchboard/openai/gpt-6-sol']);
+  await assert.rejects(launchFiltered('switchboard/openai/typo'), /SWITCHBOARD_MODELS: model is not available/);
+  const fallback = JSON.parse((await launch({})).stdout);
+  assert.deepEqual(fallback.models, ['switchboard/openai/gpt-6-luna'], 'no Claude login starts on Luna');
 });
 
 test('launcher keeps the representative catalog under 30 KB', () => {
-  const agents = workerDefinitions(true, true);
+  const agents = workerDefinitions(true);
   const definitions = JSON.stringify(agents);
   const definitionBytes = Buffer.byteLength(definitions);
   assert(definitionBytes < 30000, `representative worker JSON was ${definitionBytes} bytes`);
-  assert.equal(ZEN_MODELS.length, 1);
 });
 
 test('worker registration follows selected models with one worker per model', () => {
-  const selected = ['switchboard/openai/gpt-6-luna', 'switchboard/zen/deepseek-v4.1-flash'];
-  const agents = workerDefinitions(true, true, selected);
+  const selected = ['switchboard/openai/gpt-6-luna', 'switchboard/openai/gpt-6-sol'];
+  const agents = workerDefinitions(true, selected);
   assert.deepEqual(new Set(Object.values(agents).map((worker) => worker.model)), new Set(selected));
   assert.equal(agents['luna'].effort, 'medium');
   assert.equal(agents['luna-high'], undefined);
   assert.ok(agents['luna'].disallowedTools.includes('Agent'));
-  assert.equal(agents['deepseek'].effort, undefined);
-  assert.equal(agents['deepseek-max'], undefined);
-  assert.deepEqual(workerDefinitions(true, true, []), {});
+  assert.deepEqual(workerDefinitions(true, []), {});
 });
 
 test('launcher argument limits are platform-aware and identify largest providers', () => {
@@ -406,9 +318,9 @@ test('launcher argument limits are platform-aware and identify largest providers
       prompt: 'Complete the delegated task.',
       disallowedTools: ['WebSearch'],
     },
-    'zen-worker': {
-      model: 'switchboard/zen/model',
-      description: 'Zen',
+    'other-worker': {
+      model: 'switchboard/other/model',
+      description: 'Other',
       prompt: 'Complete the delegated task.',
       disallowedTools: ['WebSearch'],
     },
@@ -466,22 +378,6 @@ console.log(JSON.stringify({args:process.argv.slice(2),gateway:!!process.env.SWI
     launch(['-p', '--settings={"disableAllHooks":true}', '--model', 'switchboard/openai/gpt-6-luna']),
     /Switchboard models need hooks/,
   );
-});
-
-test('the Zen model listing is available without authentication', async () => {
-  const launcher = fileURLToPath(
-    new URL('../src/launcher.ts', import.meta.url),
-  );
-  const { stdout } = await promisify(execFile)(process.execPath, [launcher, '--zen-models'], {
-    timeout: 20000,
-    env: {
-      PATH: process.env.PATH,
-      HOME: os.tmpdir(),
-      XDG_DATA_HOME: path.join(os.tmpdir(), 'missing-zen-data'),
-    },
-  });
-  const models = JSON.parse(stdout);
-  assert(models.some((model: { id: string }) => model.id === 'deepseek-v4.1-flash'));
 });
 
 test('OpenAI models carry short picker labels', () => {

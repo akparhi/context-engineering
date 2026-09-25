@@ -15,27 +15,32 @@ test('provider dashboard reads every enabled provider and preserves unavailable 
     return { summary: `${provider} quota`, details: ['Account snapshot'] };
   };
   const dashboard = new ProviderUsageDashboard({
-    enabled: ['openai', 'zen'],
+    enabled: ['openai'],
     openai: reader('openai'),
-    zen: async () => ({
+  });
+  const result = await dashboard.read('owned', empty());
+  assert.deepEqual(calls, ['openai:owned']);
+  assert.deepEqual(
+    result.providers.map((row) => row.status),
+    ['ready'],
+  );
+  assert.equal(result.providers[0].summary, 'openai quota');
+  const unavailable = new ProviderUsageDashboard({
+    enabled: ['openai'],
+    openai: async () => ({
       summary: 'Native quota unavailable',
       details: ['No native quota connection'],
       status: 'unavailable',
     }),
   });
-  const result = await dashboard.read('owned', empty());
-  assert.deepEqual(calls.sort(), ['openai:owned']);
-  assert.deepEqual(
-    result.providers.map((row) => row.status),
-    ['ready', 'unavailable'],
-  );
-  assert.equal(result.providers[0].summary, 'openai quota');
-  assert(result.providers[1].details.includes('No native quota connection'));
+  const quota = (await unavailable.read('owned', empty())).providers[0];
+  assert.equal(quota.status, 'unavailable');
+  assert(quota.details.includes('No native quota connection'));
 });
 
-test('provider dashboard isolates errors and explicitly reports disabled and unsupported billing', async () => {
+test('provider dashboard isolates errors and explicitly reports disabled providers', async () => {
   const dashboard = new ProviderUsageDashboard({
-    enabled: ['openai', 'zen'],
+    enabled: ['openai'],
     openai: async () => {
       throw new Error('secret token');
     },
@@ -43,17 +48,16 @@ test('provider dashboard isolates errors and explicitly reports disabled and uns
   const result = await dashboard.read('s', empty());
   assert.deepEqual(
     result.providers.map((row) => row.status),
-    ['error', 'unavailable'],
+    ['error'],
   );
   assert(!JSON.stringify(result).includes('secret'));
-  assert(result.providers[1].details.some((line) => line.includes('billing console')));
   const disabled = new ProviderUsageDashboard({
-    enabled: ['openai'],
+    enabled: [],
     openai: async () => ({ summary: 'quota', details: ['50% used'] }),
   });
   assert.deepEqual(
     (await disabled.read('s', empty())).providers.map((row) => row.status),
-    ['ready', 'disabled'],
+    ['disabled'],
   );
 });
 
@@ -92,8 +96,8 @@ test('provider dashboard coalesces reads, caches account data, refreshes and kee
 test('provider menu route is authenticated, session scoped and read-only', async (t) => {
   let reads = 0;
   const dashboard = new ProviderUsageDashboard({
-    enabled: ['zen'],
-    zen: async (session: string) => {
+    enabled: ['openai'],
+    openai: async (session: string) => {
       reads++;
       return { summary: session, details: [] };
     },
@@ -119,6 +123,6 @@ test('provider menu route is authenticated, session scoped and read-only', async
   const response = await fetch(url, { headers: { 'x-switchboard-gateway-token': 'secret' } });
   assert.equal(response.status, 200);
   const body = (await response.json()) as ProviderUsageView;
-  assert.equal(body.providers[1].summary, 'owned');
+  assert.equal(body.providers[0].summary, 'owned');
   assert.equal(reads, 1);
 });

@@ -11,13 +11,6 @@ import { createOpenAIApproval, discoverOpenAIReviewer } from './providers/codex/
 import { readCodexAuth } from './providers/codex/auth.ts';
 import { DESCRIPTIONS, LABELS, MODELS, OPENAI_WORKERS } from './providers/codex/models.ts';
 import type { Effort } from './providers/codex/responses.ts';
-import { readZenKey } from './providers/opencode/auth.ts';
-import {
-  ZEN_MODELS,
-  ZEN_WORKERS,
-  zenModelOptions,
-  zenPickerOptions,
-} from './providers/opencode/models.ts';
 import { AgentCatalog } from './gateway/agent-catalog.ts';
 import {
   loadWorkerPermissions,
@@ -100,20 +93,14 @@ async function main() {
   const pluginRoot = await findPluginRoot(fileURLToPath(import.meta.url));
   await assertFunctionHooksSupported();
   const anthropic = await anthropicSignedIn();
-  const fullCatalog = process.env.SWITCHBOARD_MODELS !== undefined;
   const authFile = path.join(
     process.env.CODEX_HOME || path.join(os.homedir(), '.codex'),
     'auth.json',
   );
   const { codexSignedIn, openaiReview } = await discoverOpenAI(authFile);
-  const zenKey = providerEnabled('zen') ? await readZenKey() : undefined;
   const token = randomBytes(32).toString('hex');
-  const defaultModels = fullCatalog
-    ? pickerSettings(codexSignedIn, Boolean(zenKey)).modelPicker.options.map(
-        (option) => option.model,
-      )
-    : [];
-  const settings = pickerSettings(codexSignedIn, Boolean(zenKey), fullCatalog);
+  const settings = pickerSettings(codexSignedIn);
+  const defaultModels = settings.modelPicker.options.map((option) => option.model);
   await mergeSettings(args, settings);
   // The supervisor does not transfer --agents or our session-local gateway env,
   // and can outlive the child whose exit releases settingsDir and the gateway.
@@ -123,7 +110,6 @@ async function main() {
   const callerSettings = structuredClone(settings);
   const agents = workerDefinitions(
     codexSignedIn,
-    Boolean(zenKey),
     settings.modelPicker.options.map((option) => option.model),
   );
   const modBridge = new ModBridge();
@@ -156,7 +142,6 @@ async function main() {
     enabledProviders,
     authFile,
     modBridge,
-    zen: zenKey ? { apiKey: zenKey } : undefined,
     permissionModes,
     approvalBridge,
     approvalProviders,
@@ -460,7 +445,6 @@ async function discoverOpenAI(authFile: string) {
 
 export function workerDefinitions(
   codexSignedIn: boolean,
-  zen: boolean,
   selectedModels?: readonly string[],
 ) {
   const agents: Record<string, AgentDefinition> = Object.fromEntries(
@@ -475,15 +459,6 @@ export function workerDefinitions(
       },
     ]),
   );
-  for (const [name, option] of Object.entries(zen ? ZEN_WORKERS : {})) {
-    agents[name] = {
-      description: `OpenCode Zen ${option.model}${option.effort ? `, ${option.effort} effort` : ''}. Uses native Claude Code tools.`,
-      prompt: WORKER_PROMPT,
-      disallowedTools: WORKER_DISALLOWED_TOOLS,
-      model: option.model,
-      ...(option.effort ? { effort: option.effort } : {}),
-    };
-  }
   return selectWorkers(agents, selectedModels);
 }
 
@@ -676,9 +651,13 @@ function filterPicker(
     // saved while the tag was on must still resolve once SWITCHBOARD_DISABLE_1M_CONTEXT turns it off.
     const native = nativeSpelling(model) ?? model;
     const option = available.get(model) ?? available.get(`${native}[1m]`) ?? available.get(native);
+    // Retired providers (such as zen) may linger in saved selections; skip their rows.
+    if (!option && model.startsWith('switchboard/') && !model.startsWith('switchboard/openai/')) {
+      continue;
+    }
     if (!option) {
       throw new Error(
-        `SWITCHBOARD_MODELS: model is not available from a connected provider in this launcher's picker: ${model}. Check the full ID with --zen-models, then add it with /switchboard:setup --models <id>.`,
+        `SWITCHBOARD_MODELS: model is not available from a connected provider in this launcher's picker: ${model}. Add it with /switchboard:setup --models <id>.`,
       );
     }
     chosen.add(option);
@@ -732,13 +711,9 @@ function configureApproval(
 }
 
 async function handleCommand(command?: string) {
-  if (command === '--zen-models') {
-    console.log(JSON.stringify(ZEN_MODELS, null, 2));
-    process.exit(0);
-  }
   if (command === '--help') {
     console.log(
-      'Usage: bun src/launcher.ts [--zen-models] [-- <claude arguments>]\nLaunch Claude with external models and native coding workers.\n--zen-models: list supported Zen models and capabilities\nOPENCODE_API_KEY: Zen key (or use OpenCode /connect)\nSWITCHBOARD_ZEN_MODELS: comma-separated Zen model IDs to show, leaving other providers unchanged\nSWITCHBOARD_MODELS: comma-separated full model IDs to show in /model (unset: defaults; empty: hide external rows)',
+      'Usage: bun src/launcher.ts [-- <claude arguments>]\nLaunch Claude with external models and native coding workers.\nSWITCHBOARD_MODELS: comma-separated full model IDs to show in /model (unset: defaults; empty: hide external rows)',
     );
     process.exit(0);
   }
@@ -808,18 +783,12 @@ async function savedSelection(args: string[]) {
   return savedModel;
 }
 
-/** Client compatibility only, not provider equivalence. Both profiles default to 200K
+/** Client compatibility only, not provider equivalence. This profile defaults to 200K
  * in Claude 2.1.267; newer xhigh profiles imply native 1M and are deliberately not used.
  * Provider validation remains authoritative for every requested effort value. */
-function pickerProfile(adjustableEffort: boolean): string {
-  return adjustableEffort ? 'claude-sonnet-4-6' : 'claude-haiku-4-5';
-}
+const PICKER_PROFILE = 'claude-sonnet-4-6';
 
-function pickerSettings(codexSignedIn: boolean, zen: boolean, fullCatalog = false) {
-  let zenOptions = zenPickerOptions('');
-  if (zen) {
-    zenOptions = fullCatalog ? zenModelOptions() : zenPickerOptions(process.env.SWITCHBOARD_ZEN_MODELS);
-  }
+function pickerSettings(codexSignedIn: boolean) {
   const settings: LaunchSettings = {
     modelPicker: {
       options: [
@@ -827,13 +796,7 @@ function pickerSettings(codexSignedIn: boolean, zen: boolean, fullCatalog = fals
           model: `switchboard/openai/${model}`,
           label: LABELS[model] ?? model,
           description: `OpenAI · GPT-6 ${LABELS[model]} · ${DESCRIPTIONS[model]}`,
-          behavesAs: pickerProfile(true),
-        })),
-        ...zenOptions.map(({ model, label, efforts }) => ({
-          model,
-          label,
-          behavesAs: pickerProfile(Boolean(efforts?.length)),
-          description: `Zen API billing · Claude tools${efforts ? '' : ' · native reasoning; /effort not applicable'}`,
+          behavesAs: PICKER_PROFILE,
         })),
       ],
     },
@@ -866,7 +829,6 @@ function translateTrafficPolicy(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 
 function gatewayEnvironment(port: number, token: string, anthropic: boolean) {
   const env = translateTrafficPolicy({ ...process.env });
-  delete env.OPENCODE_API_KEY;
   return {
     ...env,
     CLAUDE_CODE_DISABLE_AGENT_VIEW: '1',

@@ -28,7 +28,6 @@ for (const model of [
   'opus',
   'sonnet',
   'switchboard/openai/gpt-6-astra',
-  'switchboard/zen/deepseek-v4.1-flash',
 ]) {
   test(`native ${model} compacts without consulting the gateway`, async ($, on) => {
     on('session.model', () => ({ value: model }));

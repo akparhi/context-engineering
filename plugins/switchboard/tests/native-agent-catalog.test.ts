@@ -14,7 +14,7 @@ const workers = {
     description: 'Astra high',
     disallowedTools: ['WebSearch'],
   },
-  'zen-other': { model: 'switchboard/zen/other', description: 'Other', disallowedTools: ['WebSearch'] },
+  other: { model: 'switchboard/other/model', description: 'Other', disallowedTools: ['WebSearch'] },
 };
 const rows = Object.entries(workers).map(
   ([name, worker]) => `- ${name}: ${worker.description} (Tools: All tools except ${worker.disallowedTools.join(', ')})`,
@@ -80,7 +80,7 @@ test('catalog handles bare native system announcements without changing ordinary
 });
 
 test('catalog compacts text blocks only and follows a changed picker selection', () => {
-  const catalog = new AgentCatalog(workers, ['switchboard/zen/other']);
+  const catalog = new AgentCatalog(workers, ['switchboard/other/model']);
   const body: MessagesRequest = {
     messages: [
       {

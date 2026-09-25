@@ -30,8 +30,8 @@ test('usage command reads only the current session without model dispatch', asyn
               details: ['input 6', 'output 4'],
             },
             {
-              id: 'zen',
-              name: 'Zen',
+              id: 'other',
+              name: 'Other',
               status: 'unavailable',
               summary: 'Unavailable',
               details: ['not connected'],

@@ -481,16 +481,6 @@ function providerToolResponse(url: string, id: string, command: string, stream: 
       { headers: { 'content-type': 'text/event-stream', 'x-provider-test': 'preserved' } },
     );
   }
-  if (url.includes('zen/go/v1/chat')) {
-    // Chat Completions format for Zen Go.
-    return new Response(
-      [
-        `data: ${JSON.stringify({ id: 'chat_zen', choices: [{ index: 0, delta: { tool_calls: [{ index: 0, id, type: 'function', function: { name: 'Bash', arguments: JSON.stringify({ command }) } }] }, finish_reason: 'tool_calls' }], usage: null })}\n\n`,
-        `data: ${JSON.stringify({ id: 'chat_zen', choices: [], usage: { prompt_tokens: 1, completion_tokens: 1 } })}\n\n`,
-        'data: [DONE]\n\n',
-      ].join(''),
-    );
-  }
   const item = {
     type: 'function_call',
     call_id: id,
@@ -536,7 +526,6 @@ async function mixedReviewGateway(t: TestContext, reviewer = true, blockAnthropi
     guardAuto: true,
     blockAnthropic,
     approvalBridge: reviewer ? bridge : undefined,
-    zen: { apiKey: 'zen-fixture' },
     fetchImpl: async (url, init) => {
       const body = JSON.parse(String(init.body));
       if (body.messages?.[0]?.content?.[0]?.text === '<transcript>\n') {
@@ -648,7 +637,6 @@ test('authenticated mixed-provider review follows main and headerless worker ori
   const gateway = await mixedReviewGateway(t);
   const claude = 'claude-sonnet-5';
   const gpt = 'switchboard/openai/gpt-6-astra';
-  const zen = 'switchboard/zen/deepseek-v4.1-flash';
   assert.deepEqual(
     await (await gateway.prepare(claude, 'node parent.js', undefined, true)).json(),
     {},
@@ -670,9 +658,9 @@ test('authenticated mixed-provider review follows main and headerless worker ori
   );
   assert.equal((await gateway.classify('node claude-worker.js')).status, 200);
   assert.equal((await gateway.classify('node main.js', 1, gpt)).status, 200);
-  assert.deepEqual(await (await gateway.prepare(zen, 'node zen.js')).json(), {});
-  assert.equal((await gateway.classify('node zen.js')).status, 200);
-  assert.equal(gateway.reviews.length, 2, 'Claude and Zen never borrow GPT review');
+  assert.deepEqual(await (await gateway.prepare(claude, 'node claude-main.js')).json(), {});
+  assert.equal((await gateway.classify('node claude-main.js')).status, 200);
+  assert.equal(gateway.reviews.length, 2, 'Claude never borrows GPT review');
   assert.equal(gateway.nativeReviews.length, 3);
   assert.equal(
     (await gateway.classify('node main.js')).status,
@@ -701,21 +689,6 @@ test('Claude-only Auto passes native classifier formats and fallback models thro
     {},
     'Native Auto does not depend on our pending-tool correlation',
   );
-});
-
-test('native Claude classifier retries survive an unrelated Zen context', async (t) => {
-  const gateway = await mixedReviewGateway(t);
-  await gateway.prepare('claude-sonnet-5', 'node claude-worker.js', 'claude-worker');
-  await gateway.prepare('switchboard/zen/deepseek-v4.1-flash', 'node zen.js');
-  const body = request(1, JSON.stringify({ session_id: 'mixed' }), 'node claude-worker.js');
-  const instruction = body.messages[0].content.at(-1);
-  assert(instruction);
-  instruction.text = 'A native classifier format unknown to the gateway.';
-  const response = await gateway.send(body);
-  assert.equal(response.status, 200);
-  await response.arrayBuffer();
-  assert.deepEqual(gateway.nativeReviews, ['claude-sonnet-5']);
-  assert.deepEqual(gateway.reviews, []);
 });
 
 test('observed tools seed review without a permission roundtrip', async (t) => {

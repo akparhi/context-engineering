@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 import { executableInvocation } from '../gateway/executable.ts';
 
 const MARKETPLACE = 'akparhi';
-const PROVIDERS = ['openai', 'zen'] as const;
+const PROVIDERS = ['openai'] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
 interface Plugin {
@@ -20,13 +20,8 @@ export function providerSelection(value: string | undefined): Provider[] | undef
   if (value === undefined) {
     return undefined;
   }
-  return [...new Set(value.split(',').filter(Boolean))].map((id) => {
-    const provider = PROVIDERS.find((name) => name === id);
-    if (!provider) {
-      throw new Error(`Unknown Switchboard provider: ${id}`);
-    }
-    return provider;
-  });
+  // Retired providers (such as zen) may linger in older launch environments; ignore them.
+  return PROVIDERS.filter((name) => value.split(',').includes(name));
 }
 
 /** Ask Claude for its enabled plugins rather than interpreting its cache layout. */

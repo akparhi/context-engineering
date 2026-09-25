@@ -77,7 +77,7 @@ test('Claude-loop spawn proceeds when gateway is not configured', async ($, on) 
   expect(result.agentId).toBe('worker');
 });
 
-for (const model of ['switchboard/openai/gpt-6-luna', 'switchboard/zen/deepseek-v4.1-flash']) {
+for (const model of ['switchboard/openai/gpt-6-luna']) {
   test(`${model} spawn survives an active gateway outage`, async ($, on) => {
     on('env.get', () => ({ value: 'configured' }));
     on('session.id', () => ({ value: 's' }));
