@@ -128,18 +128,11 @@
     "telemetry@builtin": false,
     "context7@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "codex@openai-codex": true,
     "commit-commands@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
     "switchboard@akparhi": true
   },
   "extraKnownMarketplaces": {
-    "openai-codex": {
-      "source": {
-        "source": "github",
-        "repo": "openai/codex-plugin-cc"
-      }
-    },
     "akparhi": {
       "source": {
         "source": "directory",
