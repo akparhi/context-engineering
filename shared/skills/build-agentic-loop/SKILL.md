@@ -1,5 +1,5 @@
 ---
-name: build-iterated-agentic-loop
+name: build-agentic-loop
 description: build a repo-local skill and install a matching iterated coding-agent GitHub Actions workflow, prompt, memory file, and reference templates
 ---
 
@@ -36,7 +36,7 @@ Completion criterion: you can name the repo's package manager, install command, 
 Walk the user through these decisions. Recommend defaults from repo evidence instead of presenting a blank form.
 
 1. **Coding Agent**: Claude Code, Codex, OpenCode, or CodeLayer. Explain the required secret and headless command for the recommended choice. Use `references/agent-runner-templates.md`. CodeLayer is Humanlayer's ultra-lightweight agent harness.
-2. **Cadence**: daily, weekly, weekdays, monthly, manual-only, or custom cron. Recommend a cadence based on task risk and review burden - most likely weekdays, daily, or weekly. 
+2. **Cadence**: daily, weekly, weekdays, monthly, manual-only, or custom cron. Recommend a cadence based on task risk and review burden - most likely weekdays, daily, or weekly.
 3. **Task**: What task should the agent loop accomplish?
   - Are there existing skills for doing this? (you can do research before asking the user this)
   - Ask the user if you should look at recent PRs, git history, or other particular parts of the codebase for reference.
@@ -68,7 +68,7 @@ Extract the smallest repeatable job the agent should perform. Work through these
 - A search pattern (e.g., files matching `*.test.ts` without coverage, components using deprecated APIs)
 - A diff or changelog (e.g., new dependencies since last release, changed files in a PR)
 - An old pattern that should be replaced with a new pattern or migrated to a new framework
-- A flaky test based on previous CI runs 
+- A flaky test based on previous CI runs
 
 **What are we changing?** What transformation does the agent apply to each target?
 - Fix: resolve a reported issue in place
@@ -90,12 +90,12 @@ Write a repo-local skill that captures the agent's judgement for this task. The 
 
 Use these skill-writing rules:
 
-- Put ordered behavior in `SKILL.md` in the skill directory (`.claude/skill-slug-here` or `.agents/skill-slug-here` depending on repo patterns and user preferences) steps with checkable completion criteria  
+- Put ordered behavior in `SKILL.md` in the skill directory (`.claude/skill-slug-here` or `.agents/skill-slug-here` depending on repo patterns and user preferences) steps with checkable completion criteria
 - Move long templates and examples into sibling reference files, then point to them from `SKILL.md`.
 - Keep one source of truth for each rule; do not repeat the same guidance in the skill, prompt, and memory file.
 - Include a response template as a reference file (e.g., `references/response-template.md` under the skill directory) that defines how the CI agent should format its final output. The skill should instruct the agent to read and follow this template when formatting its final response which will be used as the PR body.
 - Use the skill template in `references/skill-template.md`. An EXAMPLE skill can be found in `references/example-skill.md`
-- You may refer to https://agentskills.io/specification to understand skill specification. 
+- You may refer to https://agentskills.io/specification to understand skill specification.
 
 **IMPORTANT**: the `name` field in the `SKILL.md` frontmatter must match the skill slug - e.g. a skill with name `fix-eslint-issues` must be in `.claude/skills/fix-eslint-issues/SKILL.md` or `.agents/skills/fix-eslint-issues/SKILL.md`
 

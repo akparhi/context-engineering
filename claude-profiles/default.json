@@ -49,10 +49,7 @@
   },
   "disableClaudeAiConnectors": true,
   "skillOverrides": {
-    "context-mode:ctx-insight": "off",
-    "context-mode:ctx-stats": "off",
     "superpowers:using-git-worktrees": "off",
-    "context-mode:ctx-upgrade": "off",
     "claude-api": "off"
   },
   "hooks": {
@@ -94,10 +91,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/context-mode-cache-heal.mjs\""
-          },
-          {
-            "type": "command",
             "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null"
           }
         ]
@@ -135,19 +128,12 @@
     "telemetry@builtin": false,
     "context7@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "context-mode@context-mode": true,
     "codex@openai-codex": true,
     "commit-commands@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
     "switchboard@akparhi": true
   },
   "extraKnownMarketplaces": {
-    "context-mode": {
-      "source": {
-        "source": "github",
-        "repo": "mksglu/context-mode"
-      }
-    },
     "openai-codex": {
       "source": {
         "source": "github",

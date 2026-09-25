@@ -25,8 +25,7 @@
     - **Exception — high fidelity tasks (initial planning, complex architecture/features, 3d work/game development)**: use fable for planning/architecture, opus for implementation/integration (3D/game implementation → Astra/Sol subagent). Never fable for routine subagents.
     - **CRITICAL**: pass `model` explicitly on every Agent call, and tell workers to do the same for their helpers.
   - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
-  - Spawn in background; keep working on independent parts while they run. Wait only when next step needs the result.
-  - **Do NOT fan out** for small targeted tasks or one-off debugging asks.
+  - **DO NOT fan out** for small targeted tasks or one-off debugging asks.
 
 # Compact instructions
 
