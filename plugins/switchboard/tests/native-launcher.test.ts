@@ -386,11 +386,13 @@ test('launcher keeps the representative catalog under 30 KB', () => {
   assert.equal(ZEN_MODELS.length, 1);
 });
 
-test('worker registration follows selected models and retains their effort aliases', () => {
+test('worker registration follows selected models with one worker per model', () => {
   const selected = ['switchboard/openai/gpt-6-luna', 'switchboard/zen/deepseek-v4.1-flash'];
   const agents = workerDefinitions(true, true, selected);
   assert.deepEqual(new Set(Object.values(agents).map((worker) => worker.model)), new Set(selected));
-  assert.equal(agents['luna-high'].effort, 'high');
+  assert.equal(agents['luna'].effort, 'medium');
+  assert.equal(agents['luna-high'], undefined);
+  assert.ok(agents['luna'].disallowedTools.includes('Agent'));
   assert.equal(agents['deepseek'].effort, undefined);
   assert.equal(agents['deepseek-max'], undefined);
   assert.deepEqual(workerDefinitions(true, true, []), {});

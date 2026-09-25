@@ -47,7 +47,7 @@
     ],
     "defaultMode": "bypassPermissions"
   },
-  "disableClaudeAiConnectors": false,
+  "disableClaudeAiConnectors": true,
   "skillOverrides": {
     "context-mode:ctx-insight": "off",
     "context-mode:ctx-stats": "off",
@@ -128,6 +128,7 @@
   "disableRemoteControl": true,
   "disableWorkflows": true,
   "disableArtifact": true,
+  "bashEditDiffEnabled": true,
   "enabledPlugins": {
     "agents-md@builtin": false,
     "sec-default@builtin": false,
@@ -172,7 +173,6 @@
   "verbose": true,
   "switchModelsOnFlag": false,
   "fileCheckpointingEnabled": true,
-  "bashEditDiffEnabled": true,
   "terminalProgressBarEnabled": false,
   "tipsEnabled": false
 }

@@ -874,7 +874,6 @@ test('all registered model and reasoning choices reach OpenAI without substituti
   ]) {
     assert.deepEqual(OPENAI_WORKERS[name], { model: slug, effort: 'medium' });
     for (const effort of ['low', 'medium', 'high', 'xhigh', 'max']) {
-      assert.deepEqual(OPENAI_WORKERS[`${name}-${effort}`], { model: slug, effort });
       const response = await call(
         { ...body, model: `switchboard/openai/${slug}`, output_config: { effort } },
         { 'x-claude-code-agent-id': `${slug}:${effort}` },

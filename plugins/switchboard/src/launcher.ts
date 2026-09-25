@@ -48,8 +48,8 @@ const claudeExecutable = process.env.SWITCHBOARD_REAL_CLAUDE;
  * provider profiles and Claude's native subagent prompt govern them.
  */
 const WORKER_PROMPT = 'Complete the delegated task.';
-// claude.ai account services a delegated worker has no business calling.
-const WORKER_DISALLOWED_TOOLS = ['DesignSync', 'RemoteTrigger', 'ShareOnboardingGuide', 'ReportFindings'];
+// Agent: workers are leaves, no nested delegation. The rest are claude.ai account services a worker has no business calling.
+const WORKER_DISALLOWED_TOOLS = ['Agent', 'DesignSync', 'RemoteTrigger', 'ShareOnboardingGuide', 'ReportFindings'];
 
 /** One `--agents` entry: an external worker using Claude Code's native tools. */
 interface AgentDefinition {
