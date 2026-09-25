@@ -261,6 +261,12 @@ test('sessionless commands skip the launcher and reach the real executable', asy
       args,
     });
   }
+  // VS Code's claudeProcessWrapper prepends its bundled Claude path.
+  const bundled = path.join(f.directory, 'extension', f.windows ? 'claude.exe' : 'claude');
+  assert.deepEqual(
+    JSON.parse((await f.invoke('switchboard', [bundled, 'mcp', 'list'])).stdout),
+    { native: true, args: ['mcp', 'list'] },
+  );
   assert.equal(JSON.parse((await f.invoke('switchboard', ['-p', 'hi'])).stdout).providers, 'openai,zen');
 });
 

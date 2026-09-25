@@ -68,6 +68,15 @@ async function main() {
   const directory = path.dirname(fileURLToPath(import.meta.url));
   const state = await readInstallation(directory);
   const args = process.argv.slice(2);
+  // As VS Code's claudeProcessWrapper, the bundled Claude path arrives first; the
+  // installation's own Claude runs instead.
+  if (
+    args[0] &&
+    path.isAbsolute(args[0]) &&
+    ['claude', 'claude.exe'].includes(path.basename(args[0]).toLowerCase())
+  ) {
+    args.shift();
+  }
   if (args[0] === '--switchboard') {
     if (args[1] !== 'uninstall') {
       return dispatch(state, args.slice(1), true);
