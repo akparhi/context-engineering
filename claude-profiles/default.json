@@ -61,7 +61,13 @@
     "superpowers:using-git-worktrees": "off",
     "claude-api": "off",
     "loop": "off",
-    "schedule": "off"
+    "schedule": "off",
+    "security-review": "off",
+    "fewer-permission-prompts": "off",
+    "keybindings-help": "off",
+    "plugin-authoring": "off",
+    "update-config": "off",
+    "superpowers:diagnosing-superpowers": "off"
   },
   "hooks": {
     "Notification": [],
@@ -136,6 +142,7 @@
   "bashOutputMaxChars": 16000,
   "enabledPlugins": {
     "agents-md@builtin": false,
+    "plugin-authoring@builtin": false,
     "sec-default@builtin": false,
     "telemetry@builtin": false,
     "context7@claude-plugins-official": true,
