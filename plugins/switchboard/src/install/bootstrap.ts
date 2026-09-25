@@ -5,7 +5,28 @@ import { type Installation, readInstallation, uninstall } from './installation.t
 import { installedPlugins, settingsArguments } from './plugins.ts';
 import { run } from './process.ts';
 
+// These exit without a session, so the launcher would wait out its session.start ack
+// timeout; health checks like T3 Code's `--version` probe give up long before that.
+const sessionlessCommands = new Set([
+  '--version',
+  '-v',
+  '--help',
+  '-h',
+  'auth',
+  'mcp',
+  'plugin',
+  'plugins',
+  'doctor',
+  'update',
+  'upgrade',
+  'install',
+  'setup-token',
+]);
+
 async function dispatch(state: Installation, args: string[], management: boolean) {
+  if (!management && sessionlessCommands.has(args[0])) {
+    return run(state.claude, args);
+  }
   const { root, providers } = await installedPlugins(state.claude, settingsArguments(args));
   if (management && args[0] === 'status') {
     console.log(JSON.stringify({ core: root ?? null, providers, claude: state.claude }, null, 2));

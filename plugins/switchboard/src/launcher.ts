@@ -33,6 +33,7 @@ import type { GatewayEvent } from './gateway/server.ts';
 import { createNativeGateway } from './gateway/server.ts';
 
 import { providerSelection } from './install/plugins.ts';
+import { run } from './install/process.ts';
 
 function nativeSpelling(model: string | undefined): string | undefined {
   return model?.replace(/\[1m\]$/i, '');
@@ -79,6 +80,20 @@ async function main() {
   await handleCommand(args[0]);
   if (args[0] === '--') {
     args.shift();
+  }
+  if (await hooksDisabledByCaller(args)) {
+    if (explicitModel(args)?.startsWith('switchboard/')) {
+      throw new Error('Switchboard models need hooks; remove disableAllHooks from --settings.');
+    }
+    process.exitCode = await run(
+      resolveExecutable('claude', {
+        platform: process.platform,
+        env: process.env,
+        configuredPath: claudeExecutable,
+      }),
+      args,
+    );
+    return;
   }
   validateSessionLaunch(args);
   const pluginInventory = await pluginPermissions(process.cwd(), args);
@@ -727,6 +742,27 @@ async function handleCommand(command?: string) {
     );
     process.exit(0);
   }
+}
+
+/** With hooks off the mod never acknowledges session.start, so such callers (T3 Code's
+ * health and title probes) run on the real executable. Later --settings win, as in mergeSettings. */
+async function hooksDisabledByCaller(args: readonly string[]): Promise<boolean> {
+  let disabled = false;
+  for (let i = 0; i < args.length; i++) {
+    const inline = args[i].startsWith('--settings=');
+    if (args[i] !== '--settings' && !inline) {
+      continue;
+    }
+    const value = inline ? args[i].slice(11) : args[i + 1];
+    if (!value) {
+      continue;
+    }
+    const extra = await readSettings(value);
+    if ('disableAllHooks' in extra) {
+      disabled = extra.disableAllHooks === true;
+    }
+  }
+  return disabled;
 }
 
 async function readSettings(value: string) {

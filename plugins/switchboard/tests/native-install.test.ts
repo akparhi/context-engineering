@@ -250,6 +250,20 @@ test('a launch command named claude passes nested runs through to the real execu
   assert.deepEqual(nested, { native: true, args: ['-p', 'hi'] });
 });
 
+test('sessionless commands skip the launcher and reach the real executable', async (t) => {
+  const f = await fixture(t);
+  const root = await core(f.directory, 'core');
+  await writeFile(f.listing, JSON.stringify(plugins(root)));
+  await f.install();
+  for (const args of [['--version'], ['auth', 'status', '--json']]) {
+    assert.deepEqual(JSON.parse((await f.invoke('switchboard', args)).stdout), {
+      native: true,
+      args,
+    });
+  }
+  assert.equal(JSON.parse((await f.invoke('switchboard', ['-p', 'hi'])).stdout).providers, 'openai,zen');
+});
+
 test('edited shell blocks and project-only executable cores fail explicitly', async (t) => {
   const f = await fixture(t);
   await f.install();

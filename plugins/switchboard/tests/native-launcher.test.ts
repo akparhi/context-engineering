@@ -441,6 +441,33 @@ test('launcher argument limits are platform-aware and identify largest providers
   );
 });
 
+test('callers that disable hooks run the real executable untouched', {
+  skip: process.platform === 'win32',
+}, async (t) => {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), 'launcher-hooks-off-'));
+  t.after(() => removeTemporary(cwd));
+  await mkdir(path.join(cwd, 'bin'));
+  await writeClaudeFixture(
+    path.join(cwd, 'bin'),
+    `#!/usr/bin/env node
+console.log(JSON.stringify({args:process.argv.slice(2),gateway:!!process.env.SWITCHBOARD_GATEWAY_TOKEN}));
+`,
+  );
+  const launcher = fileURLToPath(new URL('../src/launcher.ts', import.meta.url));
+  const launch = (args: string[]) =>
+    promisify(execFile)(process.execPath, [launcher, '--', ...args], {
+      cwd,
+      timeout: 20000,
+      env: { PATH: path.join(cwd, 'bin') + path.delimiter + process.env.PATH, HOME: cwd },
+    });
+  const args = ['-p', '--settings', '{"disableAllHooks":true}', '--model', 'sonnet'];
+  assert.deepEqual(JSON.parse((await launch(args)).stdout), { args, gateway: false });
+  await assert.rejects(
+    launch(['-p', '--settings={"disableAllHooks":true}', '--model', 'switchboard/openai/gpt-6-luna']),
+    /Switchboard models need hooks/,
+  );
+});
+
 test('the Zen model listing is available without authentication', async () => {
   const launcher = fileURLToPath(
     new URL('../src/launcher.ts', import.meta.url),
