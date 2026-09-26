@@ -1,7 +1,7 @@
 #:schema https://developers.openai.com/codex/config-schema.json
 # Personal default; machine-specific desktop preferences and trust entries below.
 model = "gpt-6-sol"
-model_reasoning_effort = "low"
+model_reasoning_effort = "medium"
 model_verbosity = "low"
 service_tier = "default"
 personality = "pragmatic"
@@ -73,6 +73,7 @@ startup_timeout_sec = 30
 [tui]
 notifications = false
 status_line = ["model-with-reasoning", "context-remaining", "context-window-size", "five-hour-limit", "weekly-limit"]
+screen_reader_detection_done = true
 
 [tui.model_availability_nux]
 gpt-6-astra = 4
