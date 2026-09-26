@@ -1,5 +1,5 @@
 {
-  "cleanupPeriodDays": 14,
+  "cleanupPeriodDays": 21,
   "syncClaudeAiSkills": false,
   "syncClaudeAiPlugins": false,
   "env": {
@@ -9,6 +9,7 @@
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "256000",
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
+    "ENABLE_LSP_TOOL": "1",
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
     "MAX_MCP_OUTPUT_TOKENS": "10000",
     "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS": "12000"
@@ -30,7 +31,8 @@
       "TodoWrite",
       "WebFetch",
       "WebSearch",
-      "Write"
+      "Write",
+      "LSP"
     ],
     "deny": [
       "Read(./dist/**)",
@@ -51,8 +53,7 @@
       "ReportFindings",
       "ListMcpResourcesTool",
       "ReadMcpResourceTool",
-      "ReadMcpResourceDirTool",
-      "LSP"
+      "ReadMcpResourceDirTool"
     ],
     "defaultMode": "bypassPermissions"
   },
@@ -146,6 +147,7 @@
     "sec-default@builtin": false,
     "telemetry@builtin": false,
     "context7@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
     "switchboard@akparhi": true
   },

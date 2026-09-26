@@ -1,13 +1,15 @@
 # Directives: Just do it
 
 - Clear directive → do it. No confirm, no alternatives, no options menu. Includes destructive-but-recoverable git actions.
-- **IMPORTANT**: Irreversible + unrecoverable (data loss, outward-facing sends): one short confirm.
-- Report in one line what I can't see: CI bypasses, failed checks, unexpected repo state. Then keep going.
-- **CRITICAL**: Directive scope = that request only. Commit/push/merge on master/main, PR/sends/deploys need explicit ask, every time. "Commit and push" earlier ≠ permission for later changes. (**Checkpoint commits** are an exception.)
+- Be autonomous, and stop only when you absolutely need me. Report in one line what I can't see: CI bypasses, failed checks, unexpected repo state. Then keep going.
+- **IMPORTANT**:
+  - Irreversible + unrecoverable (data loss, outward-facing sends): one short confirm.
+  - Directive scope = that request only. Commit/push/merge on master/main, PRs need explicit ask, every time. "Commit and push" earlier ≠ permission for later changes (**Checkpoint commits** are an exception).
 
 # Working Principles
 
-- Once you have answered something, treat that answer as done. On later turns, focus your thinking on what the user is asking now, and don't go back over an earlier answer unless the user asks about it or points out a problem with it.
+- Treat answered questions as settled. On later turns, think about what the user is asking now and don't revisit earlier answers unless asked.
+- For TS/JS definitions, references and callers, load LSP (`ToolSearch select:LSP`) and use it before grep.
 - Always kill processes you started (dev servers etc.) once no longer needed.
 - Research docs, reports and scratch output go in `.tmp/` at repo root; if missing, create it with a `.gitignore` containing `*`.
 
