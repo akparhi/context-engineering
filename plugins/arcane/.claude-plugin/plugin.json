@@ -1,0 +1,30 @@
+{
+  "name": "arcane",
+  "displayName": "arcane",
+  "version": "0.1.0",
+  "description": "Hybrid of superpowers + pstack workflows, for claude-code.",
+  "author": {
+    "name": "Anand Kumar Parhi"
+  },
+  "license": "MIT",
+  "keywords": [
+    "pstack",
+    "poteto-mode",
+    "workflow",
+    "principles",
+    "agent-style",
+    "subagents",
+    "unslop",
+    "claude-code"
+  ],
+  "agents": [
+    "./agents/comment-sicko.md",
+    "./agents/poteto-agent.md",
+    "./effort-agents/effort-high.md",
+    "./effort-agents/effort-low.md",
+    "./effort-agents/effort-medium.md",
+    "./effort-agents/poteto-agent-high.md",
+    "./effort-agents/poteto-agent-low.md",
+    "./effort-agents/poteto-agent-medium.md"
+  ]
+}

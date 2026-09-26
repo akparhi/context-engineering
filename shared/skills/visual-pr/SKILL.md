@@ -1,6 +1,6 @@
 ---
 name: visual-pr
-description: Use whenever creating, raising, re-raising, or updating a pull request, or writing/rewriting a PR description. Writes the PR body (why, special notes, visual change outline). When a repo has its own PR skill, you can still use this for the body.
+description: Use whenever creating, raising, re-raising, or updating a pull request, or writing/rewriting a PR description. Writes the PR body (why, special notes, visual change outline). Even when a repo has its own PR skill, use this skill for the body.
 ---
 
 # Describe a Pull Request
@@ -37,10 +37,10 @@ Create or update the pull request for the current task with a concise descriptio
      - Call-tree, call-stack, control-flow, or data-flow changes.
    - Prefer `diff` blocks when showing changes to an existing shape. Show the complete target shape when most of it is new or diff notation would obscure ownership or order.
    - Keep each view focused on what a reviewer needs. Omit categories that did not change.
-   - optionaL: if you are aware of a ticket id/url, a humanlayer task url, or related plan/document urls, or other relevant links, include them in the header, otherwise omit the header
+   - optionaL: if you are aware of a ticket id/url, or related plan/document urls, or other relevant links, include them in the header, otherwise omit the header
 
 5. Save and publish the description:
-   - Use `.humanlayer/tasks/{task-slug}/pr-description.md` when the task directory exists; otherwise use `.humanlayer/tasks/pr-{number}/description.md`.
+   - Use `.arcane/tasks/{task-slug}/pr-description.md` when the task directory exists; otherwise use `.arcane/tasks/pr-{number}/description.md`.
    - Update the PR with `gh pr edit {number} --body-file {output-path}`.
    - Confirm the update succeeded.
 
