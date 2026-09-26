@@ -24,32 +24,32 @@
     {
       "role": "feature, refactoring",
       "models": "default",
-      "skill": "poteto-mode"
+      "skill": "alchemy"
     },
     {
       "role": "bug-fix",
       "models": "strongest",
-      "skill": "poteto-mode"
+      "skill": "alchemy"
     },
     {
       "role": "perf-issue",
       "models": "strongest",
-      "skill": "poteto-mode"
+      "skill": "alchemy"
     },
     {
       "role": "hillclimb",
       "models": "strongest",
-      "skill": "poteto-mode"
+      "skill": "alchemy"
     },
     {
       "role": "judgment and prose",
       "models": "default",
-      "skill": "poteto-mode"
+      "skill": "alchemy"
     },
     {
       "role": "strongest judgment",
       "models": "strongest",
-      "skill": "poteto-mode"
+      "skill": "alchemy"
     },
     {
       "role": "how explorer",

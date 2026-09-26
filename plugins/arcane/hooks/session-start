@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-sheet="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/pstack-models.md"
+sheet="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/arcane-models.md"
 
 if grep -qs '^session hook: off$' "$sheet"; then
   exit 0
