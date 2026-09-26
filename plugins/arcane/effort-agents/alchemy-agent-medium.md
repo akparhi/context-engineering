@@ -1,6 +1,6 @@
 ---
 name: alchemy-agent-medium
-description: `arcane:alchemy-agent` at medium reasoning effort. Dispatched in place of `arcane:alchemy-agent` when a arcane role's override names `@medium`. The caller passes the model.
+description: "`arcane:alchemy-agent` at medium reasoning effort. Dispatched in place of `arcane:alchemy-agent` when a arcane role's override names `@medium`. The caller passes the model."
 effort: medium
 ---
 
