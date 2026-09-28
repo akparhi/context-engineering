@@ -1,5 +1,6 @@
 {
   "cleanupPeriodDays": 21,
+  "autoMemoryEnabled": false,
   "syncClaudeAiSkills": false,
   "syncClaudeAiPlugins": false,
   "env": {
@@ -78,7 +79,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "afplay /System/Library/Sounds/Ping.aiff"
+            "command": "afplay /System/Library/Sounds/Funk.aiff"
           }
         ]
       }
@@ -90,26 +91,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "afplay /System/Library/Sounds/Ping.aiff"
-          }
-        ]
-      },
-      {
-        "matcher": "ExitPlanMode",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "afplay /System/Library/Sounds/Ping.aiff"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null"
+            "command": "afplay /System/Library/Sounds/Funk.aiff"
           }
         ]
       }
@@ -120,7 +102,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -e '.agent_id // empty' >/dev/null 2>&1 || afplay /System/Library/Sounds/Sosumi.aiff"
+            "command": "jq -e '.agent_id // empty' >/dev/null 2>&1 || afplay /System/Library/Sounds/Submarine.aiff"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null"
           }
         ]
       }
