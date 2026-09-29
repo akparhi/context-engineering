@@ -1,6 +1,6 @@
 #:schema https://developers.openai.com/codex/config-schema.json
 # Personal default; machine-specific desktop preferences and trust entries below.
-model = "gpt-6-sol"
+model = "gpt-6.1-sol"
 model_reasoning_effort = "medium"
 model_verbosity = "low"
 service_tier = "default"
@@ -77,6 +77,7 @@ screen_reader_detection_done = true
 
 [tui.model_availability_nux]
 gpt-6-astra = 4
+"gpt-6.1-sol" = 2
 
 # Load installed Superpowers engineering skills, even with remote catalog browsing disabled.
 [plugins."superpowers@openai-curated-remote"]
