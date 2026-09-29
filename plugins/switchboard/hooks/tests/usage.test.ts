@@ -63,6 +63,7 @@ test('usage command reads only the current session without model dispatch', asyn
 
 test('worker completion awaits accounting and preserves the engine answer', async ($, on) => {
   mock.env(on, {
+    SWITCHBOARD_OPENAI_MODELS: 'astra,sol,luna',
     SWITCHBOARD_GATEWAY_TOKEN: 'secret',
     SWITCHBOARD_MOD_GATEWAY_URL: 'http://127.0.0.1:4000',
   });
@@ -102,7 +103,7 @@ test('worker completion awaits accounting and preserves the engine answer', asyn
     turnId: 'turn',
     index: 0,
     agentId: 'worker',
-    model: 'switchboard/openai/gpt-6-astra',
+    model: 'astra',
     messageCount: 1,
   })) {
     // Let the model step complete before the engine emits turn.complete.

@@ -91,13 +91,13 @@ test('permission observations neither prepare settings nor grant harness admissi
 
 test('Claude-loop worker route does not require a settings-policy generation', async (t) => {
   const modes = new PermissionModes(async () => ({
-    worker: { model: 'switchboard/openai/gpt-6-sol' },
+    worker: { model: 'sol' },
   }));
   await modes.precompute('/workspace');
   modes.recordHostSession('session', {
     permissionMode: 'default',
     cwd: '/workspace',
-    model: 'switchboard/openai/gpt-6-luna',
+    model: 'luna',
   });
   const base = await start(t, modes);
   const result = await request(base, '/switchboard/mod/worker', {
@@ -105,8 +105,8 @@ test('Claude-loop worker route does not require a settings-policy generation', a
     subagentType: 'worker',
     cwd: '/workspace',
     permissionMode: 'default',
-    model: 'switchboard/openai/gpt-6-sol',
-    parentModel: 'switchboard/openai/gpt-6-luna',
+    model: 'sol',
+    parentModel: 'luna',
   });
   assert.equal(result.status, 200);
   assert.equal(result.body.accepted, true);
@@ -259,7 +259,7 @@ test('model effort telemetry is scoped observation and cannot change policy', as
   await request(base, '/switchboard/mod/telemetry', {
     sessionId: 's',
     agentId: 'worker',
-    model: 'switchboard/openai/gpt-6-astra',
+    model: 'astra',
     effort: 'high',
     permissionMode: 'plan',
   });
@@ -269,7 +269,7 @@ test('model effort telemetry is scoped observation and cannot change policy', as
     undefined,
     'GET',
   );
-  assert.deepEqual(telemetry.body, { model: 'switchboard/openai/gpt-6-astra', effort: 'high' });
+  assert.deepEqual(telemetry.body, { model: 'astra', effort: 'high' });
   assert.deepEqual(modes.resolve('s'), before);
 });
 

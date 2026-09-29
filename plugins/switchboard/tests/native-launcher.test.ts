@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -53,7 +53,7 @@ if(args[0]==='--version'){console.log(process.env.TEST_CLAUDE_VERSION??'2.1.272'
 const result=(value)=>{const base=process.env.SWITCHBOARD_MOD_GATEWAY_URL;if(!base){console.log(value);return}const url=new URL(base+'/switchboard/mod/session');const req=require('node:http').request(url,{method:'POST',headers:{'content-type':'application/json','x-switchboard-gateway-token':process.env.SWITCHBOARD_GATEWAY_TOKEN}},()=>console.log(value));req.on('error',()=>console.log(value));req.end(JSON.stringify({sessionId:'fixture',event:'start'}));};
 if(args[0]==='auth'){if(process.env.TEST_AUTH==='malformed'){console.log('not-json');process.exit(0)}if(process.env.TEST_AUTH==='error'){process.exit(2)}if(process.env.TEST_AUTH==='missing'){console.log('{}');process.exit(0)}process.stdout.write(JSON.stringify({loggedIn:process.env.TEST_AUTH==='yes'}));process.exitCode=process.env.TEST_AUTH==='yes'?0:1}else{
 const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'utf8'));
- result(JSON.stringify({agentView:process.env.CLAUDE_CODE_DISABLE_AGENT_VIEW,backgroundTasks:process.env.CLAUDE_CODE_DISABLE_BACKGROUND_TASKS,functionHooks:process.env.CLAUDE_CODE_ENABLE_FUNCTION_HOOKS,settings,models:args.filter(x=>x.startsWith('switchboard/')),args,settingsCount:args.filter(x=>x==='--settings').length,hasLocalToken:!!process.env.SWITCHBOARD_GATEWAY_TOKEN,apiTimeout:process.env.API_TIMEOUT_MS,toolSearch:process.env.ENABLE_TOOL_SEARCH,auth:process.env.ANTHROPIC_API_KEY?'api':process.env.ANTHROPIC_AUTH_TOKEN?'local':'native'}));}
+ result(JSON.stringify({agentView:process.env.CLAUDE_CODE_DISABLE_AGENT_VIEW,backgroundTasks:process.env.CLAUDE_CODE_DISABLE_BACKGROUND_TASKS,functionHooks:process.env.CLAUDE_CODE_ENABLE_FUNCTION_HOOKS,settings,models:args.filter(x=>x.startsWith('switchboard/')||['astra','sol','luna'].includes(x)),args,settingsCount:args.filter(x=>x==='--settings').length,hasLocalToken:!!process.env.SWITCHBOARD_GATEWAY_TOKEN,apiTimeout:process.env.API_TIMEOUT_MS,toolSearch:process.env.ENABLE_TOOL_SEARCH,auth:process.env.ANTHROPIC_API_KEY?'api':process.env.ANTHROPIC_AUTH_TOKEN?'local':'native'}));}
 `,
   );
   const launcher = fileURLToPath(
@@ -66,7 +66,7 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
         launcher,
         '--',
         '--model',
-        'switchboard/openai/gpt-6-luna',
+        'luna',
         '--settings',
         JSON.stringify({
           disableAgentView: false,
@@ -143,7 +143,7 @@ const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'ut
   assert.equal(supplied.args.filter((arg: string) => arg === '--plugin-dir').length, 1);
   for (const auth of ['malformed', 'error', 'missing']) {
     await assert.rejects(
-      promisify(execFile)(process.execPath, [launcher, '--', '--model', 'switchboard/openai/gpt-6-luna'], {
+      promisify(execFile)(process.execPath, [launcher, '--', '--model', 'luna'], {
         cwd,
         timeout: 20000,
         env: {
@@ -221,7 +221,7 @@ const result=(value)=>{const base=process.env.SWITCHBOARD_MOD_GATEWAY_URL;if(!ba
 if(args[0]==='auth'){process.stdout.write(JSON.stringify({loggedIn:false}));process.exitCode=1}else{
 const settings=JSON.parse(fs.readFileSync(args[args.indexOf('--settings')+1],'utf8'));
 const agents=JSON.parse(args[args.indexOf('--agents')+1]);
-result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=>x.startsWith('switchboard/')),args}));}
+result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=>x.startsWith('switchboard/')||['astra','sol','luna'].includes(x)),args}));}
 `,
   );
   const launcher = fileURLToPath(
@@ -241,17 +241,17 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
       },
     });
   const result = JSON.parse(
-    (await launch({}, ['--', '--model', 'switchboard/openai/gpt-6-sol', '--dangerously-skip-permissions'])).stdout,
+    (await launch({}, ['--', '--model', 'sol', '--dangerously-skip-permissions'])).stdout,
   );
   const pickerModels = result.settings.modelPicker.options.map(
     (option: { model: string }) => option.model,
   );
-  assert.deepEqual(pickerModels, Object.values(MODELS).map((model) => `switchboard/openai/${model}`));
+  assert.deepEqual(pickerModels, Object.keys(MODELS));
   assert(result.settings.modelPicker.options.every((row: { behavesAs: string }) => row.behavesAs === 'claude-sonnet-4-6'));
   assert.deepEqual(result.agents.sort(), ['astra', 'luna', 'sol']);
   assert.equal(result.settings.permissions.disableAutoMode, 'disable');
   assert(result.args.includes('--dangerously-skip-permissions'));
-  assert.deepEqual(result.models, ['switchboard/openai/gpt-6-sol']);
+  assert.deepEqual(result.models, ['sol']);
   const withoutProviders = JSON.parse((await launch({ SWITCHBOARD_ENABLED_PROVIDERS: '' })).stdout);
   assert.deepEqual(withoutProviders.settings.modelPicker.options, []);
   assert.deepEqual(withoutProviders.agents, []);
@@ -262,35 +262,52 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
   const launchFiltered = (selection: string, args: string[] = []) =>
     launch({ SWITCHBOARD_MODELS: selection }, args);
   const filtered = JSON.parse(
-    (await launchFiltered(' switchboard/openai/gpt-6-sol,switchboard/openai/gpt-6-sol ')).stdout,
+    (await launchFiltered(' sol,sol ')).stdout,
   );
   assert.deepEqual(
     filtered.settings.modelPicker.options.map((option: { model: string }) => option.model),
-    ['switchboard/openai/gpt-6-sol'],
+    ['sol'],
   );
-  assert.deepEqual(filtered.models, ['switchboard/openai/gpt-6-sol']);
+  assert.deepEqual(filtered.models, ['sol']);
   assert.deepEqual(filtered.agents, ['sol']);
   const all = JSON.parse((await launchFiltered('all')).stdout);
   assert.equal(all.settings.modelPicker.options.length, Object.keys(MODELS).length);
-  const plus = JSON.parse((await launchFiltered('+switchboard/openai/gpt-6-sol')).stdout);
+  const plus = JSON.parse((await launchFiltered('+sol')).stdout);
   assert.deepEqual(plus.agents.sort(), ['astra', 'luna', 'sol']);
   // A saved selection may still name retired zen models; they are skipped.
   const saved = JSON.parse(
-    (await launchFiltered('switchboard/zen/deepseek-v4.1-flash,switchboard/openai/gpt-6-luna')).stdout,
+    (await launchFiltered('switchboard/zen/deepseek-v4.1-flash,luna')).stdout,
   );
   assert.deepEqual(
     saved.settings.modelPicker.options.map((option: { model: string }) => option.model),
-    ['switchboard/openai/gpt-6-luna'],
+    ['luna'],
   );
+  // A saved pre-alias ID is dropped (with a warning), not fatal.
+  const stale = await launchFiltered('switchboard/openai/gpt-6.1-sol,luna');
+  assert.match(stale.stderr, /switchboard\/openai\/gpt-6\.1-sol is retired; use sol/);
+  assert.deepEqual(
+    JSON.parse(stale.stdout).settings.modelPicker.options.map((option: { model: string }) => option.model),
+    ['luna'],
+  );
+  // Claude's own saved /model may still be a pre-alias ID; fall back instead of 400ing every turn.
+  await mkdir(path.join(cwd, 'claude'), { recursive: true });
+  await writeFile(
+    path.join(cwd, 'claude', 'settings.json'),
+    JSON.stringify({ model: 'switchboard/openai/gpt-6-sol' }),
+  );
+  const savedStale = await launch({});
+  assert.match(savedStale.stderr, /switchboard\/openai\/gpt-6-sol is retired; use sol/);
+  assert.deepEqual(JSON.parse(savedStale.stdout).models, ['luna']);
+  await rm(path.join(cwd, 'claude', 'settings.json'));
   const hidden = JSON.parse(
-    (await launchFiltered('', ['--', '--model', 'switchboard/openai/gpt-6-sol'])).stdout,
+    (await launchFiltered('', ['--', '--model', 'sol'])).stdout,
   );
   assert.deepEqual(hidden.settings.modelPicker.options, []);
   assert.deepEqual(hidden.agents, []);
-  assert.deepEqual(hidden.models, ['switchboard/openai/gpt-6-sol']);
-  await assert.rejects(launchFiltered('switchboard/openai/typo'), /SWITCHBOARD_MODELS: model is not available/);
+  assert.deepEqual(hidden.models, ['sol']);
+  await assert.rejects(launchFiltered('typo'), /SWITCHBOARD_MODELS: model is not available/);
   const fallback = JSON.parse((await launch({})).stdout);
-  assert.deepEqual(fallback.models, ['switchboard/openai/gpt-6-luna'], 'no Claude login starts on Luna');
+  assert.deepEqual(fallback.models, ['luna'], 'no Claude login starts on Luna');
 });
 
 test('launcher keeps the representative catalog under 30 KB', () => {
@@ -301,7 +318,7 @@ test('launcher keeps the representative catalog under 30 KB', () => {
 });
 
 test('worker registration follows selected models with one worker per model', () => {
-  const selected = ['switchboard/openai/gpt-6-luna', 'switchboard/openai/gpt-6-sol'];
+  const selected = ['luna', 'sol'];
   const agents = workerDefinitions(true, selected);
   assert.deepEqual(new Set(Object.values(agents).map((worker) => worker.model)), new Set(selected));
   assert.equal(agents['luna'].effort, 'medium');
@@ -313,7 +330,7 @@ test('worker registration follows selected models with one worker per model', ()
 test('launcher argument limits are platform-aware and identify largest providers', () => {
   const agents = {
     'openai-worker': {
-      model: 'switchboard/openai/model',
+      model: 'luna',
       description: 'OpenAI',
       prompt: 'Complete the delegated task.',
       disallowedTools: ['WebSearch'],
@@ -375,14 +392,14 @@ console.log(JSON.stringify({args:process.argv.slice(2),gateway:!!process.env.SWI
   const args = ['-p', '--settings', '{"disableAllHooks":true}', '--model', 'sonnet'];
   assert.deepEqual(JSON.parse((await launch(args)).stdout), { args, gateway: false });
   await assert.rejects(
-    launch(['-p', '--settings={"disableAllHooks":true}', '--model', 'switchboard/openai/gpt-6-luna']),
+    launch(['-p', '--settings={"disableAllHooks":true}', '--model', 'luna']),
     /Switchboard models need hooks/,
   );
 });
 
 test('OpenAI models carry short picker labels', () => {
   assert.deepEqual(
-    Object.values(MODELS).map((model) => LABELS[model]),
+    Object.keys(MODELS).map((model) => LABELS[model]),
     ['Astra', 'Sol', 'Luna'],
   );
 });

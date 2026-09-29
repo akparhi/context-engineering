@@ -6,7 +6,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { CodexAuthError, codexRequest } from '../providers/codex/auth.ts';
 import { openaiInstructions } from '../providers/codex/instructions.ts';
-import { MODELS } from '../providers/codex/models.ts';
+import { modelProvider, openaiSlug } from '../providers/codex/models.ts';
 import type { ResponsesRequest } from '../providers/codex/responses.ts';
 import { forAnthropic, fromResponses, toResponses } from '../providers/codex/responses.ts';
 import { readCodexUsage } from '../providers/codex/usage.ts';
@@ -106,7 +106,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function providerOwnedReview(model: string): boolean {
-  return model.startsWith('switchboard/openai/');
+  return openaiSlug(model) !== undefined;
 }
 
 function authenticated(actual: string | string[] | undefined, expected: string): boolean {
@@ -445,7 +445,7 @@ export function createNativeGateway({
     }
     if (
       candidates.length > 1 &&
-      candidates.some(({ context }) => context.model.startsWith('switchboard/openai/'))
+      candidates.some(({ context }) => openaiSlug(context.model) !== undefined)
     ) {
       return dispatchReview(exchange, metadata, null);
     }
@@ -484,11 +484,11 @@ export function createNativeGateway({
     if (guardAuto) {
       context = pendingReview(exchange.parsed, metadata.session);
     }
-    const openai = context?.model.startsWith('switchboard/openai/');
+    const openai = context !== undefined && openaiSlug(context.model) !== undefined;
     if (approvalBridge && (openai || (!guardAuto && !context))) {
       return handleReview(exchange, context);
     }
-    const nativeClaude = context && !context.model.startsWith('switchboard/');
+    const nativeClaude = context && externalModel(context.model) === null;
     if (openai || external || blockAnthropic || (context && !nativeClaude)) {
       throw new BadRequest(
         'Automatic review cannot use ordinary external inference. No matching provider reviewer is enabled.',
@@ -661,7 +661,7 @@ export function createNativeGateway({
 class RequestTooLarge extends Error {}
 
 function providerSignal(disconnected: AbortSignal, model: string | null, timeoutMs?: number) {
-  if (model?.startsWith('switchboard/openai/') && timeoutMs === undefined) {
+  if (model !== null && openaiSlug(model) !== undefined && timeoutMs === undefined) {
     return disconnected;
   }
   return AbortSignal.any([disconnected, AbortSignal.timeout(timeoutMs ?? 180000)]);
@@ -780,7 +780,7 @@ function titleAtLowEffort(body: MessagesRequest): MessagesRequest {
 function openaiRequest(exchange: ProviderRequest, externalModel: string): ResponsesRequest {
   const { req, body, url } = exchange;
   try {
-    const model = Object.values(MODELS).find((model) => externalModel === `switchboard/openai/${model}`);
+    const model = openaiSlug(externalModel);
     if (!model) {
       throw new Error('Unknown native OpenAI model');
     }
@@ -893,11 +893,13 @@ function failResponse(res: http.ServerResponse, emit: Emit, error: unknown) {
 }
 
 function assertProviderEnabled(model: string | null, enabled: readonly string[] | undefined) {
-  if (model && enabled && !enabled.includes(model.split('/')[1])) {
+  if (model && enabled && !enabled.includes(modelProvider(model) ?? '')) {
     throw new BadRequest('This provider plugin is not enabled for this session.');
   }
 }
 
 function externalModel(model: unknown) {
-  return typeof model === 'string' && model.startsWith('switchboard/') ? model : null;
+  return typeof model === 'string' && (model.startsWith('switchboard/') || openaiSlug(model) !== undefined)
+    ? model
+    : null;
 }

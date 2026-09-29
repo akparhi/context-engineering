@@ -2,7 +2,7 @@
 name: adversarial-review
 description: Adversarial second-opinion review of a code change, spec, implementation plan or research; challenges design, assumptions and failure modes. Give the target (git scope or file paths) and any focus in the prompt.
 tools: Read, Grep, Glob, Bash
-model: switchboard/openai/gpt-6-sol
+model: sol
 color: red
 ---
 

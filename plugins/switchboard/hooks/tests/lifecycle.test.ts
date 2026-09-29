@@ -4,7 +4,7 @@ test('turn.step telemetry preserves core model, effort and streamed chunks', asy
   mock.env(on, {});
   on('session.id', () => ({ value: 's' }));
   on('turn.step', async function* (_$, event) {
-    expect(event.model).toBe('switchboard/openai/gpt-6-astra');
+    expect(event.model).toBe('astra');
     expect(event.effort).toBe('high');
     yield { kind: 'text', index: 0, text: 'core response' };
     return {
@@ -20,7 +20,7 @@ test('turn.step telemetry preserves core model, effort and streamed chunks', asy
   for await (const chunk of $.turn.step({
     turnId: 't',
     index: 0,
-    model: 'switchboard/openai/gpt-6-astra',
+    model: 'astra',
     effort: 'high',
     messageCount: 1,
   })) {

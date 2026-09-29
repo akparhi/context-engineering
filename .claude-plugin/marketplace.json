@@ -45,7 +45,7 @@
       "name": "switchboard",
       "source": "./plugins/switchboard",
       "description": "Shared Switchboard gateway, setup, status and reversible Claude startup integration.",
-      "version": "0.2.0",
+      "version": "0.2.2",
       "author": {
         "name": "akparhi"
       },

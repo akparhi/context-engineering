@@ -68,16 +68,16 @@ test('harness spawn remains dormant when gateway is not configured', async ($, o
 
 test('Claude-loop spawn proceeds when gateway is not configured', async ($, on) => {
   on('env.get', () => ({ value: undefined }));
-  on('agent.spawn', () => ({ model: 'switchboard/openai/gpt-6-luna', agentId: 'worker' }));
+  on('agent.spawn', () => ({ model: 'luna', agentId: 'worker' }));
   const result = await $.agent.spawn({
     prompt: 'task',
     subagentType: 'luna',
-    model: 'switchboard/openai/gpt-6-luna',
+    model: 'luna',
   });
   expect(result.agentId).toBe('worker');
 });
 
-for (const model of ['switchboard/openai/gpt-6-luna']) {
+for (const model of ['luna']) {
   test(`${model} spawn survives an active gateway outage`, async ($, on) => {
     on('env.get', () => ({ value: 'configured' }));
     on('session.id', () => ({ value: 's' }));

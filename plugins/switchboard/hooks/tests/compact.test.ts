@@ -27,7 +27,7 @@ for (const model of [
   'claude-sonnet-5',
   'opus',
   'sonnet',
-  'switchboard/openai/gpt-6-astra',
+  'astra',
 ]) {
   test(`native ${model} compacts without consulting the gateway`, async ($, on) => {
     on('session.model', () => ({ value: model }));

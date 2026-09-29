@@ -5,12 +5,12 @@ import type { MessagesRequest } from '../src/gateway/messages.ts';
 
 const workers = {
   'astra': {
-    model: 'switchboard/openai/gpt-6-astra',
+    model: 'astra',
     description: 'Astra',
     disallowedTools: ['WebSearch'],
   },
   'astra-high': {
-    model: 'switchboard/openai/gpt-6-astra',
+    model: 'astra',
     description: 'Astra high',
     disallowedTools: ['WebSearch'],
   },
@@ -26,7 +26,7 @@ const request = (content: string): MessagesRequest => ({ messages: [{ role: 'use
 
 test('catalog advertises one worker per picker model without mutating registration or history', () => {
   const original = structuredClone(workers);
-  const catalog = new AgentCatalog(workers, ['switchboard/openai/gpt-6-astra']);
+  const catalog = new AgentCatalog(workers, ['astra']);
   for (const heading of [
     'Available agent types for the Agent tool:',
     'New agent types are now available for the Agent tool:',
@@ -63,7 +63,7 @@ test('catalog preserves ordinary text, custom overrides, tool results and unknow
 });
 
 test('catalog handles bare native system announcements without changing ordinary user text', () => {
-  const catalog = new AgentCatalog(workers, ['switchboard/openai/gpt-6-astra']);
+  const catalog = new AgentCatalog(workers, ['astra']);
   const text = `Available agent types for the Agent tool:\n${[...rows, custom].join('\n')}\n\nKeep concurrency instructions.`;
   const body: MessagesRequest = {
     messages: [

@@ -61,7 +61,7 @@ const child = spawn(
     '-p',
     prompt,
     '--model',
-    'switchboard/openai/gpt-6-luna',
+    'luna',
     '--permission-mode',
     mode,
     '--settings',

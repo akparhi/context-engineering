@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { createOpenAIApproval, discoverOpenAIReviewer } from './providers/codex/approval.ts';
 import { readCodexAuth } from './providers/codex/auth.ts';
-import { DESCRIPTIONS, LABELS, MODELS, OPENAI_WORKERS } from './providers/codex/models.ts';
+import { DESCRIPTIONS, LABELS, MODELS, modelProvider, OPENAI_WORKERS, openaiSlug } from './providers/codex/models.ts';
 import type { Effort } from './providers/codex/responses.ts';
 import { AgentCatalog } from './gateway/agent-catalog.ts';
 import {
@@ -27,6 +27,19 @@ import { createNativeGateway } from './gateway/server.ts';
 
 import { providerSelection } from './install/plugins.ts';
 import { run } from './install/process.ts';
+
+/** Switchboard-routed IDs: `switchboard/<provider>/<model>` or a bare OpenAI alias. */
+function isExternalModel(model: string | undefined): boolean {
+  return model !== undefined && (model.startsWith('switchboard/') || openaiSlug(nativeSpelling(model) ?? model) !== undefined);
+}
+
+/** Warn about a pre-alias `switchboard/openai/<slug>` ID, naming its alias (the slug's trailing `-<alias>`). */
+function warnRetiredOpenAiId(source: string, model: string): void {
+  const alias = Object.keys(MODELS).find((name) => model.endsWith(`-${name}`));
+  console.error(
+    `${source}: ${model} is retired${alias ? `; use ${alias}` : ''}. Ignoring it; re-run /switchboard:setup --models to update saved selections.`,
+  );
+}
 
 function nativeSpelling(model: string | undefined): string | undefined {
   return model?.replace(/\[1m\]$/i, '');
@@ -75,7 +88,7 @@ async function main() {
     args.shift();
   }
   if (await hooksDisabledByCaller(args)) {
-    if (explicitModel(args)?.startsWith('switchboard/')) {
+    if (isExternalModel(explicitModel(args))) {
       throw new Error('Switchboard models need hooks; remove disableAllHooks from --settings.');
     }
     process.exitCode = await run(
@@ -454,7 +467,7 @@ export function workerDefinitions(
         description: `${model}, ${effort} reasoning. Native coding, investigation, and review.`,
         prompt: WORKER_PROMPT,
         disallowedTools: WORKER_DISALLOWED_TOOLS,
-        model: `switchboard/openai/${model}`,
+        model: name,
         effort,
       },
     ]),
@@ -502,7 +515,7 @@ export function checkLauncherArgumentLimit(
   }
   const providers = new Map<string, number>();
   for (const [name, agent] of Object.entries(agents)) {
-    const provider = agent.model.split('/')[1] ?? 'unknown';
+    const provider = modelProvider(agent.model) ?? 'unknown';
     providers.set(
       provider,
       (providers.get(provider) ?? 0) + Buffer.byteLength(JSON.stringify({ [name]: agent })),
@@ -545,16 +558,20 @@ async function mergeSettings(args: string[], settings: LaunchSettings) {
 
 async function initialSelection(args: string[], settings: LaunchSettings, anthropic: boolean) {
   const savedModel = await savedSelection(args);
-  const requested =
+  let requested =
     explicitModel(args) ??
     process.env.ANTHROPIC_MODEL ??
     (typeof settings.model === 'string' ? settings.model : savedModel);
+  if (requested?.startsWith('switchboard/openai/')) {
+    warnRetiredOpenAiId('Model selection', requested);
+    requested = undefined;
+  }
   // With no Claude login, start on an available external model instead of Sonnet.
   const options = settings.modelPicker.options;
   const initialModel = retagSelection(requested, options);
   const defaultModel =
     process.env.SWITCHBOARD_MODELS === undefined
-      ? options.find((option) => option.model === 'switchboard/openai/gpt-6-luna')
+      ? options.find((option) => option.model === 'luna')
       : undefined;
   const fallback = anthropic ? undefined : (defaultModel ?? options[0])?.model;
   const selectedModel = initialModel ?? fallback;
@@ -652,7 +669,11 @@ function filterPicker(
     const native = nativeSpelling(model) ?? model;
     const option = available.get(model) ?? available.get(`${native}[1m]`) ?? available.get(native);
     // Retired providers (such as zen) may linger in saved selections; skip their rows.
-    if (!option && model.startsWith('switchboard/') && !model.startsWith('switchboard/openai/')) {
+    if (!option && model.startsWith('switchboard/openai/')) {
+      warnRetiredOpenAiId('SWITCHBOARD_MODELS', model);
+      continue;
+    }
+    if (!option && model.startsWith('switchboard/')) {
       continue;
     }
     if (!option) {
@@ -666,7 +687,7 @@ function filterPicker(
 }
 
 function approvalProvider(model: string | undefined): 'openai' | undefined {
-  if (model?.startsWith('switchboard/openai/')) {
+  if (model !== undefined && openaiSlug(nativeSpelling(model) ?? model) !== undefined) {
     return 'openai';
   }
   return undefined;
@@ -791,14 +812,12 @@ const PICKER_PROFILE = 'claude-sonnet-4-6';
 function pickerSettings(codexSignedIn: boolean) {
   const settings: LaunchSettings = {
     modelPicker: {
-      options: [
-        ...Object.values(codexSignedIn ? MODELS : {}).map((model) => ({
-          model: `switchboard/openai/${model}`,
-          label: LABELS[model] ?? model,
-          description: `OpenAI · GPT-6 ${LABELS[model]} · ${DESCRIPTIONS[model]}`,
-          behavesAs: PICKER_PROFILE,
-        })),
-      ],
+      options: Object.keys(codexSignedIn ? MODELS : {}).map((model) => ({
+        model,
+        label: LABELS[model] ?? model,
+        description: `OpenAI · GPT-6 ${LABELS[model]} · ${DESCRIPTIONS[model]}`,
+        behavesAs: PICKER_PROFILE,
+      })),
     },
   };
   return settings;
@@ -840,6 +859,7 @@ function gatewayEnvironment(port: number, token: string, anthropic: boolean) {
     // We forward Claude tool references; preserve an explicit user preference.
     ENABLE_TOOL_SEARCH: process.env.ENABLE_TOOL_SEARCH ?? 'auto',
     SWITCHBOARD_GATEWAY_TOKEN: token,
+    SWITCHBOARD_OPENAI_MODELS: Object.keys(MODELS).join(','),
     CLAUDE_CODE_ENABLE_FUNCTION_HOOKS: '1',
     SWITCHBOARD_MOD_GATEWAY_URL: `http://127.0.0.1:${port}`,
     ...(!anthropic ? { ANTHROPIC_AUTH_TOKEN: token } : {}),

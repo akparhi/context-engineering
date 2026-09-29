@@ -219,7 +219,7 @@ test('opt-in gateway review never forwards Anthropic traffic; authentication sti
   assert.equal(response.status, 200);
   assert.equal(((await response.json()) as { model: string }).model, 'codex-auto-review');
   // Claude retries a failed Sonnet classifier using the working model ID.
-  assert.equal((await send({ ...request(), model: 'switchboard/openai/gpt-6-luna' })).status, 200);
+  assert.equal((await send({ ...request(), model: 'luna' })).status, 200);
   assert(
     (await send({ model: 'sonnet', messages: [{ role: 'user', content: 'hello' }] })).status >= 400,
   );
@@ -253,7 +253,7 @@ test('Claude-authenticated review cannot retry through ordinary external inferen
       headers: { 'content-type': 'application/json', 'x-switchboard-gateway-token': 'test-token' },
       body: JSON.stringify({ ...request(), model }),
     });
-  for (const model of ['switchboard/openai/gpt-6-luna', 'switchboard/cursor/composer-2.5']) {
+  for (const model of ['luna', 'switchboard/cursor/composer-2.5']) {
     const response = await send(model);
     assert.equal(response.status, 400);
     assert.match(await response.text(), /cannot use ordinary external inference/);
@@ -296,7 +296,7 @@ test('gateway isolates review context by worker and blocks classifier fallback f
       body: JSON.stringify(body),
     });
   const inference = {
-    model: 'switchboard/openai/gpt-6-luna',
+    model: 'luna',
     metadata: { user_id: 'session-one' },
     messages: [{ role: 'user', content: 'Work' }],
     tools: [{ name: 'Bash', input_schema: { type: 'object', properties: {} } }],
@@ -392,7 +392,7 @@ test('headerless classifier uses pending worker context and rejects ambiguous ac
     next = { id: `tool-${worker}`, command: pendingCommand };
     const inference = await send(
       {
-        model: 'switchboard/openai/gpt-6-luna',
+        model: 'luna',
         metadata: { user_id: session },
         messages: [{ role: 'user', content: worker }],
         tools: [
@@ -636,7 +636,7 @@ async function mixedReviewGateway(t: TestContext, reviewer = true, blockAnthropi
 test('authenticated mixed-provider review follows main and headerless worker origins', async (t) => {
   const gateway = await mixedReviewGateway(t);
   const claude = 'claude-sonnet-5';
-  const gpt = 'switchboard/openai/gpt-6-astra';
+  const gpt = 'astra';
   assert.deepEqual(
     await (await gateway.prepare(claude, 'node parent.js', undefined, true)).json(),
     {},
@@ -693,7 +693,7 @@ test('Claude-only Auto passes native classifier formats and fallback models thro
 
 test('observed tools seed review without a permission roundtrip', async (t) => {
   const gateway = await mixedReviewGateway(t);
-  await gateway.infer('switchboard/openai/gpt-6-astra', 'node gpt.js', 'gpt-worker');
+  await gateway.infer('astra', 'node gpt.js', 'gpt-worker');
   await gateway.infer('claude-sonnet-5', 'node claude.js', 'claude-worker');
   assert.equal((await gateway.classify('node claude.js')).status, 200);
   assert.deepEqual(gateway.nativeReviews, ['claude-sonnet-5']);
@@ -703,7 +703,7 @@ test('observed tools seed review without a permission roundtrip', async (t) => {
 
 test('mixed-provider review rejects missing, cross-session, ambiguous, and unavailable GPT origins', async (t) => {
   const gateway = await mixedReviewGateway(t, false);
-  const gpt = 'switchboard/openai/gpt-6-astra';
+  const gpt = 'astra';
   const guard = await gateway.prepare(gpt, 'node unavailable.js');
   assert.deepEqual(await guard.json(), {});
   assert.equal((await gateway.classify('node unavailable.js')).status, 400);
@@ -726,7 +726,7 @@ test('GPT second-stage denial remains provider-scoped with or without Claude cre
     const gateway = await mixedReviewGateway(t, true, blockAnthropic);
     gateway.deny();
     assert.deepEqual(
-      await (await gateway.prepare('switchboard/openai/gpt-6-astra', 'node denied.js')).json(),
+      await (await gateway.prepare('astra', 'node denied.js')).json(),
       {},
     );
     const first = await gateway.classify('node denied.js');

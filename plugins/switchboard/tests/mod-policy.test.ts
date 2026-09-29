@@ -51,7 +51,7 @@ test('late policy discovery cannot overwrite a newer prompt generation', async (
 
 test('Claude-loop workers use the prompt snapshot without settings-policy admission', async () => {
   const modes = new PermissionModes(async () => ({
-    'astra': { model: 'switchboard/openai/gpt-6-astra' },
+    'astra': { model: 'astra' },
     custom: { tools: ['Read'] },
   }));
   await modes.precompute('/workspace');
@@ -63,12 +63,12 @@ test('Claude-loop workers use the prompt snapshot without settings-policy admiss
   const token = await modes.prepareModWorker('s', {
     subagentType: 'astra',
     cwd: '/workspace',
-    model: 'switchboard/openai/gpt-6-astra',
+    model: 'astra',
     permissionMode: 'default',
     parentModel: 'claude-sonnet-4-6',
   });
   modes.startPreparedModWorker('s', 'worker', 'astra', '/workspace');
-  assert.equal(modes.resolve('s', 'worker').model, 'switchboard/openai/gpt-6-astra');
+  assert.equal(modes.resolve('s', 'worker').model, 'astra');
   assert.equal(
     modes.workerSelection({ subagentType: 'custom', cwd: '/workspace' }).execution,
     'claude',

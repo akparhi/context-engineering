@@ -43,7 +43,7 @@ interface SseEvent {
   [field: string]: unknown;
 }
 
-const model = 'switchboard/openai/gpt-6-astra';
+const model = 'astra';
 const messages: RequestMessage[] = [{ role: 'user', content: 'Read the fixture' }];
 const body: MessagesRequest = {
   model,
@@ -682,7 +682,7 @@ test('OpenAI cache keys survive history changes and restart, isolating sessions,
     await call({ ...body, metadata: { user_id: JSON.stringify({ session_id: 'session-b' }) } })
   ).text();
   await (await call(payload, { 'x-claude-code-agent-id': 'worker-a' })).text();
-  await (await call({ ...payload, model: 'switchboard/openai/gpt-6-luna' })).text();
+  await (await call({ ...payload, model: 'luna' })).text();
   await (await call(body)).text();
   await (await call(body)).text();
   await (await restarted(body)).text();
@@ -701,8 +701,8 @@ test('OpenAI main and worker requests adapt instructions without losing runtime 
     seen.push(JSON.parse(String(options.body)));
     return new Response(sse(textEvents));
   });
-  for (const name of ['gpt-6-astra', 'gpt-6-sol', 'gpt-6-luna']) {
-    await (await call({ ...payload, model: `switchboard/openai/${name}` })).text();
+  for (const name of ['astra', 'sol', 'luna']) {
+    await (await call({ ...payload, model: name })).text();
   }
   await (await call(payload, { 'x-claude-code-agent-id': 'worker-a' })).text();
   assert.equal(seen.length, 4);
@@ -808,18 +808,19 @@ test('external route isolates provider credentials and handles simultaneous work
     models.push(request.model);
     return new Response(sse(textEvents), { headers: { 'content-type': 'text/event-stream' } });
   });
+  const aliases = ['astra', 'luna'];
   const slugs = ['gpt-6-astra', 'gpt-6-luna'];
   const responses = await Promise.all(
-    slugs.map((slug, i) =>
+    aliases.map((alias, i) =>
       call(
-        { ...body, model: `switchboard/openai/${slug}` },
+        { ...body, model: alias },
         { authorization: 'Bearer claude-secret', 'x-claude-code-agent-id': ['a', 'b'][i] },
       ),
     ),
   );
   for (const [i, response] of responses.entries()) {
     const result = await readMessage(response);
-    assert.equal(result.model, `switchboard/openai/${slugs[i]}`);
+    assert.equal(result.model, aliases[i]);
     assert.equal(textOf(result), 'Done');
     assert.equal(result.stop_reason, 'end_turn');
   }
@@ -831,7 +832,7 @@ test('browser, unauthenticated and unregistered external requests never reach a 
   const call = await gateway(t, () => assert.fail('Unexpected provider request'));
   assert.equal((await call(body, { origin: 'https://example.com' })).status, 403);
   assert.equal((await call(body, { 'x-switchboard-gateway-token': 'wrong' })).status, 403);
-  for (const unknownModel of ['switchboard/openai/unknown', 'switchboard/cursor/gpt-5.6-luna']) {
+  for (const unknownModel of ['switchboard/openai/gpt-6-astra', 'switchboard/cursor/gpt-5.6-luna']) {
     assert.equal(
       (await call({ ...body, model: unknownModel }, { 'x-claude-code-agent-id': 'a' })).status,
       400,
@@ -869,18 +870,18 @@ test('all registered model and reasoning choices reach OpenAI without substituti
   });
   for (const [name, slug] of [
     ['astra', 'gpt-6-astra'],
-    ['sol', 'gpt-6-sol'],
+    ['sol', 'gpt-6.1-sol'],
     ['luna', 'gpt-6-luna'],
   ]) {
     assert.deepEqual(OPENAI_WORKERS[name], { model: slug, effort: 'medium' });
     for (const effort of ['low', 'medium', 'high', 'xhigh', 'max']) {
       const response = await call(
-        { ...body, model: `switchboard/openai/${slug}`, output_config: { effort } },
+        { ...body, model: name, output_config: { effort } },
         { 'x-claude-code-agent-id': `${slug}:${effort}` },
       );
       assert.equal(response.status, 200);
       const result = await readMessage(response);
-      assert.equal(result.model, `switchboard/openai/${slug}`);
+      assert.equal(result.model, name);
     }
   }
 });
@@ -898,8 +899,8 @@ test("Claude Code's session-title request runs at low effort on its own model", 
   };
   for (const [model, output_config] of [
     ['claude-opus-5-5', { effort: 'high', format: title }],
-    ['switchboard/openai/gpt-6-astra', { effort: 'high', format: title }],
-    ['switchboard/openai/gpt-6-astra', { effort: 'high' }],
+    ['astra', { effort: 'high', format: title }],
+    ['astra', { effort: 'high' }],
   ] as const) {
     const response = await call({ ...body, model, output_config });
     assert.equal(response.status, 200);

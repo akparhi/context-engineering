@@ -19,7 +19,7 @@ setup. Use the defaults unless the user chooses otherwise:
   shadows the plain command for every launch, including scripts, editors and agents
   that run `claude`; explain that before accepting it.
 - **Models shown in `/model`** (default: curated rows for connected providers). Pass
-  `--models <id,id,...>` with full IDs such as `switchboard/openai/gpt-6-astra` from the
+  `--models <id,id,...>` with IDs such as `astra` from the
   provider docs, `--models none` to hide external rows, or `--models all` to show
   the full connected catalog. Claude's own models always stay listed. Use
   `--models +<id,id,...>` to add models to the saved selection; with no saved

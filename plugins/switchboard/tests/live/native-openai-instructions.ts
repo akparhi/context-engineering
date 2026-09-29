@@ -70,7 +70,7 @@ async function probe(system: string, prompt: string) {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-switchboard-gateway-token': 'instructions-probe' },
     body: JSON.stringify({
-      model: 'switchboard/openai/gpt-6-astra',
+      model: 'astra',
       output_config: { effort: 'low' },
       system,
       messages: [{ role: 'user', content: prompt }],

@@ -29,7 +29,7 @@ const request = (model = 'claude-sonnet-5') => ({
   ],
 });
 const context = {
-  model: 'switchboard/openai/gpt-6-luna',
+  model: 'luna',
   scope: 'worker-one',
   request: { messages: [{ role: 'user', content: 'Run the workspace script.' }] },
 };

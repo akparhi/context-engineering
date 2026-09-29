@@ -7,7 +7,7 @@ const functionTools = (request: ResponsesRequest) =>
   request.tools.flatMap((tool) => (tool.type === 'function' ? [tool] : []));
 
 const body = {
-  model: 'switchboard/openai/gpt-6-luna',
+  model: 'luna',
   messages: [
     {
       role: 'user',

@@ -10,6 +10,7 @@ import type {
 import { NativeApprovalBridge } from '../../gateway/approval.ts';
 import type { GatewayFetch } from '../../gateway/fetch.ts';
 import { codexRequest } from './auth.ts';
+import { openaiSlug } from './models.ts';
 import { readSse } from './responses.ts';
 
 const REVIEW_FAILURE_EVENTS: readonly unknown[] = [
@@ -349,7 +350,7 @@ function reviewerVerdict(output: Record<string, unknown>[]): ApprovalVerdict {
 }
 
 function reviewEvidence(action: ApprovalAction, cwd: string, context?: ApprovalContext) {
-  if (!context?.model.startsWith('switchboard/openai/')) {
+  if (!context || openaiSlug(context.model) === undefined) {
     throw new Error('Automatic approval is unavailable for this provider');
   }
   if (context.worker && !context.rootRequest) {

@@ -82,7 +82,7 @@ globalThis.fetch = async (url, init) => {
           launcher,
           '--',
           '--model',
-          'switchboard/openai/gpt-6-astra',
+          'astra',
         ],
         {
           cwd,

@@ -41,26 +41,26 @@ const cwd = await mkdtemp(path.join(os.tmpdir(), 'native-openai-cache-'));
 console.log(`Artifacts: ${cwd}`);
 const workers = {
   'astra': {
-    model: 'switchboard/openai/gpt-6-astra',
+    model: 'astra',
     description: 'CACHE_VISIBLE_WORKER',
     prompt: 'Follow the task.',
     disallowedTools: ['WebSearch'],
   },
   'astra-high': {
-    model: 'switchboard/openai/gpt-6-astra',
+    model: 'astra',
     description: 'CACHE_HIDDEN_EFFORT',
     prompt: 'Follow the task.',
     disallowedTools: ['WebSearch'],
     effort: 'high',
   },
   'luna': {
-    model: 'switchboard/openai/gpt-6-luna',
+    model: 'luna',
     description: 'CACHE_HIDDEN_MODEL',
     prompt: 'Follow the task.',
     disallowedTools: ['WebSearch'],
   },
 };
-const catalog = new AgentCatalog(workers, ['switchboard/openai/gpt-6-astra']);
+const catalog = new AgentCatalog(workers, ['astra']);
 const session = randomUUID();
 const token = randomUUID();
 const samples: Sample[] = [];
@@ -167,7 +167,7 @@ async function runClaude(port: number, turn: number) {
       turn === 0 ? '--session-id' : '--resume',
       session,
       '--model',
-      'switchboard/openai/gpt-6-astra',
+      'astra',
       '--effort',
       'low',
       '--allowedTools',

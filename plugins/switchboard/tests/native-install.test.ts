@@ -186,12 +186,12 @@ test('setup renames the launch command, persists picker models, and keeps them a
   const stateFile = path.join(f.home, '.local/share/switchboard/state.json');
   const shim = (name: string) =>
     path.join(f.home, '.local/share/switchboard/bin', f.windows ? `${name}.cmd` : name);
-  const first = await f.install(['--command', 'mc', '--models', 'switchboard/openai/gpt-6-sol']);
+  const first = await f.install(['--command', 'mc', '--models', 'sol']);
   assert.match(first.stdout, /start mc\./);
-  assert.match(first.stdout, /shows only: switchboard\/openai\/gpt-6-sol/);
+  assert.match(first.stdout, /shows only: sol/);
   await assert.rejects(access(shim('switchboard')), /ENOENT/);
   const custom = JSON.parse((await f.invoke('mc', [])).stdout);
-  assert.equal(custom.models, 'switchboard/openai/gpt-6-sol');
+  assert.equal(custom.models, 'sol');
   assert.equal(custom.providers, 'openai');
   // An explicit environment selection still wins for one launch.
   const explicit = JSON.parse((await f.invoke('mc', [], { SWITCHBOARD_MODELS: '' })).stdout);
@@ -199,11 +199,11 @@ test('setup renames the launch command, persists picker models, and keeps them a
   // Re-running setup without flags keeps the customization.
   await f.install();
   assert.equal(JSON.parse(await readFile(stateFile, 'utf8')).command, 'mc');
-  assert.equal(JSON.parse((await f.invoke('mc', [])).stdout).models, 'switchboard/openai/gpt-6-sol');
-  await f.install(['--models', '+switchboard/openai/gpt-6-sol']);
+  assert.equal(JSON.parse((await f.invoke('mc', [])).stdout).models, 'sol');
+  await f.install(['--models', '+sol']);
   assert.equal(
     JSON.parse((await f.invoke('mc', [])).stdout).models,
-    'switchboard/openai/gpt-6-sol',
+    'sol',
   );
   // `none` hides external rows; `all` requests the full connected catalog.
   await f.install(['--models', 'none']);
@@ -217,17 +217,19 @@ test('setup renames the launch command, persists picker models, and keeps them a
   assert.equal(JSON.parse((await f.invoke('switchboard', [])).stdout).providers, 'openai');
   await assert.rejects(f.install(['--command', 'switchboard-ctl']), /reserved/);
   await assert.rejects(f.install(['--command', 'bad name']), /Invalid launch command/);
-  await assert.rejects(f.install(['--models', 'gpt-6-astra']), /Invalid picker model/);
+  await assert.rejects(f.install(['--models', 'sool']), /Invalid picker model/);
+  await assert.rejects(f.install(['--models', 'opus']), /Invalid picker model/);
+  await assert.rejects(f.install(['--models', 'switchboard/openai/gpt-6-astra']), /Invalid picker model.*astra, sol or luna/);
   // A picker row can display a context tag, so that is the spelling a user copies out of
   // /model. It names a row and must persist as the untagged ID, which stays valid whether
   // or not the tag is on, and must not persist twice alongside its own plain spelling.
   await f.install([
     '--models',
-    'switchboard/openai/gpt-6-luna[1m],switchboard/openai/gpt-6-luna',
+    'luna[1m],luna',
   ]);
   assert.equal(
     JSON.parse(await readFile(stateFile, 'utf8')).models,
-    'switchboard/openai/gpt-6-luna',
+    'luna',
   );
   await f.invoke('switchboard-ctl', ['uninstall']);
   if (f.windows) {

@@ -147,9 +147,13 @@ function normalizeModels(value: string | undefined, previous?: string): string |
   // sibling plugin sources beside it.
   const persisted = models.map((model) => model.replace(/\[1m\]$/i, ''));
   for (const model of persisted) {
-    if (!/^switchboard\/[a-z]+\/[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(model)) {
+    // Bare IDs mirror the MODELS keys in src/providers/codex/models.ts; this file can't import src.
+    if (
+      !/^(astra|sol|luna|switchboard\/[a-z]+\/[A-Za-z0-9][A-Za-z0-9._:-]*)$/.test(model) ||
+      model.startsWith('switchboard/openai/')
+    ) {
       throw new Error(
-        `Invalid picker model ID: ${JSON.stringify(model)}. Use full IDs such as switchboard/openai/gpt-6-astra, or all/none.`,
+        `Invalid picker model ID: ${JSON.stringify(model)}. Use OpenAI aliases such as astra, sol or luna (not switchboard/openai/...), other full switchboard/<provider>/<model> IDs, or all/none.`,
       );
     }
   }

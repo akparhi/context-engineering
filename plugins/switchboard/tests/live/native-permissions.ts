@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs, stripVTControlCharacters } from 'node:util';
 import { hookCommand } from '../../src/gateway/permission-hook.ts';
+import { OPENAI_WORKERS } from '../../src/providers/codex/models.ts';
 import { isolatedEnvironment } from './environment.ts';
 import type { HookInput, TranscriptEntry } from './native-events.ts';
 import { pty, skipIfPtyUnsupported } from './native-pty.ts';
@@ -18,12 +19,12 @@ const { values } = parseArgs({
 const modes = ['default', 'acceptEdits', 'plan', 'dontAsk', 'bypassPermissions'];
 if (values.help) {
   console.log(
-    'Usage: npm run test:live:permissions -- [--model switchboard/openai/gpt-6-luna] [--mode MODE]\nDefaults to OpenAI and all five non-auto modes. Requires Claude, provider login, Python 3, Node 24; uses temporary files and real provider usage.',
+    'Usage: npm run test:live:permissions -- [--model luna] [--mode MODE]\nDefaults to OpenAI and all five non-auto modes. Requires Claude, provider login, Python 3, Node 24; uses temporary files and real provider usage.',
   );
   process.exit(0);
 }
 assert(
-  !values.model || values.model.startsWith('switchboard/openai/'),
+  !values.model || Object.hasOwn(OPENAI_WORKERS, values.model),
   'This Claude tool-permission test supports OpenAI; native Cursor is unsupported.',
 );
 assert(!values.mode || modes.includes(values.mode), 'Unknown permission mode');
@@ -34,7 +35,7 @@ assert.equal(spawnSync('python3', ['--version']).status, 0, 'Python 3 required')
 const root = await mkdtemp(path.join(os.tmpdir(), 'native-permissions-'));
 console.log(`Artifacts: ${root}`);
 const reports: Record<string, unknown>[] = [];
-const models = [values.model ?? 'switchboard/openai/gpt-6-luna'];
+const models = [values.model ?? 'luna'];
 for (const model of models) {
   for (const mode of values.mode ? [values.mode] : modes) {
     const cwd = await mkdtemp(path.join(root, `${mode}-`));

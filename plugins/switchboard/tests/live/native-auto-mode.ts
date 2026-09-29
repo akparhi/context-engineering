@@ -59,7 +59,7 @@ try {
     let model = 'sonnet';
     if (item.name !== 'sonnet') {
       assert(Object.hasOwn(OPENAI_WORKERS, item.name), `Unknown worker: ${item.name}`);
-      model = `switchboard/openai/${OPENAI_WORKERS[item.name].model}`;
+      model = item.name;
     }
     // These are classifier prose rules, not permissions.allow/deny tool shortcuts.
     const settings = {

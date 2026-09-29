@@ -33,7 +33,7 @@ export const register = (
   on('turn.complete', async ($, event, next) => {
     const key = event.agentId ?? 'main';
     const model = models.get(key);
-    if (model?.startsWith('switchboard/')) {
+    if (model !== undefined && (model.startsWith('switchboard/') || (await isOpenAiAlias($, model)))) {
       await request($, '/switchboard/mod/usage/complete', {
         sessionId: await $.session.id(),
         agentId: event.agentId,
@@ -128,4 +128,10 @@ function statusText(status: Status, agentId: string | undefined) {
 }
 async function cancelCompaction($: EngineInterface, agentId?: string) {
   await request($, '/switchboard/mod/compact/cancel', { sessionId: await $.session.id(), agentId });
+}
+
+/** Bare OpenAI aliases (sol, luna, ...) are published by the launcher; hooks cannot import its model table. */
+async function isOpenAiAlias($: EngineInterface, model: string) {
+  const aliases = await $.env.get('SWITCHBOARD_OPENAI_MODELS');
+  return aliases?.split(',').includes(model.replace(/\[1m\]$/i, '')) ?? false;
 }

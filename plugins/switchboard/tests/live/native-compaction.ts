@@ -47,7 +47,7 @@ const selection = OPENAI_WORKERS[worker];
 const target = {
   ...selection,
   route: 'openai-request',
-  model: `switchboard/openai/${selection.model}`,
+  model: worker,
   traceModel: selection.model,
 };
 const model = target.model;
