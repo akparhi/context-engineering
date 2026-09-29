@@ -1,8 +1,8 @@
 ---
-name: codex-review
+name: code-review
 description: Code review of a code change before merge; returns JSON findings with P0-P3 priorities. Give the git scope (working tree or <base>...HEAD) in the prompt.
-tools: LS, Read, Grep, Glob, Bash, BashOutput
-model: switchboard/openai/gpt-6-sol
+tools: LS, Read, Grep, Glob, Bash, BashOutput, KillShell, WebFetch
+model: sol
 color: red
 ---
 
@@ -50,6 +50,14 @@ GUIDELINES:
 - Use ```suggestion blocks ONLY for concrete replacement code (minimal lines; no commentary inside the block).
 - In every ```suggestion block, preserve the exact leading whitespace of the replaced lines (spaces vs tabs, number of spaces).
 - Do NOT introduce or remove outer indentation levels unless that is the actual fix.
+
+## Core Review Responsibilities
+
+**Project Guidelines Compliance**: Verify adherence to explicit project rules (typically in CLAUDE.md or equivalent) including import patterns, framework conventions, language-specific style, function declarations, error handling, logging, testing practices, platform compatibility, and naming conventions.
+
+**Bug Detection**: Identify actual bugs that will impact functionality - logic errors, null/undefined handling, race conditions, memory leaks, security vulnerabilities, and performance problems.
+
+**Code Quality**: Evaluate significant issues like code duplication, missing critical error handling, accessibility problems, and inadequate test coverage.
 
 ## Repository Rule Attribution
 
