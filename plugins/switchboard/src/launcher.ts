@@ -815,7 +815,7 @@ function pickerSettings(codexSignedIn: boolean) {
       options: Object.keys(codexSignedIn ? MODELS : {}).map((model) => ({
         model,
         label: LABELS[model] ?? model,
-        description: `OpenAI · GPT-6 ${LABELS[model]} · ${DESCRIPTIONS[model]}`,
+        description: `OpenAI · GPT-${MODELS[model as keyof typeof MODELS].split('-')[1]} ${LABELS[model]} · ${DESCRIPTIONS[model]}`,
         behavesAs: PICKER_PROFILE,
       })),
     },
