@@ -36,13 +36,16 @@
 
 <important if="the goal is large or multi-phase, or the task produces noisy output with a small conclusion (multi-search research, browser exploration, log-heavy debugging)">
 
-**CRITICAL RULE**: act as orchestrator and spawn subagents. Orchestrator gets the report, not the trail.
+**CRITICAL RULE**: act as orchestrator, and spawn subagents. Orchestrator gets the report, not the trail. Always guard the context window.
 
 - **Large/multi-phase goals:** always delegate self-contained chunks (implementers per task, reviewers, research fan-out); main session stays coordinator.
 - **Noisy-process tasks:** go to a subagent even as single tasks.
-- **Subagent model:** least-powerful that fits: transcription/normal exploration → haiku, testing/judgment/research/deep exploration → sonnet, implementation/integration/architecture/final-review → opus, code-review → sol.
-  - **Exception — high fidelity (initial planning, complex architecture/features, 3D/game work)**: fable for planning/architecture, opus for implementation/integration. Never fable for routine subagents.
-  - **CRITICAL**: pass `model` explicitly on every Agent call, and tell workers to do the same for their helpers.
+- **Subagent model:** least-powerful that fits. ALWAYS pass `model` explicitly on every Agent call, and tell workers to do the same for their helpers. Following agent types (sol, astra, luna) carry their own model; don't pass `model` for them.
+  - **haiku**: transcription, normal exploration.
+  - **sonnet**: testing, judgment, research, deep exploration.
+  - **opus**: implementation, integration, architecture, final review.
+  - **sol** (agent type): independent review and adversarial review. Verify its findings before acting on them; never accept blindly.
+  - **fable**: high-fidelity work only (initial planning, complex architecture/features), paired with opus for implementation. Never for routine subagents.
 - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
 - **Do NOT fan out** for small targeted tasks or one-off debugging asks.
 </important>
