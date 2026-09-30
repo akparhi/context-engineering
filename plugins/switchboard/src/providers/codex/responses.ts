@@ -676,6 +676,8 @@ export function toResponses(
   // Claude's tool-search flow keeps deferred schemas out of the initial model
   // request. A loaded tool is resent without defer_loading on the next turn.
   const tools = (body.tools ?? [])
+    // Subagents inherit Claude's advisor server tool, which only Anthropic's API can run.
+    .filter((tool) => !(typeof tool.type === 'string' && tool.type.startsWith('advisor_')))
     .filter(
       (tool) =>
         !isDeferredTool(tool) ||
