@@ -9,7 +9,20 @@ Invoke the `arcane:alchemy` skill and follow its instructions when a task meets 
 
 It routes to the right arcane skill from there. For smaller tasks, such as a contained change to one file with an obvious test, a question, or a one-line edit, work directly and verify on the real artifact.
 
-When the intent is already specific, enter that skill directly: `arcane:brainstorm`, `arcane:tdd`, `arcane:architect`, `arcane:how`, `arcane:why`, `arcane:arena`, `arcane:interrogate`.
+When the intent is already specific, enter that skill directly. Invoke every skill listed for the activity, even when alchemy is not in play:
+
+- **Multi-phase or unattended work**: `arcane:figure-it-out`, `arcane:show-me-your-work`.
+- **System or code design**: `arcane:architect`; `arcane:arena` when one attempt could lock in the wrong shape; `arcane:blast-radius` before changing shared code.
+- **Understanding code**: `arcane:how` for how it works, `arcane:why` for why it is this way, `arcane:teach` to explain it.
+- **Tests**: `arcane:test-audit` whenever writing, changing, or reviewing tests; `arcane:tdd` when a failing test comes first.
+- **Reviewing a change**: `arcane:interrogate`; `arcane:thermo-nuclear-code-quality-review` for a harsh maintainability pass; `arcane:no-comments` and `arcane:deslop` before committing.
+- **Creating or updating a PR**: `arcane:make-pr-easy-to-review`, with `arcane:visual-pr` for the description. After opening: `arcane:babysit`; failing checks: `arcane:fix-ci`; review comments: `arcane:get-pr-comments`; conflicts: `arcane:fix-merge-conflicts`.
+- **Writing prose** (docs, READMEs, commit messages, replies): `arcane:technical-writing`, then `arcane:unslop`.
+- **TypeScript**: `arcane:typescript-best-practices` when reading or editing `.ts` or `.tsx`.
+- **Proving app behavior**: `arcane:create-verification-skill` when the repo has no scripted way to drive the app; `arcane:maintain-verification-skill` to audit an existing one.
+- **Parallel coverage or races**: `arcane:swarm`.
+- **Resuming work**: `arcane:recall`. End of a long session: `arcane:reflect`. Status update from commits: `arcane:what-did-i-get-done`.
+- **Capturing the user's working style as a skill**: `arcane:automate-me`.
 
 User instructions (CLAUDE.md, direct requests) take precedence. Other session-start mandates, such as superpowers, still apply. Their skill checks run as before, and when a task meets the criteria above they route implementation through alchemy.
 </EXTREMELY_IMPORTANT>
