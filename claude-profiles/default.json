@@ -141,7 +141,8 @@
     "context7@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
-    "switchboard@akparhi": true
+    "switchboard@akparhi": true,
+    "plugin-dev@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "akparhi": {
