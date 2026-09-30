@@ -1,6 +1,6 @@
 ---
 name: principle-attack-the-premise
-description: "Apply when repeated fixes sharing an assumption fail. State the assumption and choose an observation that can challenge it before trying another fix that depends on it."
+description: Apply when repeated fixes sharing an assumption fail. State the assumption and choose an observation that can challenge it before trying another fix that depends on it.
 user-invocable: false
 ---
 

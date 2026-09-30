@@ -1,6 +1,6 @@
 ---
 name: brainstorm
-description: "Interview the human one question at a time to pin intent, then write a brief or spec before design. Use only for /brainstorm, 'brainstorm this', 'grill me', 'interview me', or when alchemy routes here because a new project or subsystem arrives without a stated purpose or success criteria. Not for work whose intent the request or the repo already settles."
+description: Interview the human one question at a time to pin intent, then write a brief or spec before design. Use only for /brainstorm, 'brainstorm this', 'grill me', 'interview me', or when alchemy routes here because a new project or subsystem arrives without a stated purpose or success criteria. Not for work whose intent the request or the repo already settles.
 ---
 
 # Brainstorm
