@@ -1,6 +1,6 @@
 # context-engineering
 
-Repo-managed Claude Code and Codex configuration, shared skills, and a private plugin marketplace.
+Repo-managed Claude Code and Codex configuration, shared skills, and a public plugin marketplace.
 
 The premise throughout: **the scarce resource is the model's attention, and the second scarcest is mine.** Config, skills, and plugins here all follow from that.
 
@@ -19,8 +19,10 @@ codex-profiles/     full Codex config.toml profiles
 codex-shared/       AGENTS.md, agent roles and macOS sound hooks
 shared/skills/      skills used by both Claude and Codex
 plugins/            this repo is also a plugin marketplace
-  hindsight/        turns corrections into contextual project rules
+  arcane/           pstack-claude workflows and principles
+  switchboard/      local gateway that runs Codex models inside Claude Code
 bin/setup.mjs       Claude installer
+bin/reinstall-plugin.sh  refresh installed plugins after editing them
 bin/setup-codex.mjs Codex installer
 ```
 
@@ -71,10 +73,29 @@ Re-running is safe: an existing symlink is repointed, and a real file is moved t
 
 `ast-grep` and `ast-grep-outline` for syntax-aware search — a structural pattern can't match a string that merely looks like code.
 
-### plugins/hindsight/
+## Plugins
 
-Records the corrections you give Claude during a session and distills them into a handful of sharp rules under `.claude/rules/`. Lessons scoped to one area load only when a matching file is in context, so they cost nothing in sessions that never touch it. See [`plugins/hindsight/README.md`](plugins/hindsight/README.md).
+Install from any machine, no clone needed:
 
+```bash
+claude plugin marketplace add akparhi/context-engineering
+claude plugin install arcane@akparhi
+claude plugin install switchboard@akparhi
+```
+
+Inside Claude Code, the same is `/plugin marketplace add akparhi/context-engineering`, then `/plugin install <name>@akparhi`. Add `--scope project` to enable a plugin for one repo only. Restart Claude Code after installing.
+
+Claude Code runs plugins from its own cache, not from this repo. After editing a plugin here, run `bun run reinstall` (both plugins) or `bun run reinstall arcane`, then restart open sessions.
+
+### arcane
+
+A fork of [pstack-claude](https://github.com/michael-denyer/pstack-claude), the Claude Code port of [pstack](https://github.com/cursor/plugins/tree/main/pstack). A SessionStart hook injects a routing mandate: multi-file changes, design choices and unknown bugs go through the `alchemy` skill, which picks a playbook (bug fix, feature, refactoring, perf, PR, shipping and more). The same context lists which skill to use for each activity, such as `architect` for design, `test-audit` for tests, and `make-pr-easy-to-review` with `visual-pr` for PRs. Principle skills load on their own when their situation comes up.
+
+Every subagent model comes from one file, [`plugins/arcane/models.json`](plugins/arcane/models.json), which the hook injects each session. Edit it and reinstall to change a role's model. Differences from upstream: no Codex support, no `bro` or `setup-pstack` skill, efforts limited to low, medium and high, opus instead of fable as the strongest model, and quoted agent descriptions that fix upstream's "Malformed plugin agent" startup error. See [`plugins/arcane/README.md`](plugins/arcane/README.md).
+
+### switchboard
+
+Starts the real Claude Code binary behind a local gateway so external providers' models (such as Codex models through a ChatGPT login) show up in `/model` and can run as subagents. Needs [Bun](https://bun.sh) installed permanently; Bun fetches the plugin's dependencies on first run. After installing, run `/switchboard:setup` to add the launch command (default `switchboard`), `/switchboard:login` to sign in, and `/switchboard:status` to check it. `/switchboard:uninstall` reverses setup.
 
 ## Codex setup
 

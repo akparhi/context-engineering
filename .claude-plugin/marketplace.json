@@ -9,39 +9,6 @@
   },
   "plugins": [
     {
-      "name": "hindsight",
-      "source": "./plugins/hindsight",
-      "description": "Records corrections during a session and distills them into a small, contextual lesson set in .claude/rules/",
-      "version": "0.1.0",
-      "author": {
-        "name": "Anand Parhi"
-      },
-      "category": "development",
-      "keywords": [
-        "mcp",
-        "memory",
-        "lessons",
-        "corrections",
-        "rules"
-      ]
-    },
-    {
-      "name": "think",
-      "source": "./plugins/think",
-      "description": "A no-op scratchpad tool for reasoning mid-task about architecture, delegation, and coding decisions without taking an action",
-      "version": "0.1.0",
-      "author": {
-        "name": "Anand Parhi"
-      },
-      "category": "development",
-      "keywords": [
-        "mcp",
-        "reasoning",
-        "architecture",
-        "delegation"
-      ]
-    },
-    {
       "name": "switchboard",
       "source": "./plugins/switchboard",
       "description": "Shared Switchboard gateway, setup, status and reversible Claude startup integration.",
@@ -62,7 +29,7 @@
     {
       "name": "arcane",
       "source": "./plugins/arcane",
-      "description": "Hybrid of superpowers + pstack agent workflows (forked from pstack-claude)",
+      "description": "pstack-claude workflows and principles for Claude Code: alchemy routing, design, review, PR, and verification skills.",
       "version": "0.1.0",
       "author": {
         "name": "Anand Parhi"
