@@ -45,6 +45,8 @@ Do not push if the tree changed unintentionally.
 
 ## Reviewer Guidance
 
+**Non-negotiable**: Use the visual-pr skill to create the PR description.
+
 When code behavior should stay untouched, prefer PR description and review notes:
 
 - Add a TL;DR that matches the actual diff.
