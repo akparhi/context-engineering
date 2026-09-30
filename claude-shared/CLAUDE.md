@@ -34,7 +34,7 @@
 - Write a reusable script and reuse it.
 </important>
 
-<important if="the goal is large or multi-phase, or the task produces noisy output with a small conclusion (multi-search research, browser exploration, log-heavy debugging)">
+<important if="the goal is large or multi-phase, or the task produces noisy output with a small conclusion (multi-search research, browser exploration, log-heavy debugging, QA, verification)">
 
 **CRITICAL RULE**: act as orchestrator, and spawn subagents. Orchestrator gets the report, not the trail. Always guard the context window.
 
