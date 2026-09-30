@@ -7,7 +7,7 @@ description: Alchemy agent style for concise, detailed responses, deliberate sub
 
 ## Platform Adaptation
 
-These skills use Claude Code tool names (the `Skill` tool, the `Agent` tool, `AskUserQuestion`) and the Claude model names the `Agent` tool accepts, as each Models section lists them. On Claude Code they work as written. Other runtimes can discover the same Agent Skills tree, but they must use their own tool, model, and configuration equivalents.
+These skills use Claude Code tool names (the `Skill` tool, the `Agent` tool, `AskUserQuestion`) and the Claude model names the `Agent` tool accepts, as [Arcane Models](#arcane-models) list them. On Claude Code they work as written. Other runtimes can discover the same Agent Skills tree, but they must use their own tool, model, and configuration equivalents.
 
 Use the session's task-tracking tools for the todolist. On Claude Code these are `TaskCreate` and `TaskUpdate`, or `TodoWrite` when configured. Availability depends on the model; `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` enables them through the environment or a project's `.claude/settings.local.json` `env` block. See the [task-tool documentation](https://code.claude.com/docs/en/tools-reference#task-tool-availability). If no task-tracking tool is available, keep an uncommitted `todo.md` Markdown checklist in the work dir, next to the decision trail, with the playbook steps verbatim and each `skip: <reason>` line.
 
@@ -94,7 +94,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Use `subagent_type: "arcane:alchemy-agent"` for any subagent you spawn inside a playbook step** (code-writing delegates, ad-hoc helpers). Plugin agents register under the plugin namespace. The bare name `alchemy-agent` errors. `/alchemy` and `alchemy-agent` route through the same wrapper. Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) set their own `subagent_type` for diverse-model review. Respect what the skill prescribes, don't override to `alchemy-agent`.
 
-**Defaults for every `Agent` call.** `run_in_background: true`, full tool access (do not pick a subagent_type that strips MCP), file pointers not inlined context, explicit model per role (configurable via `/setup-arcane`. Role defaults in [Models](#models), with "judgment and prose" covering prose and judgment). Code delegates tier by difficulty. The hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms) go to your strongest-judgment model (default in [Models](#models)), whether the task needs judgment on vague intent or is a precisely specified sequence of steps to execute to the letter. Trivial mechanical edits go to your fast code model. Everything else uses the single-role default. Multi-model panels run the configured panel for diversity, with defaults enumerated in each panel skill's Models section (`arena`, `architect`, `interrogate`). Per-role `/setup-arcane` lines override these defaults and the model choices in the routed skills (`how`, `why`, `arena`, `swarm`, `architect`, `interrogate`, `reflect`). A role with no line keeps its default, and a role line of `inherit-parent` or `auto` runs that role on the parent session's model (omit `model` on the `Agent` call).
+**Defaults for every `Agent` call.** `run_in_background: true`, full tool access (do not pick a subagent_type that strips MCP), file pointers not inlined context, explicit model per role from its role in [Arcane Models](#arcane-models) (the `judgment and prose` role covers prose and judgment). Code delegates tier by difficulty. The hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms) go to the `strongest judgment` role, whether the task needs judgment on vague intent or is a precisely specified sequence of steps to execute to the letter. Trivial mechanical edits go to the `trivial edits` role. Everything else uses its playbook's role. Multi-model panels (`arena`, `architect`, `interrogate`) run their panel role for diversity.
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. Interrupt-chained resumes silently drop directives, so fire a fresh subagent with consolidated scope rather than trusting a "done" summary. **Stop the abandoned agent first, and confirm it stopped.** In the agent listing `completed` means the completion was *notified*, not that the process exited: an agent with live background children reports completed and then resumes. Only an explicit stop ends it, and the stop tool may be deferred, so load it before you need it. The tell that one is still running is a claim about the working tree that `git status` contradicts. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
@@ -145,18 +145,3 @@ A large or cross-cutting effort (a migration across many call sites, an ambitiou
 - **Multi-phase or multi-PR plan.** Work that spans phases or stacked PRs. `playbooks/multi-phase-plan.md`.
 - **Worktree and simulator cleanup.** Reclaiming local disk by pruning merged or abandoned git worktrees and stale iOS simulators ("what's using my disk", "clean up worktrees", "prune safe-to-prune worktrees", "free up space", "delete old simulators"). `playbooks/worktree-cleanup.md`.
 - **Opening a PR.** Invoked at the end of every other playbook. `playbooks/opening-a-pr.md`.
-
-## Models
-
-Role defaults, stamped from `plugins/arcane/models.json` (edit there, rerun `tools/generate.mjs`). A matching role line in the `arcane-models.md` override sheet overrides each at runtime; `/setup-arcane` writes it and lists its path per runtime.
-
-- feature, refactoring: `opus`
-- bug-fix: `opus`
-- perf-issue: `opus`
-- hillclimb: `opus`
-- judgment and prose: `opus`
-- strongest judgment: `opus`
-
-## Reasoning effort
-
-A role value in the override sheet may name a reasoning effort after its model, as in `opus @high`. Levels on Claude Code: `low`, `medium`, `high`. Which ones apply depends on the model. A value without `@` takes the sheet's `default effort` line, a level or `session`, and `session` when the sheet has no such line. `session` sets no effort, so the dispatch is the usual one. Strip the suffix before reading the model: `inherit-parent` or `auto` still omits `model` at every level, and a model name is passed as `model`. On Claude Code, a level picks the effort agent from the `subagent_type` you would otherwise use. `arcane:alchemy-agent` becomes `subagent_type: "arcane:alchemy-agent-<level>"`. `general-purpose`, or no `subagent_type`, becomes `subagent_type: "arcane:effort-<level>"`. The effort agents set only `effort`, so the model you pass still decides the model.

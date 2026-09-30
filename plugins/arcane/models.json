@@ -2,6 +2,7 @@
   "tiers": {
     "default": "opus",
     "strongest": "opus",
+    "fast": "sonnet",
     "panel": ["opus", "fable", "sonnet"]
   },
   "efforts": ["low", "medium", "high"],
@@ -14,6 +15,7 @@
     { "role": "hillclimb", "models": "strongest", "skill": "alchemy" },
     { "role": "judgment and prose", "models": "default", "skill": "alchemy" },
     { "role": "strongest judgment", "models": "strongest", "skill": "alchemy" },
+    { "role": "trivial edits", "models": "fast", "skill": "alchemy" },
     { "role": "how explorer", "models": "default", "skill": "how" },
     { "role": "how explainer", "models": "default", "skill": "how" },
     { "role": "why investigators", "models": "default", "skill": "why" },

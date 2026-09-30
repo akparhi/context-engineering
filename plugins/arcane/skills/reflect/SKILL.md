@@ -29,9 +29,9 @@ It covers the three layouts (flat `<id>.jsonl`, nested `<id>/<id>.jsonl`, subage
 
 One message, three `Agent` calls, `subagent_type: "general-purpose"`, with `model` set as below. Reviewers need MCP access for context lookups (tickets, chat threads, observability traces referenced in the transcript). Pick a subagent_type that retains MCP access. The prompt forbids file writes. The parent applies edits.
 
-Each reviewer and the synthesizer name a role line in `arcane-models.md` and a default in [Models](#models). Set `model` to that line's value, or to the default if the sheet or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If the `Agent` tool rejects a slug, use the default and say so. If it rejects the default, use the closest valid slug of the same family from its error message.
+Each reviewer and the synthesizer name a role in [Arcane Models](#arcane-models).
 
-| Lens | Role line | Prompt template |
+| Lens | Role | Prompt template |
 |---|---|---|
 | Judgment | `reflect judgment, divergent, synthesizer` | `references/judgment-reviewer.md` |
 | Tooling | `reflect tooling` | `references/tooling-reviewer.md` |
@@ -41,7 +41,7 @@ Pass each template verbatim, substituting the transcript path or digest where ma
 
 ### 3. Synthesize
 
-One `Agent` call, `subagent_type: "general-purpose"`, with `model` from the `reflect judgment, divergent, synthesizer` line (default in [Models](#models)). Pick a subagent_type that retains MCP access. The synthesizer's quality check includes spot-verifying citations, which can require MCP access. Use `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. The synthesizer returns a structured Accepted / Rejected / Backlog list.
+One `Agent` call, `subagent_type: "general-purpose"`, with `model` from the `reflect judgment, divergent, synthesizer` role in [Arcane Models](#arcane-models). Pick a subagent_type that retains MCP access. The synthesizer's quality check includes spot-verifying citations, which can require MCP access. Use `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. The synthesizer returns a structured Accepted / Rejected / Backlog list.
 
 ### 4. Structural enforcement check
 
@@ -70,14 +70,3 @@ Short list, no preamble:
 - New skills created: `<skill path>`. One line each (rare).
 - Backlog filed to the devex tracker: `<issue title>` (`<tags>`). One line each.
 - Dropped: one line per rejected finding + reason from the synthesizer.
-
-## Models
-
-Role defaults, stamped from `plugins/arcane/models.json` (edit there, rerun `tools/generate.mjs`). A matching role line in the `arcane-models.md` override sheet overrides each at runtime; `/setup-arcane` writes it and lists its path per runtime.
-
-- reflect tooling: `opus`
-- reflect judgment, divergent, synthesizer: `opus`
-
-## Reasoning effort
-
-A role value in the override sheet may name a reasoning effort after its model, as in `opus @high`. Levels on Claude Code: `low`, `medium`, `high`. Which ones apply depends on the model. A value without `@` takes the sheet's `default effort` line, a level or `session`, and `session` when the sheet has no such line. `session` sets no effort, so the dispatch is the usual one. Strip the suffix before reading the model: `inherit-parent` or `auto` still omits `model` at every level, and a model name is passed as `model`. On Claude Code, a level picks the effort agent from the `subagent_type` you would otherwise use. `arcane:alchemy-agent` becomes `subagent_type: "arcane:alchemy-agent-<level>"`. `general-purpose`, or no `subagent_type`, becomes `subagent_type: "arcane:effort-<level>"`. The effort agents set only `effort`, so the model you pass still decides the model.

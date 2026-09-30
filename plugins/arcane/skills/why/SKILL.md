@@ -9,7 +9,7 @@ Investigate the motivation and intent behind code.
 
 Companion to the `how` skill. `how` answers what the code does and how it works. `why` answers what forces led to its shape.
 
-Each spawn below names a role line in `arcane-models.md` and a default in [Models](#models). Set `model` to that line's value, or to the default if the sheet or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If the `Agent` tool rejects a slug, use the default and say so. If it rejects the default, use the closest valid slug of the same family from its error message.
+Each spawn below names a role in [Arcane Models](#arcane-models).
 
 ## Operating Posture
 
@@ -80,7 +80,7 @@ Launch all matching investigators in a single message so they run concurrently. 
 
 Subagent config (each):
 - `subagent_type`: `general-purpose`
-- `model`: the `why investigators` line, default in [Models](#models)
+- `model`: the `why investigators` role in [Arcane Models](#arcane-models)
 - `readonly`: `false` (agent mode). **Do not use readonly/Ask mode.** It strips MCP access, which disables MCP-backed investigators entirely. Investigators still shouldn't write anything.
 
 Each investigator gets:
@@ -124,7 +124,7 @@ If your scope assessment suggests a single-commit trivial target where the PR de
 Spawn one synthesizer subagent:
 
 - `subagent_type`: `general-purpose`
-- `model`: the `why synthesizer` line, default in [Models](#models)
+- `model`: the `why synthesizer` role in [Arcane Models](#arcane-models)
 - `readonly`: `false` (agent mode). The synthesizer's quality check spot-verifies citations, which can require MCP access. Readonly/Ask mode strips MCPs and defeats that.
 
 The synthesizer gets:
@@ -155,14 +155,3 @@ After the Sources Consulted block, if the user's `why` question is a precursor t
 - `references/source-playbook.md`. Index pointing at the category playbooks below.
 - `references/sources/*.md`. One self-contained example playbook per category, plus cross-cutting `incident-postmortem.md`. Give an investigator the single file that matches its category and adapt it to the available MCP.
 - `references/synthesizer-prompt.md`. Prompt template for the synthesizer subagent, including the output format.
-
-## Models
-
-Role defaults, stamped from `plugins/arcane/models.json` (edit there, rerun `tools/generate.mjs`). A matching role line in the `arcane-models.md` override sheet overrides each at runtime; `/setup-arcane` writes it and lists its path per runtime.
-
-- why investigators: `opus`
-- why synthesizer: `opus`
-
-## Reasoning effort
-
-A role value in the override sheet may name a reasoning effort after its model, as in `opus @high`. Levels on Claude Code: `low`, `medium`, `high`. Which ones apply depends on the model. A value without `@` takes the sheet's `default effort` line, a level or `session`, and `session` when the sheet has no such line. `session` sets no effort, so the dispatch is the usual one. Strip the suffix before reading the model: `inherit-parent` or `auto` still omits `model` at every level, and a model name is passed as `model`. On Claude Code, a level picks the effort agent from the `subagent_type` you would otherwise use. `arcane:alchemy-agent` becomes `subagent_type: "arcane:alchemy-agent-<level>"`. `general-purpose`, or no `subagent_type`, becomes `subagent_type: "arcane:effort-<level>"`. The effort agents set only `effort`, so the model you pass still decides the model.
