@@ -6,6 +6,8 @@ user-invocable: false
 
 # Test behavior, not implementation
 
+**Non-negotiable**: When writing or changing tests, run the **test-audit** skill's authoring gate.
+
 Before keeping a test, name a relevant defect and determine whether the complete test arrangement detects it. Where practical, introduce that defect temporarily and observe the failure. Exercise the subject through its public interface and check the required result or effect.
 
 - A missing-result experiment helps when the contract requires a result. `toBeDefined` detects a missing result, but accepts the wrong one. Strengthen it to check the particular result when correctness requires one.
