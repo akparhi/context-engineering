@@ -1,6 +1,6 @@
 ---
 name: effort-low
-description: arcane subagent with the full tool set that runs at low reasoning effort. Its system prompt is this file, not the built-in `general-purpose` prompt. Dispatched in place of `general-purpose` when a arcane role's override names `@low`. The caller passes the model.
+description: arcane subagent with the full tool set that runs at low reasoning effort. Its system prompt is this file, not the built-in `general-purpose` prompt. Dispatched in place of `general-purpose` when an arcane role's override names `@low`. The caller passes the model.
 effort: low
 ---
 

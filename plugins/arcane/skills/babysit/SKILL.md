@@ -7,11 +7,11 @@ description: Watch an open PR — fix failing CI, handle the straightforward rev
 
 Claude Code analog of Cursor's built-in `/babysit`. The implementation is a loop over `gh` CLI plus the Claude Code `loop` skill for pacing.
 
-Inside alchemy, the **Babysit** playbook ([`../alchemy/playbooks/babysit.md`](../alchemy/playbooks/babysit.md)) supersedes this skill: it owns mode declaration, the merge frontier, stack safety, and the `watch-pr` watcher. This skill stays the standalone `/babysit` entry point for a single PR outside a alchemy run.
+Inside alchemy, the **Babysit** playbook ([`../alchemy/playbooks/babysit.md`](../alchemy/playbooks/babysit.md)) supersedes this skill: it owns mode declaration, the merge frontier, stack safety, and the `watch-pr` watcher. This skill stays the standalone `/babysit` entry point for a single PR outside an alchemy run.
 
 ## When to use
 
-- There's an open PR and the user explicitly wants it kept green, and you are not already inside a alchemy run (the playbook owns that case).
+- There's an open PR and the user explicitly wants it kept green, and you are not already inside an alchemy run (the playbook owns that case).
 - The user invokes `/babysit` directly.
 - A subagent that opens a PR does NOT babysit — return to the parent and let the parent decide.
 

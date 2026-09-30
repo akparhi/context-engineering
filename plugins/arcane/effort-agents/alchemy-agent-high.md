@@ -1,6 +1,6 @@
 ---
 name: alchemy-agent-high
-description: "`arcane:alchemy-agent` at high reasoning effort. Dispatched in place of `arcane:alchemy-agent` when a arcane role's override names `@high`. The caller passes the model."
+description: "`arcane:alchemy-agent` at high reasoning effort. Dispatched in place of `arcane:alchemy-agent` when an arcane role's override names `@high`. The caller passes the model."
 effort: high
 ---
 
