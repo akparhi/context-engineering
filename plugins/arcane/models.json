@@ -2,109 +2,28 @@
   "tiers": {
     "default": "opus",
     "strongest": "opus",
-    "panel": [
-      "fable",
-      "opus",
-      "sonnet"
-    ]
+    "panel": ["opus", "fable", "sonnet"]
   },
-  "efforts": [
-    "low",
-    "medium",
-    "high"
-  ],
+  "efforts": ["low", "medium", "high"],
   "defaultEffort": "session",
-  "available": [
-    "opus",
-    "fable",
-    "sonnet",
-    "haiku"
-  ],
+  "available": ["opus", "fable", "sonnet", "haiku"],
   "roles": [
-    {
-      "role": "feature, refactoring",
-      "models": "default",
-      "skill": "alchemy"
-    },
-    {
-      "role": "bug-fix",
-      "models": "strongest",
-      "skill": "alchemy"
-    },
-    {
-      "role": "perf-issue",
-      "models": "strongest",
-      "skill": "alchemy"
-    },
-    {
-      "role": "hillclimb",
-      "models": "strongest",
-      "skill": "alchemy"
-    },
-    {
-      "role": "judgment and prose",
-      "models": "default",
-      "skill": "alchemy"
-    },
-    {
-      "role": "strongest judgment",
-      "models": "strongest",
-      "skill": "alchemy"
-    },
-    {
-      "role": "how explorer",
-      "models": "default",
-      "skill": "how"
-    },
-    {
-      "role": "how explainer",
-      "models": "default",
-      "skill": "how"
-    },
-    {
-      "role": "why investigators",
-      "models": "default",
-      "skill": "why"
-    },
-    {
-      "role": "why synthesizer",
-      "models": "default",
-      "skill": "why"
-    },
-    {
-      "role": "reflect tooling",
-      "models": "default",
-      "skill": "reflect"
-    },
-    {
-      "role": "reflect judgment, divergent, synthesizer",
-      "models": "default",
-      "skill": "reflect"
-    },
-    {
-      "role": "arena runners",
-      "models": "panel",
-      "skill": "arena"
-    },
-    {
-      "role": "arena cross-judge pool",
-      "models": "panel",
-      "skill": "arena"
-    },
-    {
-      "role": "swarm workers",
-      "models": "default",
-      "skill": "swarm"
-    },
-    {
-      "role": "architect runners",
-      "models": "panel",
-      "skill": "architect"
-    },
-    {
-      "role": "interrogate reviewers",
-      "models": "panel",
-      "skill": "interrogate"
-    }
+    { "role": "feature, refactoring", "models": "default", "skill": "alchemy" },
+    { "role": "bug-fix", "models": "strongest", "skill": "alchemy" },
+    { "role": "perf-issue", "models": "strongest", "skill": "alchemy" },
+    { "role": "hillclimb", "models": "strongest", "skill": "alchemy" },
+    { "role": "judgment and prose", "models": "default", "skill": "alchemy" },
+    { "role": "strongest judgment", "models": "strongest", "skill": "alchemy" },
+    { "role": "how explorer", "models": "default", "skill": "how" },
+    { "role": "how explainer", "models": "default", "skill": "how" },
+    { "role": "why investigators", "models": "default", "skill": "why" },
+    { "role": "why synthesizer", "models": "default", "skill": "why" },
+    { "role": "reflect tooling", "models": "default", "skill": "reflect" },
+    { "role": "reflect judgment, divergent, synthesizer", "models": "default", "skill": "reflect" },
+    { "role": "arena runners", "models": "panel", "skill": "arena" },
+    { "role": "arena cross-judge pool", "models": "panel", "skill": "arena" },
+    { "role": "swarm workers", "models": "default", "skill": "swarm" },
+    { "role": "architect runners", "models": "panel", "skill": "architect" },
+    { "role": "interrogate reviewers", "models": "panel", "skill": "interrogate" }
   ]
 }

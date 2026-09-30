@@ -71,11 +71,11 @@ One synthesized artifact. One short synthesis note alongside, naming the base, t
 
 ## Models
 
-Role defaults, mirroring `plugins/arcane/models.json` (no generator; edit both together). A matching role line in the `arcane-models.md` override sheet overrides each at runtime; `/setup-arcane` writes it and lists its path per runtime.
+Role defaults, stamped from `plugins/arcane/models.json` (edit there, rerun `tools/generate.mjs`). A matching role line in the `arcane-models.md` override sheet overrides each at runtime; `/setup-arcane` writes it and lists its path per runtime.
 
 - arena runners: `opus`, `fable`, `sonnet`
 - arena cross-judge pool: `opus`, `fable`, `sonnet`
 
 ## Reasoning effort
 
-A role value in the override sheet may name a reasoning effort after its model, as in `opus @xhigh`. Levels on Claude Code: `low`, `medium`, `high`, `xhigh`, `max`. Which ones apply depends on the model. A value without `@` takes the sheet's `default effort` line, a level or `session`, and `session` when the sheet has no such line. `session` sets no effort, so the dispatch is the usual one. Strip the suffix before reading the model: `inherit-parent` or `auto` still omits `model` at every level, and a model name is passed as `model`. On Claude Code, a level picks the effort agent from the `subagent_type` you would otherwise use. `arcane:alchemy-agent` becomes `subagent_type: "arcane:alchemy-agent-<level>"`. `general-purpose`, or no `subagent_type`, becomes `subagent_type: "arcane:effort-<level>"`. The effort agents set only `effort`, so the model you pass still decides the model.
+A role value in the override sheet may name a reasoning effort after its model, as in `opus @high`. Levels on Claude Code: `low`, `medium`, `high`. Which ones apply depends on the model. A value without `@` takes the sheet's `default effort` line, a level or `session`, and `session` when the sheet has no such line. `session` sets no effort, so the dispatch is the usual one. Strip the suffix before reading the model: `inherit-parent` or `auto` still omits `model` at every level, and a model name is passed as `model`. On Claude Code, a level picks the effort agent from the `subagent_type` you would otherwise use. `arcane:alchemy-agent` becomes `subagent_type: "arcane:alchemy-agent-<level>"`. `general-purpose`, or no `subagent_type`, becomes `subagent_type: "arcane:effort-<level>"`. The effort agents set only `effort`, so the model you pass still decides the model.

@@ -11,5 +11,5 @@ It routes to the right arcane skill from there. For smaller tasks, such as a con
 
 When the intent is already specific, enter that skill directly: `arcane:brainstorm`, `arcane:tdd`, `arcane:architect`, `arcane:how`, `arcane:why`, `arcane:arena`, `arcane:interrogate`.
 
-User instructions (CLAUDE.md, AGENTS.md, direct requests) take precedence. Other session-start mandates, such as superpowers, still apply. Their skill checks run as before, and when a task meets the criteria above they route implementation through alchemy.
+User instructions (CLAUDE.md, direct requests) take precedence. Other session-start mandates, such as superpowers, still apply. Their skill checks run as before, and when a task meets the criteria above they route implementation through alchemy.
 </EXTREMELY_IMPORTANT>

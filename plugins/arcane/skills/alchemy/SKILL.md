@@ -148,14 +148,14 @@ A large or cross-cutting effort (a migration across many call sites, an ambitiou
 
 ## Models
 
-Role defaults, mirroring `plugins/arcane/models.json` (no generator; edit both together). A matching role line in the `arcane-models.md` override sheet overrides each at runtime; `/setup-arcane` writes it and lists its path per runtime.
+Role defaults, stamped from `plugins/arcane/models.json` (edit there, rerun `tools/generate.mjs`). A matching role line in the `arcane-models.md` override sheet overrides each at runtime; `/setup-arcane` writes it and lists its path per runtime.
 
 - feature, refactoring: `opus`
-- bug-fix: `fable`
-- perf-issue: `fable`
-- hillclimb: `fable`
+- bug-fix: `opus`
+- perf-issue: `opus`
+- hillclimb: `opus`
 - judgment and prose: `opus`
-- strongest judgment: `fable`
+- strongest judgment: `opus`
 
 ## Reasoning effort
 

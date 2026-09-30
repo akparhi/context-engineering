@@ -1,6 +1,7 @@
 {
   "name": "arcane",
   "displayName": "arcane",
+  "icon": "./assets/arcane-icon.png",
   "version": "0.1.0",
   "description": "Hybrid of superpowers + pstack workflows, for claude-code.",
   "author": {
