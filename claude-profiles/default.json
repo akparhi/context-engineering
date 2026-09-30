@@ -1,6 +1,5 @@
 {
   "cleanupPeriodDays": 21,
-  "autoMemoryEnabled": false,
   "syncClaudeAiSkills": false,
   "syncClaudeAiPlugins": false,
   "env": {
@@ -61,7 +60,6 @@
   "disableClaudeAiConnectors": true,
   "skillOverrides": {
     "superpowers:using-git-worktrees": "off",
-    "claude-api": "off",
     "loop": "off",
     "schedule": "off",
     "security-review": "off",
@@ -158,6 +156,7 @@
   "promptSuggestionEnabled": false,
   "plansDirectory": "./.claude/plans",
   "tui": "fullscreen",
+  "autoMemoryEnabled": false,
   "skipDangerousModePermissionPrompt": true,
   "theme": "auto",
   "verbose": true,

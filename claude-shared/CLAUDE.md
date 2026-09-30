@@ -19,7 +19,7 @@
 </important>
 
 <important if="you finished a code change that will be committed or merged">
-- Use the codex-review agent on it; add adversarial-review for risky changes (auth, data, migrations, concurrency).
+- Use the code-review agent on it; add adversarial-review for risky changes (auth, data, migrations, concurrency).
 </important>
 
 <important if="the task involves a browser: opening pages, clicking, filling forms, screenshots, or web scraping">
