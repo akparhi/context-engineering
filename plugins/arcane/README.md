@@ -8,7 +8,7 @@ Tell `alchemy` your goal and it invokes the workflow that fits: reproduce and ro
 
 - Skills: Markdown instructions the agent reads. Public ones appear as `/arcane:<name>` slash commands.
 - Agents: `arcane:alchemy-agent` and `arcane:comment-sicko`, plus one agent per reasoning-effort level.
-- A SessionStart hook that injects the alchemy routing mandate and the per-role models from `models.json`, the one place to change which model each role uses.
+- A SessionStart hook that injects the alchemy routing mandate and the per-role models from `models.json`, the one place to change which model each role uses. The tiers, default effort, and each role can also be overridden per user in `/config`; `models.json` stays the default.
 - Local scripts for watching and shipping pull requests, orchestrating multi-phase plans, and auditing worktrees.
 
 ## Data handling

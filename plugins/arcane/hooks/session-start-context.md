@@ -29,11 +29,11 @@ User instructions (CLAUDE.md, direct requests) take precedence. Other session-st
 
 # Arcane models
 
-Arcane skills name a role. Its model comes from the JSON below, arcane's `models.json`:
+Arcane skills name a role. Its model comes from the JSON below: arcane's `models.json` with the user's `/config` choices merged in.
 
-- Find the role in `roles`. Its `models` names a tier; `tiers` maps the tier to one model, or to a list for a panel role (one subagent per entry).
+- Find the role in `roles`. Its `models` names a tier, which `tiers` maps to a model, or it names the model directly. A list is a panel: one subagent per entry.
 - Pass that model as the `Agent` call's `model`. A role missing from `roles` omits `model`, so it runs on the parent session's model.
+- `astra` and `sol` are switchboard agent types with their own model and effort. Dispatch them as `subagent_type: "<name>"` with no `model` and no effort level; a role that would use `arcane:alchemy-agent` loses that prompt, so name the playbook step in the brief. If the agent type is not in the Agent tool's list, use `opus` and say so.
 - If the `Agent` tool rejects a model, use the closest valid slug of the same family from its error message, and say so.
-- A tier value may carry a reasoning effort, as in `opus @high`; strip it before passing `model`. A value without one takes `defaultEffort`, where `session` sets no effort. A level (`low`, `medium`, `high`) picks the effort agent from the `subagent_type` you would otherwise use: `arcane:alchemy-agent` becomes `arcane:alchemy-agent-<level>`; `general-purpose`, or none, becomes `arcane:effort-<level>`. The model you pass still picks the model.
+- A model value may carry a reasoning effort, as in `opus @high`; strip it before passing `model`. A value without one takes `defaultEffort`, where `session` sets no effort. A level (`low`, `medium`, `high`) picks the effort agent from the `subagent_type` you would otherwise use: `arcane:alchemy-agent` becomes `arcane:alchemy-agent-<level>`; `general-purpose`, or none, becomes `arcane:effort-<level>`. The model you pass still picks the model.
 
-[Arcane Models](#arcane-models)
