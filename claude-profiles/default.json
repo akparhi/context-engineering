@@ -69,7 +69,10 @@
     "keybindings-help": "off",
     "plugin-authoring": "off",
     "update-config": "off",
-    "superpowers:diagnosing-superpowers": "off"
+    "superpowers:diagnosing-superpowers": "off",
+    "visual-pr": "off",
+    "test-audit": "off",
+    "arcane:setup-arcane": "off"
   },
   "hooks": {
     "Notification": [],
@@ -140,9 +143,10 @@
     "telemetry@builtin": false,
     "context7@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": true,
-    "switchboard@akparhi": true,
-    "plugin-dev@claude-plugins-official": true
+    "superpowers@claude-plugins-official": false,
+    "plugin-dev@claude-plugins-official": true,
+    "arcane@akparhi": true,
+    "switchboard@akparhi": true
   },
   "extraKnownMarketplaces": {
     "akparhi": {

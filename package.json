@@ -12,6 +12,7 @@
     "setup": "node bin/setup.mjs",
     "test": "cd plugins/hindsight && bun run test && cd ../think && bun run test",
     "setup:codex": "node bin/setup-codex.mjs",
-    "test:config": "node --test tests/config.test.mjs"
+    "test:config": "node --test tests/config.test.mjs",
+    "reinstall": "sh bin/reinstall-plugin.sh"
   }
 }

@@ -1,6 +1,7 @@
 ---
 name: visual-pr
 description: Use whenever creating, raising, re-raising, or updating a pull request, or writing/rewriting a PR description. Writes the PR body (why, special notes, visual change outline). Even when a repo has its own PR skill, use this skill for the body.
+user-invocable: false
 ---
 
 # Describe a Pull Request
