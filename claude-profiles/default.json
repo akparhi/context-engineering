@@ -55,7 +55,8 @@
       "ListMcpResourcesTool",
       "ReadMcpResourceTool",
       "ReadMcpResourceDirTool",
-      "Agent(statusline-setup)"
+      "Agent(statusline-setup)",
+      "Agent(claude-code-guide)"
     ],
     "defaultMode": "bypassPermissions"
   },
@@ -167,5 +168,26 @@
   "switchModelsOnFlag": false,
   "fileCheckpointingEnabled": true,
   "terminalProgressBarEnabled": false,
-  "tipsEnabled": false
+  "tipsEnabled": false,
+  "pluginConfigs": {
+    "switchboard@akparhi": {
+      "options": {
+        "astra": true,
+        "astra_low": false,
+        "astra_medium": false,
+        "astra_high": false,
+        "astra_xhigh": false,
+        "sol": true,
+        "sol_low": false,
+        "sol_medium": false,
+        "sol_high": true,
+        "sol_xhigh": false,
+        "luna": true,
+        "luna_low": false,
+        "luna_medium": false,
+        "luna_high": false,
+        "luna_xhigh": false
+      }
+    }
+  }
 }
