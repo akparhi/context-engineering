@@ -162,7 +162,7 @@
   "pluginConfigs": {
     "switchboard@akparhi": {
       "options": {
-        "astra": true,
+        "astra": false,
         "astra_low": false,
         "astra_medium": false,
         "astra_high": false,
@@ -172,7 +172,7 @@
         "sol_medium": false,
         "sol_high": true,
         "sol_xhigh": false,
-        "luna": true,
+        "luna": false,
         "luna_low": false,
         "luna_medium": false,
         "luna_high": false,
