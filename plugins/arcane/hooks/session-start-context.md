@@ -12,26 +12,23 @@ Invoke the `arcane:alchemy` skill and follow its instructions when a task meets 
 
 It routes to the right arcane skill from there. For smaller tasks, such as a contained change to one file with an obvious test, a question, or a one-line edit, work directly and verify on the real artifact.
 
-User instructions (CLAUDE.md, direct requests) take precedence. Other session-start mandates, such as superpowers, still apply. Their skill checks run as before, and when a task meets the criteria below they route implementation through alchemy.
+User instructions (CLAUDE.md, direct requests) take precedence. Other session-start mandates, such as superpowers, still apply. Their skill checks run as before, and when a task meets the criteria above they route implementation through alchemy.
 
-## The Rule
+## Skills Usage
 
 - If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
-- IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
-- This is not negotiable. You cannot rationalize your way out of this.
-- Always reach for principle skills as needed.
+- IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT. This is not negotiable. You cannot rationalize your way out of this.
+- **CRITICAL RULE**: load principle skills (`arcane:principle-*`) whenever their "Apply when" trigger matches the current step, before acting on it.
 
-When the intent is already specific, enter that skill directly. Invoke every skill listed for the activity, even when alchemy is not in play:
+When the intent is already specific, enter that skill directly. Invoke every skill listed for the below activities, even when alchemy is not in play:
 
 - **Vague new project or subsystem** (no stated purpose or success criteria), or "brainstorm", "grill me" / "interview me": `arcane:brainstorm`, before any design.
 - **Understanding code**: `arcane:how` for how it works, `arcane:why` for why it is this way, `arcane:teach` to explain it.
 - **Tests**: `arcane:test-audit` whenever writing, changing, or reviewing tests; `arcane:tdd` when a failing test comes first.
 - **Reviewing a change**: `arcane:interrogate`; `arcane:thermo-nuclear-code-quality-review` for a harsh maintainability pass; `arcane:no-comments` and `arcane:deslop` before committing.
 - **Creating or updating a PR**: `arcane:make-pr-easy-to-review`, with `arcane:visual-pr` for the description. After opening: `arcane:babysit`; failing checks: `arcane:fix-ci`; review comments: `arcane:get-pr-comments`; conflicts: `arcane:fix-merge-conflicts`.
-- **Writing prose** (docs, READMEs, commit messages, replies): `arcane:technical-writing`, then `arcane:unslop`.
 - **TypeScript**: `arcane:typescript-best-practices` when reading or editing `.ts` or `.tsx`.
 - **Proving app behavior**: `arcane:create-verification-skill` when the repo has no scripted way to drive the app; `arcane:maintain-verification-skill` to audit an existing one.
-- **Resuming work**: `arcane:recall`. End of a long session: `arcane:reflect`.
 
 </EXTREMELY_IMPORTANT>
 

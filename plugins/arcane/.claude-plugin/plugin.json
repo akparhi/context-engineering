@@ -2,7 +2,7 @@
   "name": "arcane",
   "displayName": "arcane",
   "icon": "./assets/arcane-icon.png",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Hybrid of superpowers + pstack workflows, for claude-code.",
   "author": {
     "name": "Anand Kumar Parhi"
