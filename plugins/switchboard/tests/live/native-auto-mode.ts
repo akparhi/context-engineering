@@ -110,7 +110,7 @@ try {
       debugFile,
     ];
     if (!item.worker && item.name.startsWith('openai-')) {
-      cliArgs.push('--effort', OPENAI_WORKERS[item.name].effort);
+      cliArgs.push('--effort', OPENAI_WORKERS[item.name].effort ?? 'medium');
     }
     const child = spawn(process.execPath, [launcher, ...cliArgs], {
       cwd,

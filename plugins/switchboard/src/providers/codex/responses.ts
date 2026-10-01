@@ -18,7 +18,7 @@ const IMAGE_MEDIA_TYPES: readonly unknown[] = [
   'image/gif',
   'image/webp',
 ];
-const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
+export const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
 const WEB_SEARCH_TOOL = 'web_search_20250305';
 
 export type Effort = (typeof EFFORTS)[number];

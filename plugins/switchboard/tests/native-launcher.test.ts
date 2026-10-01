@@ -10,7 +10,12 @@ import {
   checkLauncherArgumentLimit,
   workerDefinitions,
 } from '../src/launcher.ts';
-import { LABELS, MODELS } from '../src/providers/codex/models.ts';
+import {
+  LABELS,
+  MODELS,
+  OPENAI_WORKERS,
+  workerOptionKey,
+} from '../src/providers/codex/models.ts';
 import { removeTemporary } from './temporary.ts';
 
 async function writeClaudeFixture(bin: string, source: string): Promise<void> {
@@ -298,6 +303,18 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
   const savedStale = await launch({});
   assert.match(savedStale.stderr, /switchboard\/openai\/gpt-6-sol is retired; use sol/);
   assert.deepEqual(JSON.parse(savedStale.stdout).models, ['luna']);
+  await writeFile(
+    path.join(cwd, 'claude', 'settings.json'),
+    JSON.stringify({
+      pluginConfigs: {
+        'switchboard@akparhi': {
+          options: { sol: false, sol_high: true },
+        },
+      },
+    }),
+  );
+  const configured = await launch({});
+  assert.deepEqual(JSON.parse(configured.stdout).agents.sort(), ['astra', 'luna', 'sol-high']);
   await rm(path.join(cwd, 'claude', 'settings.json'));
   const hidden = JSON.parse(
     (await launchFiltered('', ['--', '--model', 'sol'])).stdout,
@@ -310,21 +327,44 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
   assert.deepEqual(fallback.models, ['luna'], 'no Claude login starts on Luna');
 });
 
-test('launcher keeps the representative catalog under 30 KB', () => {
-  const agents = workerDefinitions(true);
+test('launcher keeps the full worker catalog under 30 KB', () => {
+  const agents = workerDefinitions(
+    true,
+    undefined,
+    Object.fromEntries(Object.keys(OPENAI_WORKERS).map((name) => [workerOptionKey(name), true])),
+  );
+  assert.equal(Object.keys(agents).length, 15);
   const definitions = JSON.stringify(agents);
   const definitionBytes = Buffer.byteLength(definitions);
   assert(definitionBytes < 30000, `representative worker JSON was ${definitionBytes} bytes`);
 });
 
-test('worker registration follows selected models with one worker per model', () => {
-  const selected = ['luna', 'sol'];
-  const agents = workerDefinitions(true, selected);
-  assert.deepEqual(new Set(Object.values(agents).map((worker) => worker.model)), new Set(selected));
-  assert.equal(agents['luna'].effort, 'medium');
-  assert.equal(agents['luna-high'], undefined);
+test('default config registers one session-effort worker per selected model', () => {
+  const all = workerDefinitions(true);
+  assert.deepEqual(Object.keys(all), ['astra', 'sol', 'luna']);
+  for (const worker of Object.values(all)) {
+    assert.equal('effort' in worker, false);
+    assert.match(worker.description, /^gpt-[^,]+, session reasoning\./);
+  }
+  const agents = workerDefinitions(true, ['luna', 'sol']);
+  assert.deepEqual(Object.keys(agents), ['sol', 'luna']);
   assert.ok(agents['luna'].disallowedTools.includes('Agent'));
   assert.deepEqual(workerDefinitions(true, []), {});
+});
+
+test('config toggles effort variants and base workers, still filtered by picker models', () => {
+  const options = { sol: false, sol_xhigh: true, luna_low: 'true', astra: 'false' };
+  const agents = workerDefinitions(true, undefined, options);
+  assert.deepEqual(Object.keys(agents), ['sol-xhigh', 'luna', 'luna-low']);
+  assert.deepEqual(agents['luna-low'], {
+    ...agents['luna'],
+    description: 'gpt-6-luna, low reasoning. Native coding, investigation, and review.',
+    effort: 'low',
+  });
+  assert.equal(agents['sol-xhigh'].model, 'sol');
+  assert.equal(agents['sol-xhigh'].effort, 'xhigh');
+  assert.deepEqual(Object.keys(workerDefinitions(true, ['luna'], options)), ['luna', 'luna-low']);
+  assert.deepEqual(workerDefinitions(false, undefined, options), {});
 });
 
 test('launcher argument limits are platform-aware and identify largest providers', () => {

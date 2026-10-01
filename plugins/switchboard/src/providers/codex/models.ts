@@ -1,4 +1,4 @@
-import type { Effort } from './responses.ts';
+import { EFFORTS, type Effort } from './responses.ts';
 
 /** Public model ID (the bare alias clients send) -> OpenAI slug. Bumping a model is a one-line edit here. */
 export const MODELS = {
@@ -6,6 +6,8 @@ export const MODELS = {
   'sol': 'gpt-6.1-sol',
   'luna': 'gpt-6-luna',
 };
+
+type Alias = keyof typeof MODELS;
 
 /** The OpenAI slug behind a public alias, or undefined when the ID is not an OpenAI alias. */
 export function openaiSlug(id: string): string | undefined {
@@ -30,14 +32,34 @@ export const DESCRIPTIONS: Readonly<Record<string, string>> = {
   luna: 'Fast and affordable model for easier tasks.',
 };
 
-/** A registered native worker: the OpenAI model it runs on and its reasoning effort. */
+/** A native worker: the alias it runs on and its reasoning effort; no effort follows the session's. */
 export interface Worker {
-  model: string;
-  effort: Effort;
+  model: Alias;
+  effort?: Effort;
 }
 
+/** Every worker `/config` can show: one per alias, plus an `<alias>-<effort>` variant per effort below `max`. */
 export const OPENAI_WORKERS: Readonly<Record<string, Worker>> = Object.freeze(
   Object.fromEntries(
-    Object.entries(MODELS).map(([name, model]) => [name, { model, effort: 'medium' as const }]),
+    (Object.keys(MODELS) as Alias[]).flatMap((model) => [
+      [model, { model }],
+      ...EFFORTS.filter((effort) => effort !== 'max').map((effort) => [`${model}-${effort}`, { model, effort }]),
+    ]),
   ),
 );
+
+/** Switchboard's `/config` values, as Claude Code stores them under `pluginConfigs[<id>].options`. */
+export type PluginOptions = Readonly<Record<string, unknown>>;
+
+/** The `/config` key that shows a worker: `sol`, `sol_high`. */
+export const workerOptionKey = (name: string) => name.replace('-', '_');
+
+/** Workers whose `/config` toggle is on; unset shows base workers and hides effort variants. */
+export function enabledWorkers(options: PluginOptions): Record<string, Worker> {
+  return Object.fromEntries(
+    Object.entries(OPENAI_WORKERS).filter(([name, worker]) => {
+      const value = String(options[workerOptionKey(name)]);
+      return value === 'true' || (value !== 'false' && worker.effort === undefined);
+    }),
+  );
+}

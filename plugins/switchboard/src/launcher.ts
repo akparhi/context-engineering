@@ -9,9 +9,16 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { createOpenAIApproval, discoverOpenAIReviewer } from './providers/codex/approval.ts';
 import { readCodexAuth } from './providers/codex/auth.ts';
-import { DESCRIPTIONS, LABELS, MODELS, modelProvider, OPENAI_WORKERS, openaiSlug } from './providers/codex/models.ts';
+import {
+  DESCRIPTIONS,
+  enabledWorkers,
+  LABELS,
+  MODELS,
+  modelProvider,
+  openaiSlug,
+  type PluginOptions,
+} from './providers/codex/models.ts';
 import type { Effort } from './providers/codex/responses.ts';
-import { AgentCatalog } from './gateway/agent-catalog.ts';
 import {
   loadWorkerPermissions,
   type PluginPermissionInventory,
@@ -112,6 +119,7 @@ async function main() {
   );
   const { codexSignedIn, openaiReview } = await discoverOpenAI(authFile);
   const token = randomBytes(32).toString('hex');
+  const options = await pluginOptions();
   const settings = pickerSettings(codexSignedIn);
   const defaultModels = settings.modelPicker.options.map((option) => option.model);
   await mergeSettings(args, settings);
@@ -124,6 +132,7 @@ async function main() {
   const agents = workerDefinitions(
     codexSignedIn,
     settings.modelPicker.options.map((option) => option.model),
+    options,
   );
   const modBridge = new ModBridge();
   const settingsDir = await mkdtemp(path.join(os.tmpdir(), 'switchboard-native-settings-'));
@@ -160,10 +169,6 @@ async function main() {
     approvalProviders,
     blockAnthropic: !anthropic,
     guardAuto: true,
-    agentCatalog: new AgentCatalog(
-      agents,
-      settings.modelPicker.options.map((option) => option.model),
-    ),
     onEvent: traceEvent,
   });
   await new Promise<void>((resolve, reject) => {
@@ -459,16 +464,17 @@ async function discoverOpenAI(authFile: string) {
 export function workerDefinitions(
   codexSignedIn: boolean,
   selectedModels?: readonly string[],
+  options: PluginOptions = {},
 ) {
   const agents: Record<string, AgentDefinition> = Object.fromEntries(
-    Object.entries(codexSignedIn ? OPENAI_WORKERS : {}).map(([name, { model, effort }]) => [
+    Object.entries(codexSignedIn ? enabledWorkers(options) : {}).map(([name, { model, effort }]) => [
       name,
       {
-        description: `${model}, ${effort} reasoning. Native coding, investigation, and review.`,
+        description: `${MODELS[model]}, ${effort ?? 'session'} reasoning. Native coding, investigation, and review.`,
         prompt: WORKER_PROMPT,
         disallowedTools: WORKER_DISALLOWED_TOOLS,
-        model: name,
-        effort,
+        model,
+        ...(effort && { effort }),
       },
     ]),
   );
@@ -771,6 +777,21 @@ async function readSettings(value: string) {
   return extra;
 }
 
+function userSettingsFile() {
+  return path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'settings.json');
+}
+
+/** Claude stores `/config` values in user settings, but only hands them to plugin processes it starts. */
+async function pluginOptions(): Promise<PluginOptions> {
+  try {
+    const settings = JSON.parse(await readFile(userSettingsFile(), 'utf8'));
+    const options = settings?.pluginConfigs?.['switchboard@akparhi']?.options;
+    return typeof options === 'object' && options !== null ? options : {};
+  } catch {
+    return {};
+  }
+}
+
 async function savedSelection(args: string[]) {
   let savedModel: string | undefined;
   const sourcesIndex = args.lastIndexOf('--setting-sources');
@@ -779,13 +800,7 @@ async function savedSelection(args: string[]) {
     (sourcesIndex >= 0 ? args[sourcesIndex + 1] : 'user,project,local')
   ).split(',');
   for (const [source, filename] of [
-    [
-      'user',
-      path.join(
-        process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'),
-        'settings.json',
-      ),
-    ],
+    ['user', userSettingsFile()],
     ['project', path.join(process.cwd(), '.claude', 'settings.json')],
     ['local', path.join(process.cwd(), '.claude', 'settings.local.json')],
   ] as const) {

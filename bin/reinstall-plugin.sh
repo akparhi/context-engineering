@@ -12,6 +12,7 @@ set -eu
 [ $# -gt 0 ] || set -- arcane switchboard
 
 node "$(dirname "$0")/sync-arcane-config.mjs"
+node "$(dirname "$0")/sync-switchboard-config.mjs"
 claude plugin marketplace update akparhi
 for name in "$@"; do
   ref="$name@akparhi"

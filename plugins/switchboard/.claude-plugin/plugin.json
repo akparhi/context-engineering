@@ -1,5 +1,5 @@
 {
-  "version": "0.2.3",
+  "version": "0.3.0",
   "author": {
     "name": "akparhi"
   },
@@ -7,5 +7,97 @@
   "name": "switchboard",
   "description": "Shared Switchboard gateway, setup, status and reversible Claude startup integration.",
   "skills": "./skills",
-  "hooks": "./hooks/hooks.json"
+  "hooks": "./hooks/hooks.json",
+  "userConfig": {
+    "astra": {
+      "type": "boolean",
+      "title": "Show Astra subagent",
+      "description": "",
+      "default": true
+    },
+    "astra_low": {
+      "type": "boolean",
+      "title": "Show astra-low subagent",
+      "description": "",
+      "default": false
+    },
+    "astra_medium": {
+      "type": "boolean",
+      "title": "Show astra-medium subagent",
+      "description": "",
+      "default": false
+    },
+    "astra_high": {
+      "type": "boolean",
+      "title": "Show astra-high subagent",
+      "description": "",
+      "default": false
+    },
+    "astra_xhigh": {
+      "type": "boolean",
+      "title": "Show astra-xhigh subagent",
+      "description": "",
+      "default": false
+    },
+    "sol": {
+      "type": "boolean",
+      "title": "Show Sol subagent",
+      "description": "",
+      "default": true
+    },
+    "sol_low": {
+      "type": "boolean",
+      "title": "Show sol-low subagent",
+      "description": "",
+      "default": false
+    },
+    "sol_medium": {
+      "type": "boolean",
+      "title": "Show sol-medium subagent",
+      "description": "",
+      "default": false
+    },
+    "sol_high": {
+      "type": "boolean",
+      "title": "Show sol-high subagent",
+      "description": "",
+      "default": false
+    },
+    "sol_xhigh": {
+      "type": "boolean",
+      "title": "Show sol-xhigh subagent",
+      "description": "",
+      "default": false
+    },
+    "luna": {
+      "type": "boolean",
+      "title": "Show Luna subagent",
+      "description": "",
+      "default": true
+    },
+    "luna_low": {
+      "type": "boolean",
+      "title": "Show luna-low subagent",
+      "description": "",
+      "default": false
+    },
+    "luna_medium": {
+      "type": "boolean",
+      "title": "Show luna-medium subagent",
+      "description": "",
+      "default": false
+    },
+    "luna_high": {
+      "type": "boolean",
+      "title": "Show luna-high subagent",
+      "description": "",
+      "default": false
+    },
+    "luna_xhigh": {
+      "type": "boolean",
+      "title": "Show luna-xhigh subagent",
+      "description": "",
+      "default": false
+    }
+  }
 }

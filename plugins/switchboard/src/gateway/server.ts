@@ -10,7 +10,6 @@ import { modelProvider, openaiSlug } from '../providers/codex/models.ts';
 import type { ResponsesRequest } from '../providers/codex/responses.ts';
 import { forAnthropic, fromResponses, toResponses } from '../providers/codex/responses.ts';
 import { readCodexUsage } from '../providers/codex/usage.ts';
-import type { AgentCatalog } from './agent-catalog.ts';
 import type { ApprovalContext, NativeApprovalBridge } from './approval.ts';
 import { approvalCwdForComparison, isApprovalRequest, parseApprovalRequest } from './approval.ts';
 import type { GatewayFetch } from './fetch.ts';
@@ -83,7 +82,6 @@ export interface GatewayOptions {
   blockAnthropic?: boolean;
   guardAuto?: boolean;
   permissionModes?: PermissionModes;
-  agentCatalog?: AgentCatalog;
   modBridge?: ModBridge;
 }
 
@@ -148,7 +146,6 @@ export function createNativeGateway({
   blockAnthropic,
   guardAuto,
   permissionModes,
-  agentCatalog,
   modBridge = new ModBridge(),
   receipts = new ReceiptLedger(),
   usageDashboard,
@@ -596,7 +593,7 @@ export function createNativeGateway({
         return;
       }
       const url = new URL(req.url ?? '', 'http://localhost');
-      const { raw, parsed, body } = await readRequest(req, agentCatalog);
+      const { raw, parsed, body } = await readRequest(req);
       if (url.pathname.startsWith('/switchboard/mod/')) {
         return handleModRoute(
           req,
@@ -667,7 +664,7 @@ function providerSignal(disconnected: AbortSignal, model: string | null, timeout
   return AbortSignal.any([disconnected, AbortSignal.timeout(timeoutMs ?? 180000)]);
 }
 
-async function readRequest(req: http.IncomingMessage, catalog?: AgentCatalog) {
+async function readRequest(req: http.IncomingMessage) {
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of req) {
@@ -687,10 +684,8 @@ async function readRequest(req: http.IncomingMessage, catalog?: AgentCatalog) {
   if (!isRecord(parsed) || (parsed.model !== undefined && typeof parsed.model !== 'string')) {
     throw new BadRequest('Expected an object with a string model');
   }
-  const body: MessagesRequest = isApprovalRequest(parsed)
-    ? parsed
-    : (catalog?.compact(parsed) ?? parsed);
-  return { raw: body === parsed ? raw : Buffer.from(JSON.stringify(body)), parsed, body };
+  const body: MessagesRequest = parsed;
+  return { raw, parsed, body };
 }
 
 function providerRoute(model: string | null): 'openai' | 'anthropic' {

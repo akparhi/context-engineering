@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { terminateProcessTree } from '../../src/gateway/process-tree.ts';
-import { OPENAI_WORKERS } from '../../src/providers/codex/models.ts';
+import { MODELS, OPENAI_WORKERS } from '../../src/providers/codex/models.ts';
 import { isolatedEnvironment } from './environment.ts';
 
 interface Event {
@@ -45,10 +45,10 @@ assert(
 );
 const selection = OPENAI_WORKERS[worker];
 const target = {
-  ...selection,
+  effort: selection.effort ?? 'medium',
   route: 'openai-request',
   model: worker,
-  traceModel: selection.model,
+  traceModel: MODELS[selection.model],
 };
 const model = target.model;
 const launcher = fileURLToPath(

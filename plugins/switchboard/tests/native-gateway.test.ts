@@ -4,7 +4,6 @@ import os from 'node:os';
 import path from 'node:path';
 import type { TestContext } from 'node:test';
 import test from 'node:test';
-import { AgentCatalog } from '../src/gateway/agent-catalog.ts';
 import type { GatewayFetch } from '../src/gateway/fetch.ts';
 import type {
   MessagesRequest,
@@ -23,7 +22,7 @@ import {
 } from '../src/gateway/tools.ts';
 import { readCodexAuth } from '../src/providers/codex/auth.ts';
 import { openaiInstructions } from '../src/providers/codex/instructions.ts';
-import { OPENAI_WORKERS } from '../src/providers/codex/models.ts';
+import { OPENAI_WORKERS, openaiSlug } from '../src/providers/codex/models.ts';
 import type {
   ResponsesInputContent,
   ResponsesInputItem,
@@ -515,7 +514,7 @@ test('fragmented SSE and truncated or failed responses never become successful c
 async function gateway(
   t: TestContext,
   fetchImpl: GatewayFetch,
-  options: { timeoutMs?: number; agentCatalog?: AgentCatalog; receipts?: ReceiptLedger } = {},
+  options: { timeoutMs?: number; receipts?: ReceiptLedger } = {},
 ) {
   const cwd = await mkdtemp(path.join(os.tmpdir(), 'native-gateway-test-'));
   const authFile = path.join(cwd, 'auth.json');
@@ -758,43 +757,6 @@ test('Claude prompts remain unchanged after OpenAI main and worker requests, inc
   assert.equal(claudeCalls, 8);
 });
 
-test('catalog filtering reaches Claude and OpenAI without changing user text or native registration', async (t) => {
-  const row = '- hidden: Hidden worker (Tools: All tools except WebSearch)';
-  const text = `<system-reminder>\nAvailable agent types for the Agent tool:\n${row}\n- custom: Keep this (Tools: Read)\n</system-reminder>`;
-  const seen: string[] = [];
-  const call = await gateway(
-    t,
-    async (url, options) => {
-      seen.push(String(options.body));
-      return url.includes('anthropic')
-        ? Response.json({ content: [] })
-        : new Response(sse(textEvents));
-    },
-    {
-      agentCatalog: new AgentCatalog(
-        { hidden: { model, description: 'Hidden worker', disallowedTools: ['WebSearch'] } },
-        [],
-      ),
-    },
-  );
-  for (const choice of [model, 'claude-sonnet-5']) {
-    await (
-      await call({
-        model: choice,
-        messages: [
-          { role: 'user', content: text },
-          { role: 'user', content: row },
-        ],
-      })
-    ).text();
-  }
-  assert.equal(seen.length, 2);
-  for (const sent of seen) {
-    assert.equal(sent.split('Hidden worker').length - 1, 1);
-    assert(sent.includes('Keep this'));
-  }
-});
-
 test('external route isolates provider credentials and handles simultaneous worker identities', async (t) => {
   const ids: string[] = [];
   const models: string[] = [];
@@ -873,7 +835,8 @@ test('all registered model and reasoning choices reach OpenAI without substituti
     ['sol', 'gpt-6.1-sol'],
     ['luna', 'gpt-6-luna'],
   ]) {
-    assert.deepEqual(OPENAI_WORKERS[name], { model: slug, effort: 'medium' });
+    assert.deepEqual(OPENAI_WORKERS[name], { model: name });
+    assert.equal(openaiSlug(name), slug);
     for (const effort of ['low', 'medium', 'high', 'xhigh', 'max']) {
       const response = await call(
         { ...body, model: name, output_config: { effort } },
