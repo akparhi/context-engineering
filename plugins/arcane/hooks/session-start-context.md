@@ -11,6 +11,7 @@ It routes to the right arcane skill from there. For smaller tasks, such as a con
 
 When the intent is already specific, enter that skill directly. Invoke every skill listed for the activity, even when alchemy is not in play:
 
+- **Vague new project or subsystem** (no stated purpose or success criteria), or "brainstorm", "grill me" / "interview me": `arcane:brainstorm`, before any design.
 - **Multi-phase or unattended work**: `arcane:figure-it-out`, `arcane:show-me-your-work`.
 - **System or code design**: `arcane:architect`; `arcane:arena` when one attempt could lock in the wrong shape; `arcane:blast-radius` before changing shared code.
 - **Understanding code**: `arcane:how` for how it works, `arcane:why` for why it is this way, `arcane:teach` to explain it.
