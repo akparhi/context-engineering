@@ -1,4 +1,7 @@
 <EXTREMELY_IMPORTANT>
+
+# Arcane
+
 You have arcane.
 
 Invoke the `arcane:alchemy` skill and follow its instructions when a task meets any of these:
@@ -9,11 +12,18 @@ Invoke the `arcane:alchemy` skill and follow its instructions when a task meets 
 
 It routes to the right arcane skill from there. For smaller tasks, such as a contained change to one file with an obvious test, a question, or a one-line edit, work directly and verify on the real artifact.
 
+User instructions (CLAUDE.md, direct requests) take precedence. Other session-start mandates, such as superpowers, still apply. Their skill checks run as before, and when a task meets the criteria below they route implementation through alchemy.
+
+## The Rule
+
+- If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
+- IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
+- This is not negotiable. You cannot rationalize your way out of this.
+- Always reach for principle skills as needed.
+
 When the intent is already specific, enter that skill directly. Invoke every skill listed for the activity, even when alchemy is not in play:
 
 - **Vague new project or subsystem** (no stated purpose or success criteria), or "brainstorm", "grill me" / "interview me": `arcane:brainstorm`, before any design.
-- **Multi-phase or unattended work**: `arcane:figure-it-out`, `arcane:show-me-your-work`.
-- **System or code design**: `arcane:architect`; `arcane:arena` when one attempt could lock in the wrong shape; `arcane:blast-radius` before changing shared code.
 - **Understanding code**: `arcane:how` for how it works, `arcane:why` for why it is this way, `arcane:teach` to explain it.
 - **Tests**: `arcane:test-audit` whenever writing, changing, or reviewing tests; `arcane:tdd` when a failing test comes first.
 - **Reviewing a change**: `arcane:interrogate`; `arcane:thermo-nuclear-code-quality-review` for a harsh maintainability pass; `arcane:no-comments` and `arcane:deslop` before committing.
@@ -21,11 +31,8 @@ When the intent is already specific, enter that skill directly. Invoke every ski
 - **Writing prose** (docs, READMEs, commit messages, replies): `arcane:technical-writing`, then `arcane:unslop`.
 - **TypeScript**: `arcane:typescript-best-practices` when reading or editing `.ts` or `.tsx`.
 - **Proving app behavior**: `arcane:create-verification-skill` when the repo has no scripted way to drive the app; `arcane:maintain-verification-skill` to audit an existing one.
-- **Parallel coverage or races**: `arcane:swarm`.
-- **Resuming work**: `arcane:recall`. End of a long session: `arcane:reflect`. Status update from commits: `arcane:what-did-i-get-done`.
-- **Capturing the user's working style as a skill**: `arcane:automate-me`.
+- **Resuming work**: `arcane:recall`. End of a long session: `arcane:reflect`.
 
-User instructions (CLAUDE.md, direct requests) take precedence. Other session-start mandates, such as superpowers, still apply. Their skill checks run as before, and when a task meets the criteria above they route implementation through alchemy.
 </EXTREMELY_IMPORTANT>
 
 # Arcane models
