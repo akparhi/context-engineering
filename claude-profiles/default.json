@@ -159,16 +159,6 @@
   "alwaysThinkingEnabled": false,
   "effortLevel": "medium",
   "promptSuggestionEnabled": false,
-  "plansDirectory": "./.claude/plans",
-  "tui": "fullscreen",
-  "autoMemoryEnabled": false,
-  "skipDangerousModePermissionPrompt": true,
-  "theme": "auto",
-  "verbose": true,
-  "switchModelsOnFlag": false,
-  "fileCheckpointingEnabled": true,
-  "terminalProgressBarEnabled": false,
-  "tipsEnabled": false,
   "pluginConfigs": {
     "switchboard@akparhi": {
       "options": {
@@ -189,5 +179,15 @@
         "luna_xhigh": false
       }
     }
-  }
+  },
+  "plansDirectory": "./.claude/plans",
+  "tui": "fullscreen",
+  "autoMemoryEnabled": false,
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "auto",
+  "verbose": true,
+  "switchModelsOnFlag": false,
+  "fileCheckpointingEnabled": true,
+  "terminalProgressBarEnabled": false,
+  "tipsEnabled": false
 }

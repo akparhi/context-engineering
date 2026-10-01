@@ -2,7 +2,7 @@
   "name": "arcane",
   "displayName": "arcane",
   "icon": "./assets/arcane-icon.png",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "description": "Hybrid of superpowers + pstack workflows, for claude-code.",
   "author": {
     "name": "Anand Kumar Parhi"
@@ -125,8 +125,6 @@
       "options": [
         "models.json: session",
         "session",
-        "low",
-        "medium",
         "high"
       ],
       "default": "models.json: session"
@@ -384,10 +382,6 @@
     "./agents/comment-sicko.md",
     "./agents/alchemy-agent.md",
     "./effort-agents/effort-high.md",
-    "./effort-agents/effort-low.md",
-    "./effort-agents/effort-medium.md",
-    "./effort-agents/alchemy-agent-high.md",
-    "./effort-agents/alchemy-agent-low.md",
-    "./effort-agents/alchemy-agent-medium.md"
+    "./effort-agents/alchemy-agent-high.md"
   ]
 }

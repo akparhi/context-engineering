@@ -5,7 +5,7 @@
     "fast": "sonnet",
     "panel": ["opus", "fable", "sonnet"]
   },
-  "efforts": ["low", "medium", "high"],
+  "efforts": ["high"],
   "defaultEffort": "session",
   "available": ["opus", "fable", "sonnet", "haiku"],
   "roles": [
