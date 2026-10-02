@@ -10,6 +10,9 @@ import { modelProvider, openaiSlug } from '../providers/codex/models.ts';
 import type { ResponsesRequest } from '../providers/codex/responses.ts';
 import { forAnthropic, fromResponses, toResponses } from '../providers/codex/responses.ts';
 import { readCodexUsage } from '../providers/codex/usage.ts';
+import { validateZenKey } from '../providers/opencode/auth.ts';
+import { fromChat } from '../providers/opencode/chat.ts';
+import { zenRequest } from '../providers/opencode/request.ts';
 import type { ApprovalContext, NativeApprovalBridge } from './approval.ts';
 import { approvalCwdForComparison, isApprovalRequest, parseApprovalRequest } from './approval.ts';
 import type { GatewayFetch } from './fetch.ts';
@@ -45,7 +48,7 @@ const STRIPPED_RESPONSE_HEADERS = [
 
 /** What the gateway reports to `onEvent`; routing only, never credentials or bodies. */
 export interface GatewayEvent {
-  route: 'anthropic' | 'openai' | 'openai-request' | 'approval';
+  route: 'anthropic' | 'openai' | 'openai-request' | 'approval' | 'zen' | 'zen-request';
   model?: string;
   agentId?: string | null;
   path?: string;
@@ -75,6 +78,7 @@ export interface GatewayOptions {
   fetchImpl?: GatewayFetch;
   onEvent?: (event: GatewayEvent) => void;
   timeoutMs?: number;
+  zen?: { apiKey: string };
   /** OpenAI review for GPT-originated actions, independent of Claude authentication. */
   approvalBridge?: Pick<NativeApprovalBridge, 'respond'>;
   approvalProviders?: readonly ('openai')[];
@@ -90,8 +94,9 @@ class BadRequest extends Error {}
 class UpstreamFailure extends Error {
   status: number;
   retryAfter: string | null;
-  constructor(status: number, retryAfter: string | null) {
-    super(`OpenAI returned HTTP ${status}.${status === 401 ? ' Renew the Codex login.' : ''}`);
+  constructor(status: number, retryAfter: string | null, provider = 'OpenAI') {
+    const authHelp = provider === 'OpenAI' ? ' Renew the Codex login.' : ' Check the Zen API key.';
+    super(`${provider} returned HTTP ${status}.${status === 401 ? authHelp : ''}`);
     this.status = status;
     this.retryAfter = retryAfter;
   }
@@ -141,6 +146,7 @@ export function createNativeGateway({
   fetchImpl = fetch as GatewayFetch,
   onEvent: observer = () => {},
   timeoutMs,
+  zen,
   approvalBridge,
   approvalProviders: _approvalProviders = approvalBridge ? ['openai'] : [],
   blockAnthropic,
@@ -162,6 +168,9 @@ export function createNativeGateway({
   };
   if (!token) {
     throw new Error('Gateway token required');
+  }
+  if (zen) {
+    validateZenKey(zen.apiKey);
   }
   const fallbackSession = randomUUID();
   const approvalContexts = new Map<string, ApprovalContext>();
@@ -349,6 +358,56 @@ export function createNativeGateway({
     });
     sendResult(exchange, result);
   }
+  async function handleZen(exchange: ProviderRequest) {
+    const { res, body, url, signal, agentId, emit } = exchange;
+    if (!zen?.apiKey) {
+      throw new BadRequest('Zen is not configured. Set OPENCODE_API_KEY or connect OpenCode Zen.');
+    }
+    const prepared = prepareZenRequest(exchange);
+    if (url.pathname === '/v1/messages/count_tokens') {
+      res.writeHead(200, { 'content-type': 'application/json', 'x-switchboard-token-count': 'estimate' });
+      return res.end(JSON.stringify({ input_tokens: prepared.inputTokens }));
+    }
+    onEvent({ route: 'zen-request', agentId, model: body.model });
+    // Zen uses the session header for sticky upstream routing. Claude identity survives
+    // restarts; no per-request nonce goes into the prompt or the key.
+    const session = createHash('sha256')
+      .update(JSON.stringify([exchange.identity.session || fallbackSession, agentId ?? 'main', body.model, process.cwd()]))
+      .digest('hex');
+    const upstream = await fetchImpl('https://opencode.ai/zen/go/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${zen.apiKey}`,
+        'content-type': 'application/json',
+        accept: 'text/event-stream',
+        'x-opencode-session': session,
+        'x-opencode-client': 'cc-multi-cli-plugin',
+      },
+      body: JSON.stringify(prepared.body),
+      signal,
+      redirect: 'error',
+    });
+    if (!upstream.ok) {
+      onEvent({ route: 'zen', agentId, status: upstream.status });
+      await upstream.body?.cancel();
+      throw new UpstreamFailure(upstream.status, upstream.headers.get('retry-after'), 'Zen');
+    }
+    if (!upstream.body) {
+      throw new Error('Zen returned no response stream.');
+    }
+    exchange.startStream();
+    const result = await fromChat(upstream.body, String(body.model), body.stream ? emit : undefined, {
+      toolNames: originalToolNames(body),
+      stopSequences: body.stop_sequences,
+      inputTokens: prepared.inputTokens,
+    });
+    rememberResult(exchange, result);
+    if (result.stop_reason === 'stop_sequence') {
+      exchange.abort.abort();
+    }
+    onEvent(completionEvent(exchange, result, 'zen', 'chat/completions'));
+    sendResult(exchange, result);
+  }
   async function handleAnthropic(exchange: ProviderRequest) {
     const { req, res, body, url, raw, signal } = exchange;
     const headers = anthropicHeaders(req);
@@ -485,7 +544,9 @@ export function createNativeGateway({
     if (approvalBridge && (openai || (!guardAuto && !context))) {
       return handleReview(exchange, context);
     }
-    const nativeClaude = context && externalModel(context.model) === null;
+    // Zen has no provider reviewer, so Claude's own classifier reviews its actions.
+    const nativeClaude =
+      context && (externalModel(context.model) === null || context.model.startsWith('switchboard/zen/'));
     if (openai || external || blockAnthropic || (context && !nativeClaude)) {
       throw new BadRequest(
         'Automatic review cannot use ordinary external inference. No matching provider reviewer is enabled.',
@@ -538,6 +599,15 @@ export function createNativeGateway({
     });
     if (!external) {
       return handleAnthropic(exchange);
+    }
+    if (external.startsWith('switchboard/zen/')) {
+      // DeepSeek cannot run Claude's web_search server tool; the launcher only offers
+      // deepseek WebSearch when Codex is signed in, so its searches run on luna.
+      if (!isWebSearch(exchange.body)) {
+        return handleZen(exchange);
+      }
+      assertProviderEnabled(ZEN_WEB_SEARCH_MODEL, enabledProviders);
+      return handleOpenAI(exchange, ZEN_WEB_SEARCH_MODEL);
     }
     return handleOpenAI(exchange, external);
   }
@@ -658,7 +728,7 @@ export function createNativeGateway({
 class RequestTooLarge extends Error {}
 
 function providerSignal(disconnected: AbortSignal, model: string | null, timeoutMs?: number) {
-  if (model !== null && openaiSlug(model) !== undefined && timeoutMs === undefined) {
+  if (model !== null && (openaiSlug(model) !== undefined || model.startsWith('switchboard/zen/')) && timeoutMs === undefined) {
     return disconnected;
   }
   return AbortSignal.any([disconnected, AbortSignal.timeout(timeoutMs ?? 180000)]);
@@ -688,8 +758,33 @@ async function readRequest(req: http.IncomingMessage) {
   return { raw, parsed, body };
 }
 
-function providerRoute(model: string | null): 'openai' | 'anthropic' {
+function providerRoute(model: string | null): 'openai' | 'anthropic' | 'zen' {
+  if (model?.startsWith('switchboard/zen/')) {
+    return 'zen';
+  }
   return model ? 'openai' : 'anthropic';
+}
+
+const ZEN_WEB_SEARCH_MODEL = 'luna';
+
+/**
+ * Claude Code's WebSearch side request. Only it carries the `web_search_*` server tool; its forced
+ * tool_choice is demoted to auto when thinking is on, so the tool is the reliable mark.
+ */
+function isWebSearch(body: MessagesRequest): boolean {
+  return (body.tools ?? []).some((tool) => typeof tool.type === 'string' && tool.type.startsWith('web_search_'));
+}
+
+function prepareZenRequest(exchange: ProviderRequest) {
+  const { req, body, url } = exchange;
+  if (req.method !== 'POST' || !['/v1/messages', '/v1/messages/count_tokens'].includes(url.pathname)) {
+    throw new BadRequest('Zen requires POST /v1/messages or /v1/messages/count_tokens');
+  }
+  try {
+    return zenRequest(body);
+  } catch (error) {
+    throw new BadRequest(reason(error));
+  }
 }
 
 function errorStatus(error: unknown): number {

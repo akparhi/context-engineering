@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 import { executableInvocation } from '../gateway/executable.ts';
 
 const MARKETPLACE = 'akparhi';
-const PROVIDERS = ['openai'] as const;
+const PROVIDERS = ['openai', 'zen'] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
 interface Plugin {
@@ -20,7 +20,7 @@ export function providerSelection(value: string | undefined): Provider[] | undef
   if (value === undefined) {
     return undefined;
   }
-  // Retired providers (such as zen) may linger in older launch environments; ignore them.
+  // Older launch environments may name providers this version dropped; ignore them.
   return PROVIDERS.filter((name) => value.split(',').includes(name));
 }
 

@@ -168,7 +168,7 @@ test('wrapper follows installed core updates and enables only selected providers
   const args = ['--settings', '{"model":"sonnet"}', '--', 'literal $() and spaces'];
   const first = JSON.parse((await f.invoke('switchboard', args)).stdout);
   assert.deepEqual(first.args, args);
-  assert.equal(first.providers, 'openai');
+  assert.equal(first.providers, 'openai,zen');
   assert.equal(first.claude, f.real);
   const next = path.join(f.directory, 'core-v2');
   await cp(old, next, { recursive: true });
@@ -192,7 +192,7 @@ test('setup renames the launch command, persists picker models, and keeps them a
   await assert.rejects(access(shim('switchboard')), /ENOENT/);
   const custom = JSON.parse((await f.invoke('mc', [])).stdout);
   assert.equal(custom.models, 'sol');
-  assert.equal(custom.providers, 'openai');
+  assert.equal(custom.providers, 'openai,zen');
   // An explicit environment selection still wins for one launch.
   const explicit = JSON.parse((await f.invoke('mc', [], { SWITCHBOARD_MODELS: '' })).stdout);
   assert.equal(explicit.models, '');
@@ -214,7 +214,7 @@ test('setup renames the launch command, persists picker models, and keeps them a
   // Renaming removes the previous shim and uninstall removes the current one.
   await f.install(['--command', 'switchboard']);
   await assert.rejects(access(shim('mc')), /ENOENT/);
-  assert.equal(JSON.parse((await f.invoke('switchboard', [])).stdout).providers, 'openai');
+  assert.equal(JSON.parse((await f.invoke('switchboard', [])).stdout).providers, 'openai,zen');
   await assert.rejects(f.install(['--command', 'switchboard-ctl']), /reserved/);
   await assert.rejects(f.install(['--command', 'bad name']), /Invalid launch command/);
   await assert.rejects(f.install(['--models', 'sool']), /Invalid picker model/);
@@ -245,7 +245,7 @@ test('a launch command named claude passes nested runs through to the real execu
   await writeFile(f.listing, JSON.stringify(plugins(root)));
   const install = await f.install(['--command', 'claude']);
   assert.match(install.stderr, /shadows the plain claude command/);
-  assert.equal(JSON.parse((await f.invoke('claude', [])).stdout).providers, 'openai');
+  assert.equal(JSON.parse((await f.invoke('claude', [])).stdout).providers, 'openai,zen');
   const nested = JSON.parse(
     (await f.invoke('claude', ['-p', 'hi'], { SWITCHBOARD_GATEWAY_TOKEN: 'token' })).stdout,
   );
@@ -269,7 +269,7 @@ test('sessionless commands skip the launcher and reach the real executable', asy
     JSON.parse((await f.invoke('switchboard', [bundled, 'mcp', 'list'])).stdout),
     { native: true, args: ['mcp', 'list'] },
   );
-  assert.equal(JSON.parse((await f.invoke('switchboard', ['-p', 'hi'])).stdout).providers, 'openai');
+  assert.equal(JSON.parse((await f.invoke('switchboard', ['-p', 'hi'])).stdout).providers, 'openai,zen');
 });
 
 test('edited shell blocks and project-only executable cores fail explicitly', async (t) => {
@@ -355,7 +355,7 @@ test('Windows executable discovery uses PATHEXT and does not require mode bits',
 test('provider selection and native settings arguments preserve explicit disablement', () => {
   assert.equal(providerSelection(undefined), undefined);
   assert.deepEqual(providerSelection(''), []);
-  assert.deepEqual(providerSelection('zen,openai,openai'), ['openai']);
+  assert.deepEqual(providerSelection('retired,zen,openai,openai'), ['openai', 'zen']);
   assert.deepEqual(providerSelection('typo'), []);
   assert.deepEqual(
     settingsArguments([

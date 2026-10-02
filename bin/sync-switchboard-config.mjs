@@ -2,6 +2,7 @@
 // Regenerates switchboard's /config options (plugin.json userConfig) from its model and worker registry.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { LABELS, OPENAI_WORKERS, workerOptionKey } from '../plugins/switchboard/src/providers/codex/models.ts';
+import { DEEPSEEK } from '../plugins/switchboard/src/providers/opencode/models.ts';
 
 const manifestPath = new URL('../plugins/switchboard/.claude-plugin/plugin.json', import.meta.url);
 const manifest = JSON.parse(readFileSync(manifestPath));
@@ -16,6 +17,14 @@ for (const [name, { model, effort }] of Object.entries(OPENAI_WORKERS)) {
     default: !effort,
   };
 }
+
+// The launcher shows deepseek only when it also finds a Zen key.
+userConfig[DEEPSEEK.worker] = {
+  type: 'boolean',
+  title: 'Show DeepSeek subagent (needs a Zen key)',
+  description: '',
+  default: true,
+};
 
 manifest.userConfig = userConfig;
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');

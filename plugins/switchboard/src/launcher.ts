@@ -19,6 +19,8 @@ import {
   type PluginOptions,
 } from './providers/codex/models.ts';
 import type { Effort } from './providers/codex/responses.ts';
+import { readZenKey } from './providers/opencode/auth.ts';
+import { DEEPSEEK } from './providers/opencode/models.ts';
 import {
   loadWorkerPermissions,
   type PluginPermissionInventory,
@@ -120,6 +122,7 @@ async function main() {
   const { codexSignedIn, openaiReview } = await discoverOpenAI(authFile);
   const token = randomBytes(32).toString('hex');
   const options = await pluginOptions();
+  const zenKey = await discoverZen(options);
   const settings = pickerSettings(codexSignedIn);
   const defaultModels = settings.modelPicker.options.map((option) => option.model);
   await mergeSettings(args, settings);
@@ -133,6 +136,7 @@ async function main() {
     codexSignedIn,
     settings.modelPicker.options.map((option) => option.model),
     options,
+    Boolean(zenKey),
   );
   const modBridge = new ModBridge();
   const settingsDir = await mkdtemp(path.join(os.tmpdir(), 'switchboard-native-settings-'));
@@ -164,6 +168,7 @@ async function main() {
     enabledProviders,
     authFile,
     modBridge,
+    zen: zenKey ? { apiKey: zenKey } : undefined,
     permissionModes,
     approvalBridge,
     approvalProviders,
@@ -461,10 +466,24 @@ async function discoverOpenAI(authFile: string) {
   return { codexSignedIn, openaiReview };
 }
 
+/** deepseek is optional: a broken OpenCode config must not stop the launch. */
+async function discoverZen(options: PluginOptions): Promise<string | undefined> {
+  if (!providerEnabled('zen') || String(options[DEEPSEEK.worker]) === 'false') {
+    return undefined;
+  }
+  try {
+    return await readZenKey();
+  } catch (error) {
+    console.error(`deepseek unavailable: ${error instanceof Error ? error.message : String(error)}`);
+    return undefined;
+  }
+}
+
 export function workerDefinitions(
   codexSignedIn: boolean,
   selectedModels?: readonly string[],
   options: PluginOptions = {},
+  zen = false,
 ) {
   const agents: Record<string, AgentDefinition> = Object.fromEntries(
     Object.entries(codexSignedIn ? enabledWorkers(options) : {}).map(([name, { model, effort }]) => [
@@ -478,7 +497,18 @@ export function workerDefinitions(
       },
     ]),
   );
-  return selectWorkers(agents, selectedModels);
+  const workers = selectWorkers(agents, selectedModels);
+  // deepseek has no /model row, so the picker selection never hides it; only its /config switch does.
+  if (zen && String(options[DEEPSEEK.worker]) !== 'false') {
+    workers[DEEPSEEK.worker] = {
+      description: `${DEEPSEEK.id} on OpenCode Go, native reasoning. Reads images, not PDFs.`,
+      prompt: WORKER_PROMPT,
+      // Claude refuses worktrees from subagents. WebSearch runs on Codex luna, so it needs a Codex login.
+      disallowedTools: [...WORKER_DISALLOWED_TOOLS, 'EnterWorktree', 'ExitWorktree', ...(codexSignedIn ? [] : ['WebSearch'])],
+      model: DEEPSEEK.model,
+    };
+  }
+  return workers;
 }
 
 function selectWorkers(
@@ -674,7 +704,7 @@ function filterPicker(
     // saved while the tag was on must still resolve once SWITCHBOARD_DISABLE_1M_CONTEXT turns it off.
     const native = nativeSpelling(model) ?? model;
     const option = available.get(model) ?? available.get(`${native}[1m]`) ?? available.get(native);
-    // Retired providers (such as zen) may linger in saved selections; skip their rows.
+    // Zen (subagent only) and retired providers have no picker rows; skip them in saved selections.
     if (!option && model.startsWith('switchboard/openai/')) {
       warnRetiredOpenAiId('SWITCHBOARD_MODELS', model);
       continue;
@@ -863,6 +893,7 @@ function translateTrafficPolicy(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 
 function gatewayEnvironment(port: number, token: string, anthropic: boolean) {
   const env = translateTrafficPolicy({ ...process.env });
+  delete env.OPENCODE_API_KEY;
   return {
     ...env,
     CLAUDE_CODE_DISABLE_AGENT_VIEW: '1',

@@ -260,9 +260,16 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
   const withoutProviders = JSON.parse((await launch({ SWITCHBOARD_ENABLED_PROVIDERS: '' })).stdout);
   assert.deepEqual(withoutProviders.settings.modelPicker.options, []);
   assert.deepEqual(withoutProviders.agents, []);
-  // Older installs may still enable the retired zen provider; it is ignored, not fatal.
-  const retired = JSON.parse((await launch({ SWITCHBOARD_ENABLED_PROVIDERS: 'openai,zen' })).stdout);
-  assert.deepEqual(retired.agents.sort(), ['astra', 'luna', 'sol']);
+  const zen = JSON.parse((await launch({ OPENCODE_API_KEY: 'zen-fixture' })).stdout);
+  assert.deepEqual(zen.agents.sort(), ['astra', 'deepseek', 'luna', 'sol']);
+  assert.deepEqual(zen.settings.modelPicker.options.map((option: { model: string }) => option.model), Object.keys(MODELS));
+  const badKey = await launch({ OPENCODE_API_KEY: 'bad key' });
+  assert.match(badKey.stderr, /deepseek unavailable: Invalid OpenCode Zen API key/);
+  assert.deepEqual(JSON.parse(badKey.stdout).agents.sort(), ['astra', 'luna', 'sol']);
+  const zenDisabled = JSON.parse(
+    (await launch({ OPENCODE_API_KEY: 'zen-fixture', SWITCHBOARD_ENABLED_PROVIDERS: 'openai' })).stdout,
+  );
+  assert.deepEqual(zenDisabled.agents.sort(), ['astra', 'luna', 'sol']);
 
   const launchFiltered = (selection: string, args: string[] = []) =>
     launch({ SWITCHBOARD_MODELS: selection }, args);
@@ -327,13 +334,27 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
   assert.deepEqual(fallback.models, ['luna'], 'no Claude login starts on Luna');
 });
 
+test('deepseek is a Zen-key subagent that ignores the picker and borrows WebSearch from Codex', () => {
+  const deepseek = (codexSignedIn: boolean, selected?: string[], options = {}) =>
+    workerDefinitions(codexSignedIn, selected, options, true).deepseek;
+  assert.equal(workerDefinitions(true, undefined, {}, false).deepseek, undefined);
+  assert.equal(deepseek(true, [])?.model, 'switchboard/zen/deepseek-v4.1-flash');
+  assert.equal(deepseek(true, [])?.effort, undefined);
+  assert.equal(deepseek(true, undefined, { deepseek: false }), undefined);
+  assert.deepEqual(deepseek(true)?.disallowedTools, [
+    'Agent', 'DesignSync', 'RemoteTrigger', 'ShareOnboardingGuide', 'ReportFindings', 'EnterWorktree', 'ExitWorktree',
+  ]);
+  assert.deepEqual(deepseek(false)?.disallowedTools.slice(-1), ['WebSearch']);
+});
+
 test('launcher keeps the full worker catalog under 30 KB', () => {
   const agents = workerDefinitions(
     true,
     undefined,
     Object.fromEntries(Object.keys(OPENAI_WORKERS).map((name) => [workerOptionKey(name), true])),
+    true,
   );
-  assert.equal(Object.keys(agents).length, 15);
+  assert.equal(Object.keys(agents).length, 16);
   const definitions = JSON.stringify(agents);
   const definitionBytes = Buffer.byteLength(definitions);
   assert(definitionBytes < 30000, `representative worker JSON was ${definitionBytes} bytes`);

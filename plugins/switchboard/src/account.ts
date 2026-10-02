@@ -7,7 +7,7 @@ async function main() {
   if (!enabled.some((name) => name === provider)) {
     throw new Error('Install and enable the requested Switchboard provider plugin first.');
   }
-  if (command !== 'login') {
+  if (command !== 'login' || provider !== 'openai') {
     throw new Error(
       'Usage: switchboard-ctl status | login openai [--device-auth] | uninstall',
     );
