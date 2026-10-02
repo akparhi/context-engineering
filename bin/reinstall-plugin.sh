@@ -21,6 +21,10 @@ for name in "$@"; do
   ref="$name@akparhi"
   claude plugin uninstall "$ref" --scope user
   claude plugin install "$ref" --scope user
+  # Setup copies the startup wrapper outside the plugin cache; refresh it to match.
+  if [ "$name" = switchboard ]; then
+    bun "$(claude plugin list --json | node -e 'const p=JSON.parse(require("fs").readFileSync(0)).find((p)=>p.id==="switchboard@akparhi"&&p.scope==="user"); console.log(p.installPath)')/src/setup.ts"
+  fi
 done
 node -e '
 const fs = require("fs");
