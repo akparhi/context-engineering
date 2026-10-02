@@ -188,7 +188,8 @@
         "luna_low": false,
         "luna_medium": false,
         "luna_high": false,
-        "luna_xhigh": false
+        "luna_xhigh": false,
+        "deepseek": true
       }
     }
   },
