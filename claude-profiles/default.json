@@ -13,7 +13,19 @@
     "ENABLE_TOOL_SEARCH": "true",
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
     "MAX_MCP_OUTPUT_TOKENS": "10000",
-    "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS": "12000"
+
+
+    "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS": "12000",
+    "CLAUDE_CODE_DISABLE_FAST_MODE": "true",
+    "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "true",
+    "CLAUDE_CODE_DISABLE_WORKFLOWS": "true",
+    "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "true",
+    "CLAUDE_CODE_ENABLE_DESIGN_SYNC": "false",
+    "CLAUDE_CODE_ENABLE_MENU_KIND_LANES": "false",
+    "CLAUDE_CODE_ARTIFACT_PREVIEW": "false",
+    "CLAUDE_CODE_ENABLE_AUTO_MODE": "false",
+    "CLAUDE_CODE_ENABLE_EXPERIMENTAL_ADVISOR_TOOL": "false",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "false"
   },
   "attribution": {
     "sessionUrl": false
@@ -162,7 +174,7 @@
   "pluginConfigs": {
     "switchboard@akparhi": {
       "options": {
-        "astra": false,
+        "astra": true,
         "astra_low": false,
         "astra_medium": false,
         "astra_high": false,
