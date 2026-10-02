@@ -6,6 +6,7 @@
 #
 # Claude Code runs plugins from ~/.claude/plugins/cache, not this repo, and
 # `claude plugin update` skips a plugin whose version did not change.
+# Uninstall drops the plugin's /config values, so they are saved and put back.
 # Restart open sessions afterward.
 set -eu
 
@@ -14,8 +15,17 @@ set -eu
 node "$(dirname "$0")/sync-arcane-config.mjs"
 node "$(dirname "$0")/sync-switchboard-config.mjs"
 claude plugin marketplace update akparhi
+settings="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json"
+saved=$(node -e 'try { console.log(JSON.stringify(JSON.parse(require("fs").readFileSync(process.argv[1])).pluginConfigs ?? {})) } catch { console.log("{}") }' "$settings")
 for name in "$@"; do
   ref="$name@akparhi"
   claude plugin uninstall "$ref" --scope user
   claude plugin install "$ref" --scope user
 done
+node -e '
+const fs = require("fs");
+const [file, saved] = process.argv.slice(1);
+const settings = JSON.parse(fs.readFileSync(file));
+settings.pluginConfigs = { ...JSON.parse(saved), ...settings.pluginConfigs };
+fs.writeFileSync(file, JSON.stringify(settings, null, 2) + "\n");
+' "$settings" "$saved"
