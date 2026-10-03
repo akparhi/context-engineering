@@ -31,6 +31,10 @@
 - **Checkpoint commits**: commit at checkpoints with task ID from the plan — `<phase>-<task-id>: <description>`.
 </important>
 
+<important if="you are writing, changing, or reviewing tests">
+- Invoke the `test-audit` skill first.
+</important>
+
 <important if="you are running the same test or check more than once">
 - Write a reusable script and reuse it. (`arcane:principle-build-the-lever`)
 </important>
