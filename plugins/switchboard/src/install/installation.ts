@@ -290,6 +290,7 @@ async function writeShim(
   bootstrap: string,
   name: string,
   platform: Platform,
+  configDir: string | undefined,
 ) {
   const suffix = name === MANAGEMENT_COMMAND ? ' --switchboard' : '';
   if (platform === 'win32') {
@@ -305,7 +306,12 @@ async function writeShim(
     );
     return [`${name}.cmd`, `${name}.ps1`];
   }
-  const script = `#!/bin/sh\nexec ${posixQuote(node)} ${posixQuote(bootstrap)}${suffix} "$@"\n`;
+  // GUI launchers (T3 Code, IDEs) skip shell exports, and Claude keys its keychain login by this dir.
+  // yagni: POSIX only; the Windows shims gain the same line if a Windows GUI launcher needs it.
+  const configLine = configDir
+    ? `[ -n "$CLAUDE_CONFIG_DIR" ] || export CLAUDE_CONFIG_DIR=${posixQuote(configDir)}\n`
+    : '';
+  const script = `#!/bin/sh\n${configLine}exec ${posixQuote(node)} ${posixQuote(bootstrap)}${suffix} "$@"\n`;
   await writeFile(path.join(bin, name), script, { mode: 0o700 });
   return [name];
 }
@@ -317,6 +323,7 @@ async function writeRuntime(
   platform: Platform,
   command: string,
   staleShims: string[],
+  configDir: string | undefined,
 ) {
   await mkdir(bin, { recursive: true, mode: 0o700 });
   for (const stale of staleShims) {
@@ -338,7 +345,7 @@ async function writeRuntime(
   const bootstrap = path.join(directory, 'bootstrap.ts');
   const shims: string[] = [];
   for (const name of [command, MANAGEMENT_COMMAND]) {
-    shims.push(...(await writeShim(bin, node, bootstrap, name, platform)));
+    shims.push(...(await writeShim(bin, node, bootstrap, name, platform, configDir)));
   }
   return shims;
 }
@@ -381,6 +388,7 @@ export async function setup(
     resolved.platform,
     command,
     previous?.shims ?? [],
+    path.isAbsolute(resolved.env.CLAUDE_CONFIG_DIR ?? '') ? resolved.env.CLAUDE_CONFIG_DIR : undefined,
   );
   const state: Installation = {
     claude,
