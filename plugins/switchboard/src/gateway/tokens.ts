@@ -1,14 +1,15 @@
-import { getEncoding } from 'js-tiktoken';
 import type {
   ResponsesInputContent,
   ResponsesRequest,
 } from '../providers/codex/responses.ts';
 
-let encoding: ReturnType<typeof getEncoding> | undefined;
-/** Shared local text estimate; providers may use different tokenizers. */
+// o200k_base measured 3.5-4.2 bytes/token on code, docs and transcripts; the low end
+// overestimates, which keeps compaction early. A real encoder costs ~140 MB RSS per gateway.
+const BYTES_PER_TOKEN = 3.5;
+
+/** Shared local text estimate; providers report real usage at message end. */
 export function estimateTextTokens(value: string): number {
-  encoding ??= getEncoding('o200k_base');
-  return encoding.encode(value, [], []).length;
+  return Math.ceil(Buffer.byteLength(value) / BYTES_PER_TOKEN);
 }
 
 /** Local estimate, not a provider billing count. Media expansion uses heuristics. */

@@ -28,10 +28,8 @@ The automatic reviewer includes OpenAI Codex Guardian policy assets under
 src/providers/codex/guardian/, from https://github.com/openai/codex, licensed
 under Apache 2.0. Their upstream LICENSE and NOTICE are included there.
 
-The local token estimator uses js-tiktoken (https://github.com/dqbd/tiktoken),
-licensed under MIT, with OpenAI tiktoken encoding data. Translator compatibility
-behavior was researched against CLIProxyAPI; no gateway engine or authentication
-implementation from that project is included.
+Translator compatibility behavior was researched against CLIProxyAPI; no gateway
+engine or authentication implementation from that project is included.
 
 This plugin is a community project, not affiliated with Anthropic, OpenAI,
 Google, GitHub, or Cursor.

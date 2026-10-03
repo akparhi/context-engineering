@@ -21,7 +21,6 @@
     "reinstall": "claude plugin marketplace update akparhi && claude plugin uninstall switchboard@akparhi && claude plugin install switchboard@akparhi"
   },
   "dependencies": {
-    "js-tiktoken": "1.0.21",
     "yaml": "2.9.0"
   },
   "devDependencies": {
