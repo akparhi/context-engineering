@@ -80,7 +80,9 @@
     "keybindings-help": "off",
     "plugin-authoring": "off",
     "update-config": "off",
-    "superpowers:diagnosing-superpowers": "off"
+    "superpowers:diagnosing-superpowers": "off",
+    "dataviz": "off",
+    "claude-api": "off"
   },
   "hooks": {
     "Notification": [],
