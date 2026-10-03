@@ -119,7 +119,7 @@ test('Zen isolates credentials, keeps cache affinity over restarts, and reports 
   const restarted = await gateway(t, upstream);
   const result = await (await post(first)).json();
   assert(result && typeof result === 'object' && 'model' in result && 'usage' in result);
-  assert.equal(result.model, model);
+  assert.equal(result.model, 'deepseek-v4.1-flash');
   assert.deepEqual(result.usage, {
     input_tokens: 100,
     output_tokens: 12,

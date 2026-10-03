@@ -13,6 +13,7 @@ import { readCodexUsage } from '../providers/codex/usage.ts';
 import { validateZenKey } from '../providers/opencode/auth.ts';
 import { fromChat } from '../providers/opencode/chat.ts';
 import { zenRequest } from '../providers/opencode/request.ts';
+import { DEEPSEEK } from '../providers/opencode/models.ts';
 import type { ApprovalContext, NativeApprovalBridge } from './approval.ts';
 import { approvalCwdForComparison, isApprovalRequest, parseApprovalRequest } from './approval.ts';
 import type { GatewayFetch } from './fetch.ts';
@@ -341,9 +342,10 @@ export function createNativeGateway({
       throw new Error('OpenAI returned no response stream.');
     }
     exchange.startStream();
+    // The provider slug, not the switchboard alias, so transcript readers can price it.
     const result = await fromResponses(
       upstream.body,
-      externalModel,
+      request.model,
       body.stream ? emit : undefined,
       { toolNames, stopSequences: body.stop_sequences, inputTokens: estimateInputTokens(request) },
     );
@@ -396,7 +398,7 @@ export function createNativeGateway({
       throw new Error('Zen returned no response stream.');
     }
     exchange.startStream();
-    const result = await fromChat(upstream.body, String(body.model), body.stream ? emit : undefined, {
+    const result = await fromChat(upstream.body, DEEPSEEK.id, body.stream ? emit : undefined, {
       toolNames: originalToolNames(body),
       stopSequences: body.stop_sequences,
       inputTokens: prepared.inputTokens,

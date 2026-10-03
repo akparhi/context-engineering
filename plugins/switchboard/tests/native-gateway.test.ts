@@ -782,7 +782,7 @@ test('external route isolates provider credentials and handles simultaneous work
   );
   for (const [i, response] of responses.entries()) {
     const result = await readMessage(response);
-    assert.equal(result.model, aliases[i]);
+    assert.equal(result.model, slugs[i]);
     assert.equal(textOf(result), 'Done');
     assert.equal(result.stop_reason, 'end_turn');
   }
@@ -844,7 +844,7 @@ test('all registered model and reasoning choices reach OpenAI without substituti
       );
       assert.equal(response.status, 200);
       const result = await readMessage(response);
-      assert.equal(result.model, name);
+      assert.equal(result.model, slug);
     }
   }
 });
