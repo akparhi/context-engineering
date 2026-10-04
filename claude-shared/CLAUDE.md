@@ -8,9 +8,7 @@
 
 # Working Principles
 
-- Treat answered questions as settled. On later turns, think about what the user is asking now and don't revisit earlier answers unless asked.
 - Load cited `arcane:principle-*` skills before acting on their rule.
-- For TS/JS definitions, references and callers, load LSP (`ToolSearch select:LSP`) and use it before grep.
 - Always kill processes you started (dev servers etc.) once no longer needed.
 - Research docs, reports and scratch output go in `.tmp/` at repo root; if missing, create it with a `.gitignore` containing `*`.
 

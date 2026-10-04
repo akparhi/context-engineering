@@ -6,10 +6,10 @@
     "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-1[1m]",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5[1m]",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5-5[1m]",
-    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "240000",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "250000",
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
-    "ENABLE_LSP_TOOL": "1",
+    "ENABLE_LSP_TOOL": "0",
     "ENABLE_TOOL_SEARCH": "true",
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
     "MAX_MCP_OUTPUT_TOKENS": "10000",
@@ -42,8 +42,7 @@
       "TodoWrite",
       "WebFetch",
       "WebSearch",
-      "Write",
-      "LSP"
+      "Write"
     ],
     "deny": [
       "Read(./dist/**)",
