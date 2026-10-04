@@ -6,7 +6,7 @@
     "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-1[1m]",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5[1m]",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5-5[1m]",
-    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "256000",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "240000",
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
     "ENABLE_LSP_TOOL": "1",
@@ -154,8 +154,8 @@
     "context7@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "superpowers@claude-plugins-official": false,
-    "switchboard@akparhi": true,
-    "arcane@akparhi": true
+    "arcane@akparhi": true,
+    "switchboard@akparhi": true
   },
   "extraKnownMarketplaces": {
     "akparhi": {
