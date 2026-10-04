@@ -49,7 +49,6 @@
   - **opus**: implementation, integration, architecture, final review.
   - **sol** (agent type): independent review and adversarial review. Verify its findings before acting on them; never accept blindly.
   - **sol-high** (agent type): 3d asset building/generation.
-  - **fable**: high-fidelity work only (initial planning, complex architecture/features), paired with opus for implementation. Never for routine subagents.
 - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
 - **Do NOT fan out** for small targeted tasks or one-off debugging asks.
 </important>
