@@ -58,18 +58,10 @@ interface ChatToolCall {
 }
 
 interface ChatUsage {
-  prompt_tokens?: number;
-  cached_tokens?: number;
-  completion_tokens?: number;
-  total_tokens?: number;
-  prompt_tokens_details?: {
-    cached_tokens?: number;
-    cache_write_tokens?: number;
-    cache_creation_input_tokens?: number;
-  } | null;
-  completion_tokens_details?: { reasoning_tokens?: number } | null;
-  cache_read_input_tokens?: number;
-  cache_creation_input_tokens?: number;
+  prompt?: number;
+  completion?: number;
+  cached: number;
+  written: number;
 }
 
 interface ChatDelta {
@@ -475,50 +467,21 @@ function requestOptions(body: MessagesRequest, result: ChatRequest): ChatRequest
   return result;
 }
 
-function validUsage(value: unknown): value is ChatUsage {
-  if (!record(value)) {
-    return false;
-  }
-  if (!validUsageNumbers(value) || !validUsageDetails(value)) {
-    return false;
-  }
-  const cached =
-    usageNumber(value.prompt_tokens_details, 'cached_tokens') ??
-    usageNumber(value, 'cached_tokens', 'cache_read_input_tokens');
-  const written =
-    usageNumber(value.prompt_tokens_details, 'cache_creation_input_tokens', 'cache_write_tokens') ??
-    usageNumber(value, 'cache_creation_input_tokens');
-  const prompt = usageNumber(value, 'prompt_tokens');
-  return (
-    prompt === undefined || ((cached ?? 0) <= prompt && (cached ?? 0) + (written ?? 0) <= prompt)
-  );
-}
-
-function validUsageNumbers(value: Record<string, unknown>): boolean {
-  return [
-    'prompt_tokens',
-    'cached_tokens',
-    'completion_tokens',
-    'total_tokens',
-    'cache_read_input_tokens',
-    'cache_creation_input_tokens',
-  ].every((key) => {
-    const item = value[key];
-    return item === undefined || (Number.isSafeInteger(item) && Number(item) >= 0);
-  });
-}
-
-function validUsageDetails(value: Record<string, unknown>): boolean {
-  return ['prompt_tokens_details', 'completion_tokens_details'].every((key) => {
-    const item = value[key];
-    if (item === undefined || item === null) {
-      return true;
-    }
-    return (
-      record(item) &&
-      Object.values(item).every((nested) => Number.isSafeInteger(nested) && Number(nested) >= 0)
-    );
-  });
+/** Reads Zen usage leniently: fields that are not counts are dropped, never fatal. */
+function chatUsage(value: Record<string, unknown>): ChatUsage {
+  const details = value.prompt_tokens_details;
+  return {
+    prompt: usageNumber(value, 'prompt_tokens'),
+    completion: usageNumber(value, 'completion_tokens'),
+    cached:
+      usageNumber(details, 'cached_tokens') ??
+      usageNumber(value, 'cached_tokens', 'cache_read_input_tokens') ??
+      0,
+    written:
+      usageNumber(details, 'cache_creation_input_tokens', 'cache_write_tokens') ??
+      usageNumber(value, 'cache_creation_input_tokens') ??
+      0,
+  };
 }
 
 function usageNumber(value: unknown, ...keys: string[]): number | undefined {
@@ -534,20 +497,13 @@ function usageNumber(value: unknown, ...keys: string[]): number | undefined {
 }
 
 function usage(value: ChatUsage): MessagesResponse['usage'] {
-  const details = value.prompt_tokens_details;
-  const cached =
-    usageNumber(details, 'cached_tokens') ??
-    value.cached_tokens ??
-    value.cache_read_input_tokens ??
-    0;
-  const written =
-    usageNumber(details, 'cache_creation_input_tokens', 'cache_write_tokens') ??
-    value.cache_creation_input_tokens ??
-    0;
-  const input = value.prompt_tokens ?? 0;
+  const input = value.prompt ?? 0;
+  // Cache counts are clamped to the prompt so a bad provider snapshot cannot fail a finished reply.
+  const cached = Math.min(value.cached, input);
+  const written = Math.min(value.written, input - cached);
   return {
-    input_tokens: Math.max(0, input - cached - written),
-    output_tokens: value.completion_tokens ?? 0,
+    input_tokens: input - cached - written,
+    output_tokens: value.completion ?? 0,
     cache_read_input_tokens: cached,
     cache_creation_input_tokens: written,
   };
@@ -661,11 +617,11 @@ class ChatAccumulator {
     if (value === undefined || value === null) {
       return;
     }
-    if (!validUsage(value)) {
-      throw new Error('Malformed Zen Chat usage');
+    if (!record(value)) {
+      throw new Error(`Malformed Zen Chat usage: ${JSON.stringify(value)}`);
     }
     // Zen forwards cumulative usage snapshots; the last snapshot is authoritative.
-    this.usageValue = value;
+    this.usageValue = chatUsage(value);
   }
 
   private acceptChoice(value: unknown) {
@@ -883,8 +839,8 @@ class ChatAccumulator {
     }
     if (
       !this.usageValue ||
-      this.usageValue.prompt_tokens === undefined ||
-      this.usageValue.completion_tokens === undefined
+      this.usageValue.prompt === undefined ||
+      this.usageValue.completion === undefined
     ) {
       throw new Error('Zen Chat omitted terminal usage');
     }
@@ -919,7 +875,7 @@ class ChatAccumulator {
       usage: resultUsage,
       switchboard_usage: {
         source: 'provider',
-        total_tokens: this.usageValue.prompt_tokens + this.usageValue.completion_tokens,
+        total_tokens: this.usageValue.prompt + this.usageValue.completion,
         model: this.model,
       },
     };

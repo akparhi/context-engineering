@@ -365,24 +365,31 @@ test('fromChat treats null tool metadata as omitted fields in fragmented deltas'
   });
 });
 
-test('fromChat rejects impossible cache counts and propagates an aborted iterable', async () => {
-  await assert.rejects(
-    fromChat(
-      sse([
-        {
-          id: 'chat-4',
-          choices: [],
-          usage: {
-            prompt_tokens: 4,
-            completion_tokens: 1,
-            prompt_tokens_details: { cached_tokens: 5 },
-          },
+test('fromChat completes despite null usage details and clamps impossible cache counts', async () => {
+  const result = await fromChat(
+    sse([
+      {
+        id: 'chat-4',
+        choices: [{ index: 0, delta: { content: 'Done' }, finish_reason: 'stop' }],
+        usage: {
+          prompt_tokens: 4,
+          completion_tokens: 1,
+          prompt_tokens_details: { cached_tokens: 5, audio_tokens: null },
+          completion_tokens_details: { reasoning_tokens: null },
         },
-      ]),
-      model,
-    ),
-    /usage/,
+      },
+    ]),
+    model,
   );
+  assert.deepEqual(result.usage, {
+    input_tokens: 0,
+    output_tokens: 1,
+    cache_read_input_tokens: 4,
+    cache_creation_input_tokens: 0,
+  });
+});
+
+test('fromChat propagates an aborted iterable', async () => {
   async function* aborted() {
     yield Buffer.from(
       'data: {"id":"chat-5","choices":[{"index":0,"delta":{"content":"partial"},"finish_reason":null}]}\n\n',
