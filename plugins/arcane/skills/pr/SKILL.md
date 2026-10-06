@@ -65,4 +65,4 @@ Always read and follow `{SKILLBASE}/references/pr_description_template.md`. Do n
 - Never hide meaningful behavior changes inside "cleanup".
 - Do not bypass hooks unless the user explicitly asks.
 
-Apply the **unslop** skill and write as one human talking to another: avoid jargon and slang, and use simple, coherent, concise language. Skip all preambles and keep prose brief. Use the user's domain language from `GLOSSARY.md` when it exists.
+Apply the **unslop** skill and write as one human talking to another: avoid jargon and slang, and use simple, coherent, concise language. Skip all preambles and keep prose brief.
