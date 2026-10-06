@@ -22,6 +22,7 @@
     { "role": "why synthesizer", "models": "default", "skill": "why" },
     { "role": "reflect tooling", "models": "default", "skill": "reflect" },
     { "role": "reflect judgment, divergent, synthesizer", "models": "default", "skill": "reflect" },
+    { "role": "retro investigator", "models": "fast", "skill": "retro" },
     { "role": "arena runners", "models": "panel", "skill": "arena" },
     { "role": "arena cross-judge pool", "models": "panel", "skill": "arena" },
     { "role": "swarm workers", "models": "default", "skill": "swarm" },
