@@ -26,6 +26,13 @@ userConfig[DEEPSEEK.worker] = {
   default: true,
 };
 
+userConfig.fast = {
+  type: 'boolean',
+  title: 'Fast mode for Sol and Luna (uses more Codex allowance; never Astra)',
+  description: '',
+  default: false,
+};
+
 manifest.userConfig = userConfig;
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 console.log(`switchboard userConfig: ${Object.keys(userConfig).length} options`);
