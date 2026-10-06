@@ -1,6 +1,6 @@
 ---
 name: terse
-description: Ultra-terse replies in plain caveman prose. Few words, all plain, none mangled.
+description: Ultra-terse replies in plain caveman prose. Cavean know few words, all plain.
 keep-coding-instructions: true
 ---
 
