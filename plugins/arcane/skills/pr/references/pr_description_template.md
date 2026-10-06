@@ -1,14 +1,14 @@
 [{RELEVANT LINK}]({RELEVANT LINK})  | [{RELEVANT LINK 2}]({RELEVANT LINK 2})  | ...
 
-## Why the change
+## Why
 
 {Exactly one sentence explaining the problem this PR solves and what becomes possible after it ships.}
 
-## Special things to note
+## Reviewer notes
 
-- {List 1-3 reviewer-relevant warnings, migrations, constraints, deliberate omissions, or surprising decisions.
-- Flag unrelated changes, one-way doors (data migration, deletion, public contract change) and name what breaks.
-- Use "None." when there are no special considerations.}
+- {List 1-3 reviewer-relevant warnings, migrations, constraints, deliberate omissions, or surprising decisions. Flag unrelated changes, one-way doors (data migration, deletion, public contract change) and name what breaks.}
+- **Blast radius:** {Who or what the change touches, and why it is safe or risky. Always present.}
+- **Tradeoff:** {A rejected alternative a reviewer would otherwise ask about, and why. One bullet each; omit when there was no real choice.}
 
 ## Change outline
 

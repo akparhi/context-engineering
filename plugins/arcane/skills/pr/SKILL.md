@@ -1,6 +1,6 @@
 ---
 name: pr
-description: ALWAYS use whenever creating, raising, re-raising, or updating a pull request, writing/rewriting a PR description, or when asked to make a PR easy to review, tidy it, or clean up its commits. Writes the PR body (why, special things to note, visual change outline, evidence). Even when a repo has its own PR skill, refer to this skill for the body.
+description: ALWAYS use whenever creating, raising, re-raising, or updating a pull request, writing/rewriting a PR description, or when asked to make a PR easy to review, tidy it, or clean up its commits. Writes the PR body (why, reviewer notes, change outline, evidence). Even when a repo has its own PR skill, refer to this skill for the body.
 ---
 
 # Pull Request
@@ -32,8 +32,10 @@ Create or update the pull request for the current task with a concise descriptio
    - Propose a plan before rewriting history or force-pushing. Follow `{SKILLBASE}/references/tidy-history.md`.
 
 5. Write the PR description using the template:
-   - Keep **Why the change** to exactly one sentence.
-   - Keep **Special things to note** to 1-3 bullets. Prioritize reviewer warnings, migrations, compatibility constraints, deliberate omissions, or surprising decisions. Flag unrelated changes, one-way doors (data migration, deletion, public contract change) and name what breaks. Write `- None.` when there are no special considerations.
+   - Keep **Why** to exactly one sentence.
+   - Keep **Reviewer notes** to 2-4 bullets. Prioritize reviewer warnings, migrations, compatibility constraints, deliberate omissions, or surprising decisions. Flag unrelated changes, one-way doors (data migration, deletion, public contract change) and name what breaks.
+   - Add a **Blast radius** bullet: who or what the change touches, why it is safe or risky, and the cost of not shipping it when main is broken without it.
+   - Add a **Tradeoff** bullet for each rejected alternative a reviewer would otherwise ask about. Skip it when there was no real choice.
    - Make **Change outline** a compact, `/show-me`-inspired structural view rather than prose or a file-by-file changelog.
    - Include only the views that help explain this PR:
      - SQL table and endpoint contract changes, plus pseudocode for business logic.
