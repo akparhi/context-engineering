@@ -1,16 +1,11 @@
 ---
 name: pr
-description: Always use whenever creating, raising, re-raising, or updating a pull request, writing or rewriting a PR description. Writes the PR body (why, special things to note, visual change outline, evidence). Even when a repo has its own PR skill, refer to this skill for the body.
+description: ALWAYS use whenever creating, raising, re-raising, or updating a pull request, writing/rewriting a PR description, or when asked to make a PR easy to review, tidy it, or clean up its commits. Writes the PR body (why, special things to note, visual change outline, evidence). Even when a repo has its own PR skill, refer to this skill for the body.
 ---
 
 # Pull Request
 
 Create or update the pull request for the current task with a concise description that helps a reviewer understand why the change exists and the shape of the implementation.
-
-## Pick the mode
-
-- **Open**: the current branch has no PR.
-- **Update**: the current branch already has a PR.
 
 ## Workflow
 
@@ -29,9 +24,14 @@ Create or update the pull request for the current task with a concise descriptio
    - Read the complete PR diff and enough surrounding code to understand behavior and ownership.
    - Use `gh pr view` to collect PR metadata, commits, and changed files.
    - Read `{SKILLBASE}/references/show-me.md` for the visual-outline conventions used in the PR body.
-   - In Update mode, read the current PR body. Keep links, closing keywords such as `Fixes #123`, and notes a human wrote.
+   - If PR already exists, read the current PR body. Keep links, closing keywords such as `Fixes #123`, and notes a human wrote.
 
-4. Write the PR description using the template:
+4. Optional, only when the user asks to make the PR easy to review, tidy it, or clean up commits:
+   - Inspect commits, diff size, changed paths, generated files, and the PR description.
+   - Identify reviewability issues: noisy commits, stale description, unrelated changes, mixed mechanical and logic changes, missing tests, or unclear reviewer entry points.
+   - Propose a plan before rewriting history or force-pushing. Follow `{SKILLBASE}/references/tidy-history.md`.
+
+5. Write the PR description using the template:
    - Keep **Why the change** to exactly one sentence.
    - Keep **Special things to note** to 1-3 bullets. Prioritize reviewer warnings, migrations, compatibility constraints, deliberate omissions, or surprising decisions. Flag one-way doors (data migration, deletion, public contract change) and name what breaks. Write `- None.` when there are no special considerations.
    - Make **Change outline** a compact, `/show-me`-inspired structural view rather than prose or a file-by-file changelog.
@@ -47,19 +47,20 @@ Create or update the pull request for the current task with a concise descriptio
    - When screenshots or recordings exist, upload them with `bash {SKILLBASE}/scripts/upload-proofs.sh <branch> <files>` and paste its markdown under the Evidence table.
    - optionaL: if you are aware of a ticket id/url, or related plan/document urls, or other relevant links, include them in the header, otherwise omit the header
 
-5. Save and publish the description:
+6. Save and publish the description:
    - Use `.arcane/tasks/{task-slug}/pr-description.md` when the task directory exists; otherwise use `.arcane/tasks/pr-{number}/description.md`.
    - Update the PR with `gh pr edit {number} --body-file {output-path}`.
    - Confirm the update succeeded.
 
-6. Report completion:
+7. Report completion:
    - Read `{SKILLBASE}/references/describe_pr_final_answer.md`.
-   - Respond using that final answer template with the PR URL, saved description URL, and concise list of changed files. In Update mode, list anything dropped from the old body.
+   - Respond using that final answer template with the PR URL, saved description URL, and concise list of changed files.
 
 Always read and follow `{SKILLBASE}/references/pr_description_template.md`. Do not expand the PR body beyond that template.
 
 ## Guardrails
 
+- Never hide meaningful behavior changes inside "cleanup".
 - Do not bypass hooks unless the user explicitly asks.
 
 Write as one human talking to another: avoid jargon and slang, and use simple, coherent, concise language. Skip all preambles and keep prose brief. Use the user's domain language from `GLOSSARY.md` when it exists.
