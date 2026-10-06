@@ -19,6 +19,12 @@ export function modelProvider(id: string): string | undefined {
   return openaiSlug(id) === undefined ? id.split('/')[1] : 'openai';
 }
 
+/** Aliases `/config` fast mode moves to Codex's priority tier. Astra never: the owner keeps it on the default tier. */
+export const FAST_MODELS: ReadonlySet<string> = new Set(['sol', 'luna']);
+
+/** Fast mode is opt-in; Codex bills the priority tier at a higher usage rate. */
+export const fastMode = (options: PluginOptions) => String(options.fast) === 'true';
+
 export const LABELS: Readonly<Record<string, string>> = {
   astra: 'Astra',
   sol: 'Sol',

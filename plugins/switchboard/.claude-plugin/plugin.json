@@ -104,6 +104,12 @@
       "title": "Show DeepSeek subagent (needs a Zen key)",
       "description": "",
       "default": true
+    },
+    "fast": {
+      "type": "boolean",
+      "title": "Fast mode for Sol and Luna (uses more Codex allowance; never Astra)",
+      "description": "",
+      "default": false
     }
   }
 }

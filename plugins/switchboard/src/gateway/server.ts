@@ -6,7 +6,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { CodexAuthError, codexRequest } from '../providers/codex/auth.ts';
 import { openaiInstructions } from '../providers/codex/instructions.ts';
-import { modelProvider, openaiSlug } from '../providers/codex/models.ts';
+import { FAST_MODELS, modelProvider, openaiSlug } from '../providers/codex/models.ts';
 import type { ResponsesRequest } from '../providers/codex/responses.ts';
 import { forAnthropic, fromResponses, toResponses } from '../providers/codex/responses.ts';
 import { readCodexUsage } from '../providers/codex/usage.ts';
@@ -80,6 +80,8 @@ export interface GatewayOptions {
   onEvent?: (event: GatewayEvent) => void;
   timeoutMs?: number;
   zen?: { apiKey: string };
+  /** Send FAST_MODELS on Codex's priority tier. */
+  fast?: boolean;
   /** OpenAI review for GPT-originated actions, independent of Claude authentication. */
   approvalBridge?: Pick<NativeApprovalBridge, 'respond'>;
   approvalProviders?: readonly ('openai')[];
@@ -148,6 +150,7 @@ export function createNativeGateway({
   onEvent: observer = () => {},
   timeoutMs,
   zen,
+  fast = false,
   approvalBridge,
   approvalProviders: _approvalProviders = approvalBridge ? ['openai'] : [],
   blockAnthropic,
@@ -291,6 +294,9 @@ export function createNativeGateway({
   async function handleOpenAI(exchange: ProviderRequest, externalModel: string) {
     const { req, res, body, url, signal, abort, agentId, emit } = exchange;
     const request = openaiRequest(exchange, externalModel);
+    if (fast && FAST_MODELS.has(externalModel)) {
+      request.service_tier = 'priority';
+    }
     request.prompt_cache_key = createHash('sha256')
       .update(
         JSON.stringify([

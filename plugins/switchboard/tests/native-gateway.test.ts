@@ -514,7 +514,7 @@ test('fragmented SSE and truncated or failed responses never become successful c
 async function gateway(
   t: TestContext,
   fetchImpl: GatewayFetch,
-  options: { timeoutMs?: number; receipts?: ReceiptLedger } = {},
+  options: { timeoutMs?: number; receipts?: ReceiptLedger; fast?: boolean } = {},
 ) {
   const cwd = await mkdtemp(path.join(os.tmpdir(), 'native-gateway-test-'));
   const authFile = path.join(cwd, 'auth.json');
@@ -690,6 +690,30 @@ test('OpenAI cache keys survive history changes and restart, isolating sessions,
   assert.equal(keys[0], keys[2]);
   assert.equal(new Set([keys[0], ...keys.slice(3, 7), keys[8]]).size, 6);
   assert.equal(keys[6], keys[7]);
+});
+
+test('fast mode puts Sol and Luna on the priority tier and never Astra', async (t) => {
+  for (const fast of [false, true]) {
+    const tiers: Record<string, unknown> = {};
+    const call = await gateway(
+      t,
+      async (_url, options) => {
+        const request: ResponsesRequest = JSON.parse(String(options.body));
+        tiers[request.model] = request.service_tier;
+        return new Response(sse(textEvents));
+      },
+      { fast },
+    );
+    for (const name of ['astra', 'sol', 'luna']) {
+      await (await call({ ...body, model: name })).text();
+    }
+    const priority = fast ? 'priority' : undefined;
+    assert.deepEqual(tiers, {
+      'gpt-6-astra': undefined,
+      'gpt-6.1-sol': priority,
+      'gpt-6-luna': priority,
+    });
+  }
 });
 
 test('OpenAI main and worker requests adapt instructions without losing runtime policy or changing translation', async (t) => {

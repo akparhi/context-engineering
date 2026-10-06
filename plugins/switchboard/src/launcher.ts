@@ -12,6 +12,7 @@ import { readCodexAuth } from './providers/codex/auth.ts';
 import {
   DESCRIPTIONS,
   enabledWorkers,
+  fastMode,
   LABELS,
   MODELS,
   modelProvider,
@@ -169,6 +170,7 @@ async function main() {
     authFile,
     modBridge,
     zen: zenKey ? { apiKey: zenKey } : undefined,
+    fast: fastMode(options),
     permissionModes,
     approvalBridge,
     approvalProviders,

@@ -59,6 +59,7 @@ export interface ResponsesRequest {
   tool_choice: ResponsesToolChoice;
   parallel_tool_calls: boolean;
   reasoning: { effort: Effort; summary: 'auto' };
+  service_tier?: 'priority';
   include: string[];
   store: boolean;
   stream: boolean;
