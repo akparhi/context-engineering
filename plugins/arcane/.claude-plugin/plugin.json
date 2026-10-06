@@ -54,7 +54,7 @@
     "fast_model": {
       "type": "string",
       "title": "Fast model",
-      "description": "Model for the fast tier, used by: trivial edits. astra and sol need the switchboard plugin.",
+      "description": "Model for the fast tier, used by: trivial edits; retro investigator. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: sonnet",
         "opus",
@@ -336,6 +336,22 @@
         "sol"
       ],
       "default": "models.json: default (opus)"
+    },
+    "role_retro_investigator": {
+      "type": "string",
+      "title": "Role: retro investigator",
+      "description": "Model for this retro role. The models.json value follows the fast tier, including its /config value. astra and sol need the switchboard plugin.",
+      "options": [
+        "models.json: fast (sonnet)",
+        "opus",
+        "fable",
+        "sonnet",
+        "haiku",
+        "inherit-parent",
+        "astra",
+        "sol"
+      ],
+      "default": "models.json: fast (sonnet)"
     },
     "role_arena_runners": {
       "type": "string",
