@@ -8,7 +8,7 @@ Invoked at the end of every other playbook. Use the `arcane:pr` skill to write t
 
 **PRs.** Run `/deslop` over the diff before commit. Run `/no-comments` before review. Write every PR title and commit body with `/technical-writing`, then apply `/unslop`. Apply every technical-writing layer except Diátaxis. Use one word for each action, keep articles, and avoid `-ing` when a plain verb works.
 
-**Title & Descriptions.** Follow the `arcane:pr` skill's template. On top of it:
+**Title & Descriptions.** Use the `arcane:pr` skill. On top of it:
 
 - In Evidence, name each real run path and its outcome. For a performance change, report one primary number with its unit in `before → after` form. Link the arena or swarm directory for the remaining evidence. Do not include sample-size methodology, swarm recitals, or metric tables.
 
