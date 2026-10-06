@@ -29,10 +29,6 @@
 - **Checkpoint commits**: commit at checkpoints with task ID from the plan — `<phase>-<task-id>: <description>`.
 </important>
 
-<important if="you are writing, changing, or reviewing tests">
-- Invoke the `test-audit` skill first.
-</important>
-
 <important if="you are running the same test or check more than once">
 - Write a reusable script and reuse it. (`arcane:principle-build-the-lever`)
 </important>
@@ -52,10 +48,6 @@
 - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
 - **Do NOT fan out** for small targeted tasks or one-off debugging asks.
 </important>
-
-# Compact instructions
-
-Preserve exactly: what I asked, decided, ruled out, or set as constraint (near my words); approaches tried or set aside + why; problems hit + how resolved; where things stand; open items / next steps; hard-to-reconstruct details (paths, names, numbers, exact wording, links). Condense your own reasoning to conclusions.
 
 # Global Coding Standards
 
