@@ -1,6 +1,6 @@
 ---
 name: deslop
-description: Remove AI-generated code slop and clean up code style
+description: Remove AI-generated code slop and clean up code style. Must apply before every commit or PR that touches code, and when reviewing a diff.
 ---
 
 # Remove AI code slop
@@ -9,7 +9,7 @@ Check the diff against main and remove AI-generated slop introduced in the branc
 
 ## Focus Areas
 
-- Extra comments that are unnecessary or inconsistent with local style
+- Comments: read `{SKILLBASE}/references/comments.md` and apply it.
 - Defensive checks or try/catch blocks that are abnormal for trusted code paths
 - Casts to `any` used only to bypass type issues
 - Deeply nested code that should be simplified with early returns
