@@ -25,7 +25,7 @@ When the intent is already specific, enter that skill directly. Invoke every ski
 - **Vague new project or subsystem** (no stated purpose or success criteria), or "brainstorm", "grill me" / "interview me": `arcane:brainstorm`, before any design.
 - **Understanding code**: `arcane:how` for how it works, `arcane:why` for why it is this way, `arcane:teach` to explain it.
 - **Tests**: `arcane:test-audit` whenever writing, changing, or reviewing tests; `arcane:tdd` when a failing test comes first.
-- **Reviewing a change**: `arcane:interrogate`; `arcane:thermo-nuclear-code-quality-review` for a harsh maintainability pass.
+- **Reviewing a change**: `arcane:interrogate`; `arcane:deslop` and `arcane:thermo-nuclear-code-quality-review` for a harsh maintainability pass.
 - **Before every `git commit` or PR creation**: always `arcane:deslop` on the diff.
 - **Creating, updating, or tidying a PR**: `arcane:pr`. After opening: `arcane:babysit`; failing checks: `arcane:fix-ci`; review comments: `arcane:get-pr-comments`; conflicts: `arcane:fix-merge-conflicts`.
 - **TypeScript**: `arcane:typescript-best-practices` when reading or editing `.ts` or `.tsx`.
