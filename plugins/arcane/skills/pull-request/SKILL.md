@@ -1,5 +1,5 @@
 ---
-name: pr
+name: pull-request
 description: Always use whenever creating, raising, re-raising, or updating a pull request, writing or rewriting a PR description. Writes the PR body (why, special things to note, visual change outline, evidence). Even when a repo has its own PR skill, refer to this skill for the body.
 ---
 
