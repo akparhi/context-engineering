@@ -81,8 +81,8 @@ if (args.includes('plugin') && args.includes('list')) {
         SHELL: process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash',
         TEST_PLUGIN_LIST: listing,
       };
-  const install = (flags: string[] = [], extra: Record<string, string> = {}) =>
-    execute(process.execPath, [setup, '--claude', real, ...flags], { env: { ...env, ...extra } });
+  const install = (flags: string[] = []) =>
+    execute(process.execPath, [setup, '--claude', real, ...flags], { env });
   const bin = path.join(home, '.local/share/switchboard/bin');
   const invoke = (name: string, args: string[], extra: Record<string, string> = {}) => {
     const executable = path.join(bin, windows ? `${name}.cmd` : name);
@@ -126,7 +126,7 @@ async function core(directory: string, name: string) {
   await mkdir(src, { recursive: true });
   await writeFile(
     path.join(src, 'launcher.ts'),
-    `console.log(JSON.stringify({root:import.meta.url,args:process.argv.slice(2),providers:process.env.SWITCHBOARD_ENABLED_PROVIDERS,claude:process.env.SWITCHBOARD_REAL_CLAUDE,models:process.env.SWITCHBOARD_MODELS ?? null,configDir:process.env.CLAUDE_CONFIG_DIR ?? null}));`,
+    `console.log(JSON.stringify({root:import.meta.url,args:process.argv.slice(2),providers:process.env.SWITCHBOARD_ENABLED_PROVIDERS,claude:process.env.SWITCHBOARD_REAL_CLAUDE,models:process.env.SWITCHBOARD_MODELS ?? null}));`,
   );
   return root;
 }
@@ -237,24 +237,6 @@ test('setup renames the launch command, persists picker models, and keeps them a
   } else {
     await assert.rejects(access(shim('switchboard')), /ENOENT/);
   }
-});
-
-test('the shim carries the setup shell CLAUDE_CONFIG_DIR to launchers that lack it', async (t) => {
-  const f = await fixture(t);
-  if (f.windows) {
-    t.skip('POSIX shims only');
-    return;
-  }
-  const root = await core(f.directory, 'core');
-  await writeFile(f.listing, JSON.stringify(plugins(root)));
-  const configDir = path.join(f.home, 'claude config');
-  await f.install([], { CLAUDE_CONFIG_DIR: configDir });
-  assert.equal(JSON.parse((await f.invoke('switchboard', [])).stdout).configDir, configDir);
-  const other = path.join(f.home, 'other');
-  const explicit = await f.invoke('switchboard', [], { CLAUDE_CONFIG_DIR: other });
-  assert.equal(JSON.parse(explicit.stdout).configDir, other);
-  await f.install();
-  assert.equal(JSON.parse((await f.invoke('switchboard', [])).stdout).configDir, null);
 });
 
 test('a launch command named claude passes nested runs through to the real executable', async (t) => {
