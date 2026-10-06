@@ -56,7 +56,16 @@
 
 ## Evidence
 
-- **Before:** {screenshot/output/failing test run}
-  **After:** {screenshot/output/passing test run}
+- `{exact command run}`: {result}
 
-{Concrete evidence that the change works. Show a before and after. Screenshots are S-tier - when the environment is set up for it and the change is visual. Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode. When the change has no runtime behavior, write "None." with the reason.}
+| # | Where | Step | Observed | Result |
+|---|---|---|---|---|
+| 1 | {environment} (before) | {action} | {value or behavior seen} | {bug present} |
+| 2 | {environment} (after) | {action} | {value or behavior seen} | {pass} |
+
+![01-before-{name}.png]({url from upload-proofs.sh})
+![02-after-{name}.png]({url from upload-proofs.sh})
+
+Skipped: {check}. {reason}
+
+{Concrete evidence that the change works. Show a before and after. Screenshots are S-tier - when the environment is set up for it and the change is visual. Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode. One table row per step; number proof files to match their rows. Drop the table, images, or Skipped line when there is nothing to put in them. When the change has no runtime behavior, write "None." with the reason.}
