@@ -7,7 +7,7 @@
 ## Special things to note
 
 - {List 1-3 reviewer-relevant warnings, migrations, constraints, deliberate omissions, or surprising decisions.
-- Call out migration order, rollout plan, and feature flags. When the change is a one-way door (data migration, deletion, public contract change), say so and name what breaks.
+- Flag unrelated changes, one-way doors (data migration, deletion, public contract change) and name what breaks.
 - Use "None." when there are no special considerations.}
 
 ## Change outline
