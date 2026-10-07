@@ -198,7 +198,6 @@
     "sec-default@builtin": false,
     "telemetry@builtin": false,
     "context7@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": false,
     "switchboard@akparhi": true,
     "arcane@akparhi": true
   },
