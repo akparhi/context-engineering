@@ -89,23 +89,6 @@
       "title": "Panel model 2",
       "description": "One subagent of the panel tier, used by: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. none drops the slot. astra and sol need the switchboard plugin.",
       "options": [
-        "models.json: fable",
-        "opus",
-        "fable",
-        "sonnet",
-        "haiku",
-        "inherit-parent",
-        "astra",
-        "sol",
-        "none"
-      ],
-      "default": "models.json: fable"
-    },
-    "panel_model_3": {
-      "type": "string",
-      "title": "Panel model 3",
-      "description": "One subagent of the panel tier, used by: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. none drops the slot. astra and sol need the switchboard plugin.",
-      "options": [
         "models.json: sonnet",
         "opus",
         "fable",
@@ -117,6 +100,23 @@
         "none"
       ],
       "default": "models.json: sonnet"
+    },
+    "panel_model_3": {
+      "type": "string",
+      "title": "Panel model 3",
+      "description": "One subagent of the panel tier, used by: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. none drops the slot. astra and sol need the switchboard plugin.",
+      "options": [
+        "models.json: none",
+        "opus",
+        "fable",
+        "sonnet",
+        "haiku",
+        "inherit-parent",
+        "astra",
+        "sol",
+        "none"
+      ],
+      "default": "models.json: none"
     },
     "default_effort": {
       "type": "string",
@@ -357,13 +357,13 @@
       "type": "string",
       "title": "Role: arena runners",
       "description": "Comma-separated models for arena, one subagent each. Keep the models.json value to follow the panel tier. astra and sol need the switchboard plugin.",
-      "default": "models.json: panel (opus, fable, sonnet)"
+      "default": "models.json: panel (opus, sonnet)"
     },
     "role_arena_cross_judge_pool": {
       "type": "string",
       "title": "Role: arena cross-judge pool",
       "description": "Comma-separated models for arena, one subagent each. Keep the models.json value to follow the panel tier. astra and sol need the switchboard plugin.",
-      "default": "models.json: panel (opus, fable, sonnet)"
+      "default": "models.json: panel (opus, sonnet)"
     },
     "role_swarm_workers": {
       "type": "string",
@@ -385,13 +385,13 @@
       "type": "string",
       "title": "Role: architect runners",
       "description": "Comma-separated models for architect, one subagent each. Keep the models.json value to follow the panel tier. astra and sol need the switchboard plugin.",
-      "default": "models.json: panel (opus, fable, sonnet)"
+      "default": "models.json: panel (opus, sonnet)"
     },
     "role_interrogate_reviewers": {
       "type": "string",
       "title": "Role: interrogate reviewers",
       "description": "Comma-separated models for interrogate, one subagent each. Keep the models.json value to follow the panel tier. astra and sol need the switchboard plugin.",
-      "default": "models.json: panel (opus, fable, sonnet)"
+      "default": "models.json: panel (opus, sonnet)"
     }
   },
   "agents": [

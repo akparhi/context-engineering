@@ -3,7 +3,7 @@
     "default": "opus",
     "strongest": "opus",
     "fast": "sonnet",
-    "panel": ["opus", "fable", "sonnet"]
+    "panel": ["opus", "sonnet"]
   },
   "efforts": ["high"],
   "defaultEffort": "session",
