@@ -795,15 +795,16 @@ function prepareZenRequest(exchange: ProviderRequest) {
   }
 }
 
+// Never 401: Claude treats it as its own login failing and rotates its refresh token.
 function errorStatus(error: unknown): number {
   if (error instanceof CodexAuthError) {
-    return 401;
+    return 403;
   }
   if (error instanceof BadRequest) {
     return 400;
   }
   if (error instanceof UpstreamFailure) {
-    return error.status;
+    return error.status === 401 ? 403 : error.status;
   }
   return 502;
 }

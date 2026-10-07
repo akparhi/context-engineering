@@ -1237,7 +1237,7 @@ test('count_tokens is local, includes schemas, and labels its estimate', async (
 });
 
 test('HTTP failures retain status and retry-after without returning private upstream bodies', async (t) => {
-  for (const status of [400, 401, 403, 404, 429, 503]) {
+  for (const status of [400, 403, 404, 429, 503]) {
     const call = await gateway(
       t,
       async () =>
@@ -1248,6 +1248,35 @@ test('HTTP failures retain status and retry-after without returning private upst
     assert.equal(response.headers.get('retry-after'), '17');
     assert(!(await response.text()).includes('secret provider diagnostic'));
   }
+});
+
+test('provider login failures never reach Claude as a 401 that rotates its own login', async (t) => {
+  const call = await gateway(t, async () => new Response('', { status: 401 }));
+  const rejected = await call(body);
+  assert.equal(rejected.status, 403);
+  assert.match(await rejected.text(), /permission_error.*Renew the Codex login/);
+
+  const cwd = await mkdtemp(path.join(os.tmpdir(), 'native-auth-test-'));
+  t.after(() => removeTemporary(cwd));
+  const server = createNativeGateway({
+    token: 'local-test-secret',
+    authFile: path.join(cwd, 'auth.json'),
+    fetchImpl: () => assert.fail('A missing Codex login must not reach a provider'),
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise<void>((resolve) => server.close(() => resolve())));
+  const address = server.address();
+  assert(address !== null && typeof address === 'object', 'Gateway port');
+  const missing = await fetch(`http://127.0.0.1:${address.port}/v1/messages?beta=true`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-switchboard-gateway-token': 'local-test-secret',
+    },
+    body: JSON.stringify(body),
+  });
+  assert.equal(missing.status, 403);
+  assert.match(await missing.text(), /codex login/);
 });
 
 test('invalid request shapes fail locally and legacy thinking budgets respect explicit effort', async (t) => {
