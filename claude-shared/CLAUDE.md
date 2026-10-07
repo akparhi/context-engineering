@@ -43,10 +43,11 @@
   - **haiku**: transcription, normal exploration.
   - **sonnet**: testing, judgment, research, deep exploration.
   - **opus**: implementation, integration, architecture, final review.
-  - **sol** (agent type): independent review and adversarial review. Verify its findings before acting on them; never accept blindly.
+  - **sol** (agent type): independent and adversarial review. Verify its findings before acting on them; never accept blindly.
+  - **deepseek** (agent type): use as another panel model for swarm/arena.
   - **sol-high** (agent type): 3d asset building/generation.
 - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
-- **Do NOT fan out** for small targeted tasks or one-off debugging asks.
+- **DO NOT fan out** for small targeted tasks or one-off debugging asks.
 </important>
 
 # Global Coding Standards
