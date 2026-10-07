@@ -46,7 +46,9 @@ Create or update the pull request for the current task with a concise descriptio
    - Prefer `diff` blocks when showing changes to an existing shape. Show the complete target shape when most of it is new or diff notation would obscure ownership or order.
    - Keep each view focused on what a reviewer needs. Omit categories that did not change.
    - Make **Evidence** concrete evidence that the change works. Show a before and after. Never invent one; write `- None.` with the reason when the change has no runtime behavior.
-   - When screenshots or recordings exist, upload them with `bash {SKILLBASE}/scripts/upload-proofs.sh <branch> <files>` and paste its markdown under the Evidence table.
+   - When screenshots or recordings exist, upload them with `bash {SKILLBASE}/scripts/upload-proofs.sh <branch> <files>`. It prints one markdown image link per file. Where they go depends on the PR:
+     - Bugfix/Hotfix: build a `| Case | Before | After |` table below the Evidence table. One row per scenario (data state, role, error path). Put each before and after image in its cell. Write `—` when a scenario has no before.
+     - Any other PR: paste the printed links below the Evidence table, unchanged.
    - optionaL: if you are aware of a ticket id/url, or related plan/document urls, or other relevant links, include them in the header, otherwise omit the header
 
 6. Save and publish the description:
