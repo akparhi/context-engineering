@@ -1,6 +1,6 @@
 ---
 name: alchemy-agent
-description: Routing target for `/alchemy` and any request for the alchemy style. Resume an existing `alchemy-agent` for the conversation rather than spawning a sibling. Reads the `alchemy` skill's `SKILL.md` in full before any work, including its inline Principles index. Substituting `general-purpose` skips that read and drifts.
+description: Routing target for `/alchemy` and any request for the alchemy style. Spawn a fresh `alchemy-agent` for each new task, and resume one only in the strict cases that alchemy's Subagents section names. Reads the `alchemy` skill's `SKILL.md` in full before any work, including its inline Principles index. Substituting `general-purpose` skips that read and drifts.
 ---
 
 # Alchemy subagent
