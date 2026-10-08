@@ -63,18 +63,17 @@
 | 1 | {environment} (before) | {action} | {value or behavior seen} | {bug present} |
 | 2 | {environment} (after) | {action} | {value or behavior seen} | {pass} |
 
-{Bug fix:}
+{Screenshot evidence:}
 
 | Case | Before | After |
 |---|---|---|
 | {scenario, e.g. real data} | ![01-before-{name}.png]({url}) | ![01-after-{name}.png]({url}) |
-| {scenario new to this PR, e.g. API 500} | — | ![02-after-{name}.png]({url}) |
+| {scenario with no before, e.g. new screen or API 500} | — | ![02-after-{name}.png]({url}) |
 
-{Anything else:}
+{Video evidence:}
 
-![01-{name}.png]({url from upload-proofs.sh})
-![02-{name}.png]({url from upload-proofs.sh})
+![03-{name}.gif]({url from upload-proofs.sh}) [Full video]({url from upload-proofs.sh})
 
 Skipped: {check}. {reason}
 
-{Concrete evidence that the change works. Show a before and after. Screenshots are S-tier - when the environment is set up for it and the change is visual. Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode. One table row per step; number proof files to match their rows. Bug fix screenshots go in the Case / Before / After table, one row per scenario (data states, roles, error paths), `—` where before has no equivalent; image URLs come from upload-proofs.sh. Other PRs paste its markdown as-is. Drop either table, the images, or the Skipped line when there is nothing to put in them. When the change has no runtime behavior, write "None." with the reason.}
+{Concrete evidence that the change works. Show a before and after. Screenshots are S-tier - when the environment is set up for it and the change is visual. Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode. One table row per step; number proof files to match their rows. Screenshots go in the Case / Before / After table for every PR, one row per scenario (data states, roles, error paths), `—` where before has no equivalent (new features usually have none); image URLs come from upload-proofs.sh, which turns each recording (max 2 min) into a GIF preview plus a full-video link; recordings go below the tables, never in a cell. Drop either table, the images, or the Skipped line when there is nothing to put in them. When the change has no runtime behavior, write "None." with the reason.}
