@@ -39,12 +39,14 @@
 
 - **Large/multi-phase goals:** always delegate self-contained chunks (implementers per task, reviewers, research fan-out); main session stays coordinator.
 - **Noisy-process tasks:** go to a subagent even as single tasks.
-- **Subagent model:** least-powerful that fits. ALWAYS pass `model` explicitly on every Agent call, and tell workers to do the same for their helpers. Switchboard agent types (astra, sol, deepseek) carry their own model; don't pass `model` for them.
-  - **haiku**: transcription, exploration, summarization, classification.
+- **Subagent model:** least-powerful that fits. ALWAYS pass `model` explicitly on every Agent call, and tell workers to do the same for their helpers.
+  - **haiku**: transcription, exploration, summarization, classification, extraction, smoke tests, web fetching.
   - **sonnet**: testing, judgment, research, deep exploration.
   - **opus**: implementation, integration, architecture, final review.
   - **sol** (agent type): independent and adversarial review. Verify its findings before acting on them; never accept blindly.
   - **deepseek** (agent type): use as another panel model for swarm/arena.
+- **Subagent effort:** use medium or high based on task.
+- Switchboard agent types (astra, sol, deepseek) carry their own model and effort; NEVER pass `model` or `effort` for them.
 - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
 - **DO NOT fan out** for small targeted tasks or one-off debugging asks.
 </important>

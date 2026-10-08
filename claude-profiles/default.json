@@ -130,6 +130,7 @@
     "dataviz": "off",
     "claude-api": "off"
   },
+  "disableBundledSkills": true,
   "hooks": {
     "Notification": [],
     "PermissionRequest": [
