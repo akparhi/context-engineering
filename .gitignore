@@ -1,6 +1,7 @@
 .DS_Store
 docs/superpowers/plans/archive/
 .local/
+.tmp
 .env
 research
 shared/skills/synced
