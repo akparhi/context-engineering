@@ -2,8 +2,8 @@ import { EFFORTS, type Effort } from './responses.ts';
 
 /** Public model ID (the bare alias clients send) -> OpenAI slug. Bumping a model is a one-line edit here. */
 export const MODELS = {
-  'astra': 'gpt-6-astra',
   'sol': 'gpt-6.1-sol',
+  'astra': 'gpt-6-astra',
   'luna': 'gpt-6-luna',
 };
 
@@ -26,15 +26,15 @@ export const FAST_MODELS: ReadonlySet<string> = new Set(['sol', 'luna']);
 export const fastMode = (options: PluginOptions) => String(options.fast) === 'true';
 
 export const LABELS: Readonly<Record<string, string>> = {
-  astra: 'Astra',
   sol: 'Sol',
+  astra: 'Astra',
   luna: 'Luna',
 };
 
 /** Picker descriptions, verbatim from Codex's own model picker. */
 export const DESCRIPTIONS: Readonly<Record<string, string>> = {
-  astra: 'Frontier intelligence for the most demanding work.',
   sol: 'Latest workhorse model for coding and everyday work.',
+  astra: 'Frontier intelligence for the most demanding work.',
   luna: 'Fast and affordable model for easier tasks.',
 };
 

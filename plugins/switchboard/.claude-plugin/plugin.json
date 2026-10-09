@@ -9,33 +9,9 @@
   "skills": "./skills",
   "hooks": "./hooks/hooks.json",
   "userConfig": {
-    "astra": {
+    "fast": {
       "type": "boolean",
-      "title": "Show Astra subagent",
-      "description": "",
-      "default": true
-    },
-    "astra_low": {
-      "type": "boolean",
-      "title": "Show astra-low subagent",
-      "description": "",
-      "default": false
-    },
-    "astra_medium": {
-      "type": "boolean",
-      "title": "Show astra-medium subagent",
-      "description": "",
-      "default": false
-    },
-    "astra_high": {
-      "type": "boolean",
-      "title": "Show astra-high subagent",
-      "description": "",
-      "default": false
-    },
-    "astra_xhigh": {
-      "type": "boolean",
-      "title": "Show astra-xhigh subagent",
+      "title": "Fast mode for Sol and Luna (uses more Codex allowance; never Astra)",
       "description": "",
       "default": false
     },
@@ -66,6 +42,36 @@
     "sol_xhigh": {
       "type": "boolean",
       "title": "Show sol-xhigh subagent",
+      "description": "",
+      "default": false
+    },
+    "astra": {
+      "type": "boolean",
+      "title": "Show Astra subagent",
+      "description": "",
+      "default": true
+    },
+    "astra_low": {
+      "type": "boolean",
+      "title": "Show astra-low subagent",
+      "description": "",
+      "default": false
+    },
+    "astra_medium": {
+      "type": "boolean",
+      "title": "Show astra-medium subagent",
+      "description": "",
+      "default": false
+    },
+    "astra_high": {
+      "type": "boolean",
+      "title": "Show astra-high subagent",
+      "description": "",
+      "default": false
+    },
+    "astra_xhigh": {
+      "type": "boolean",
+      "title": "Show astra-xhigh subagent",
       "description": "",
       "default": false
     },
@@ -104,12 +110,6 @@
       "title": "Show DeepSeek subagent (needs a Zen key)",
       "description": "",
       "default": true
-    },
-    "fast": {
-      "type": "boolean",
-      "title": "Fast mode for Sol and Luna (uses more Codex allowance; never Astra)",
-      "description": "",
-      "default": false
     }
   }
 }

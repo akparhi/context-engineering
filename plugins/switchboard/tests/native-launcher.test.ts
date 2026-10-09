@@ -362,7 +362,7 @@ test('launcher keeps the full worker catalog under 30 KB', () => {
 
 test('default config registers one session-effort worker per selected model', () => {
   const all = workerDefinitions(true);
-  assert.deepEqual(Object.keys(all), ['astra', 'sol', 'luna']);
+  assert.deepEqual(Object.keys(all), ['sol', 'astra', 'luna']);
   for (const worker of Object.values(all)) {
     assert.equal('effort' in worker, false);
     assert.match(worker.description, /^gpt-[^,]+, session reasoning\./);
@@ -461,6 +461,6 @@ console.log(JSON.stringify({args:process.argv.slice(2),gateway:!!process.env.SWI
 test('OpenAI models carry short picker labels', () => {
   assert.deepEqual(
     Object.keys(MODELS).map((model) => LABELS[model]),
-    ['Astra', 'Sol', 'Luna'],
+    ['Sol', 'Astra', 'Luna'],
   );
 });

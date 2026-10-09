@@ -7,7 +7,14 @@ import { DEEPSEEK } from '../plugins/switchboard/src/providers/opencode/models.t
 const manifestPath = new URL('../plugins/switchboard/.claude-plugin/plugin.json', import.meta.url);
 const manifest = JSON.parse(readFileSync(manifestPath));
 
-const userConfig = {};
+const userConfig = {
+  fast: {
+    type: 'boolean',
+    title: 'Fast mode for Sol and Luna (uses more Codex allowance; never Astra)',
+    description: '',
+    default: false,
+  },
+};
 for (const [name, { model, effort }] of Object.entries(OPENAI_WORKERS)) {
   userConfig[workerOptionKey(name)] = {
     type: 'boolean',
@@ -24,13 +31,6 @@ userConfig[DEEPSEEK.worker] = {
   title: 'Show DeepSeek subagent (needs a Zen key)',
   description: '',
   default: true,
-};
-
-userConfig.fast = {
-  type: 'boolean',
-  title: 'Fast mode for Sol and Luna (uses more Codex allowance; never Astra)',
-  description: '',
-  default: false,
 };
 
 manifest.userConfig = userConfig;
