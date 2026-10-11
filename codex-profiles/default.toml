@@ -448,6 +448,9 @@ trust_level = "trusted"
 [projects."/Users/akparhi/Projects/Home/experiment"]
 trust_level = "trusted"
 
+[projects."/Users/akparhi/Projects/Home/8bitdreams"]
+trust_level = "trusted"
+
 # Preserve desktop UI, composer, notifications, Git and worktree preferences for this machine.
 [desktop]
 appearanceTheme = "system"
