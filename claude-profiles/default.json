@@ -116,7 +116,6 @@
     ],
     "defaultMode": "bypassPermissions"
   },
-  "disableClaudeAiConnectors": true,
   "skillOverrides": {
     "superpowers:using-git-worktrees": "off",
     "loop": "off",
@@ -198,7 +197,7 @@
     "plugin-authoring@builtin": false,
     "sec-default@builtin": false,
     "telemetry@builtin": false,
-    "context7@claude-plugins-official": true,
+    "context7@claude-plugins-official": false,
     "arcane@akparhi": true,
     "switchboard@akparhi": true
   },
@@ -213,7 +212,7 @@
   "outputStyle": "terse",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
-  "effortLevel": "medium",
+  "effortLevel": "high",
   "promptSuggestionEnabled": false,
   "pluginConfigs": {
     "switchboard@akparhi": {
