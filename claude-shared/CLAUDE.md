@@ -47,6 +47,8 @@
   - **deepseek** (agent type): use as another panel model for swarm/arena.
 - **Subagent effort:** use medium or high based on task.
 - Switchboard agent types (astra, sol, deepseek) carry their own model and effort; NEVER pass `model` or `effort` for them.
+  - Dispatch as `subagent_type: "<name>"`. Arcane role resolving to one loses the `arcane:alchemy-agent` prompt → name the playbook step in the brief.
+  - Agent type missing from the Agent tool's list → use `opus` and say so.
 - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
 - **DO NOT fan out** for small targeted tasks or one-off debugging asks.
 </important>

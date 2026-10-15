@@ -41,8 +41,11 @@ while IFS= read -r line; do
       key=$(printf '%s' "$line" | sed 's/.*"role": "\([^"]*\)".*/\1/' | tr -cs 'a-z' '_' | sed 's/^_//; s/_$//' | tr 'a-z' 'A-Z')
       eval "role_value=\${CLAUDE_PLUGIN_OPTION_ROLE_$key:-}"
       if chosen "$role_value"; then
+        # A /config model keeps the file's " @<effort>" unless it names its own.
+        effort=$(printf '%s' "$line" | sed -n 's/.*"models": "[^"@]*\( @[a-z]*\)".*/\1/p')
+        case "$value" in *@*) ;; *) value=$(printf '%s' "$value" | sed "s/ *, */$effort, /g")$effort ;; esac
         case "$line" in
-          *'"models": "panel"'*) value=$(json_list "$value") ;;
+          *'"models": "panel'*) value=$(json_list "$value") ;;
           *) value="\"$value\"" ;;
         esac
         line=$(printf '%s' "$line" | sed "s|\"models\": \"[^\"]*\"|\"models\": $value|")

@@ -11,6 +11,7 @@ const manifest = JSON.parse(readFileSync(manifestPath));
 const SWITCHBOARD_MODELS = ['astra', 'sol'];
 const FROM_FILE = 'models.json: ';
 const SWITCHBOARD_NOTE = 'astra and sol need the switchboard plugin.';
+const EFFORT_NOTE = 'A /config model keeps the models.json effort.';
 
 const modelChoices = [...models.available, 'inherit-parent', ...SWITCHBOARD_MODELS];
 const panel = models.tiers.panel;
@@ -24,8 +25,14 @@ const picker = (title, description, fileValue, choices = modelChoices) => ({
   default: FROM_FILE + fileValue,
 });
 
+// A role value is "<tier or model>" with an optional " @<effort>".
+const parseRole = (value) => {
+  const [tier, effort] = value.split(' @');
+  return { tier, effortSuffix: effort ? ` @${effort}` : '' };
+};
+
 const tierUsers = (tier) =>
-  models.roles.filter((r) => r.models === tier).map((r) => r.role).join('; ');
+  models.roles.filter((r) => parseRole(r.models).tier === tier).map((r) => r.role).join('; ');
 
 const userConfig = {};
 for (const tier of ['default', 'strongest', 'fast']) {
@@ -50,21 +57,22 @@ userConfig.default_effort = picker(
   ['session', ...models.efforts],
 );
 
-for (const { role, models: tier, skill } of models.roles) {
+for (const { role, models: value, skill } of models.roles) {
+  const { tier, effortSuffix } = parseRole(value);
   const key = `role_${role.toLowerCase().replace(/[^a-z]+/g, '_').replace(/^_|_$/g, '')}`;
   const title = `Role: ${role}`;
   if (tier === 'panel') {
     userConfig[key] = {
       type: 'string',
       title,
-      description: `Comma-separated models for ${skill}, one subagent each. Keep the models.json value to follow the panel tier. ${SWITCHBOARD_NOTE}`,
-      default: `${FROM_FILE}panel (${panel.join(', ')})`,
+      description: `Comma-separated models for ${skill}, one subagent each. Keep the models.json value to follow the panel tier. ${EFFORT_NOTE} ${SWITCHBOARD_NOTE}`,
+      default: `${FROM_FILE}panel (${panel.join(', ')})${effortSuffix}`,
     };
   } else {
     userConfig[key] = picker(
       title,
-      `Model for this ${skill} role. The models.json value follows the ${tier} tier, including its /config value. ${SWITCHBOARD_NOTE}`,
-      `${tier} (${models.tiers[tier]})`,
+      `Model for this ${skill} role. The models.json value follows the ${tier} tier, including its /config value. ${EFFORT_NOTE} ${SWITCHBOARD_NOTE}`,
+      `${tier} (${models.tiers[tier]})${effortSuffix}`,
     );
   }
 }
