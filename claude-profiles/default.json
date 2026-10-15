@@ -198,8 +198,8 @@
     "sec-default@builtin": false,
     "telemetry@builtin": false,
     "context7@claude-plugins-official": false,
-    "arcane@akparhi": true,
-    "switchboard@akparhi": true
+    "switchboard@akparhi": true,
+    "arcane@akparhi": true
   },
   "extraKnownMarketplaces": {
     "akparhi": {
@@ -212,7 +212,7 @@
   "outputStyle": "terse",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
-  "effortLevel": "high",
+  "effortLevel": "medium",
   "promptSuggestionEnabled": false,
   "pluginConfigs": {
     "switchboard@akparhi": {
