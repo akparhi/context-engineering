@@ -48,7 +48,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 - **Laziness Protocol.** Refactoring, sizing a diff, or tempted to add abstractions, layers, or signal threading. Bias to deletion and the smallest change that solves the problem.
 - **Foundational Thinking.** Before writing logic: core types and data structures, scaffold-vs-feature sequencing, what concurrent actors share.
 - **Redesign from First Principles.** Integrating a new requirement into an existing design. Redesign as if it had been foundational from day one.
-- **Attack the Premise.** Repeated fixes share an assumption and fail. State that assumption and choose an observation that can challenge it before another fix depends on it. Count work per actor when the hypothesis concerns uneven assignment.
+- **Attack the Premise.** Two or more fixes that share one premise have failed the same gate. Take a census of which actors hold the imbalance before the next fix, then question the premise instead of writing another fix that assumes it.
 - **Subtract Before You Add.** Sequencing an addition, refactor, or rewrite. Remove dead weight first, then build on the simpler base.
 - **Minimize Reader Load.** Reviewing or shaping code that's hard to trace. Count layers and hidden state, collapse one-caller wrappers, shrink mutable scope.
 - **Outcome-Oriented Execution.** Planned rewrites and migrations with explicit phase boundaries. Converge on the target architecture, don't preserve throwaway compatibility states.
@@ -70,7 +70,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 - **Prove It Works.** After a task, before declaring done. Verify against the real artifact, not a proxy or "it compiles".
 - **Fix Root Causes.** Debugging. Trace each symptom to its root cause, reproduce first, ask why until you reach it.
 - **Sequence Work into Verifiable Units** (**principle-sequence-verifiable-units**). Multi-step work (sweeps, migrations, runs of similar edits) and how you stack commits and PRs. Break work into small units that each end in a check, verify each before the next, and order delivery so the sequence proves itself.
-- **Test Behavior, Not Implementation.** Writing, changing, or keeping a test. Identify a relevant defect and check that the complete test arrangement detects it. Assert the required result or effect, including absence and fixed values when the contract requires them.
+- **Test Behavior, Not Implementation.** Writing, changing, or keeping a test. Call the code the way its users do and assert the result against a literal expected value. If the test would still pass when every imported function returns `undefined`, rewrite the assertion or delete the test.
 - **Explain the Number.** Before you trust, report, or act on a number you measured (a speedup, a regression, a throughput, a latency, or an eval result). Find what limits it, and rule out that it measured something other than the work you think.
 
 **Delegation**
