@@ -1,7 +1,17 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
+import {
+  chmodSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { WatchDeadline } from "./deadline.ts";
 import {
   ChecksUnavailable,
+  GhGitHubReader,
   WatcherQueryError,
   discoverStack,
   mapRollupNode,
@@ -438,6 +448,143 @@ it("annotates Bugbot threads with distinct review-pass counts", () => {
   expect(threads).toHaveLength(2);
   expect(threads.map((thread) => thread.isBugbot)).toEqual([true, true]);
   expect(threads.map((thread) => thread.bugbotReviewPasses)).toEqual([3, 3]);
+});
+
+describe("review thread pagination", () => {
+  type Page = { readonly pageInfo?: unknown; readonly nodes: unknown[] };
+  const directories: string[] = [];
+  const originalPath = process.env.PATH;
+  afterEach(() => {
+    process.env.PATH = originalPath;
+    for (const dir of directories.splice(0))
+      rmSync(dir, { recursive: true, force: true });
+  });
+
+  const thread = (id: string, resolved = false, body = "please fix") => ({
+    id,
+    isResolved: resolved,
+    comments: {
+      nodes: [
+        {
+          body,
+          createdAt: "now",
+          path: "a.ts",
+          line: 1,
+          author: { login: body.startsWith("RUN_ID") ? "bugbot" : "someone" },
+        },
+      ],
+    },
+  });
+  const page = (endCursor: string | null, nodes: unknown[]): Page => ({
+    pageInfo: { hasNextPage: endCursor !== null, endCursor },
+    nodes,
+  });
+
+  // A fake `gh` on PATH serves one page per call, so the real reader runs.
+  async function readThreads(pages: readonly Page[]) {
+    const dir = mkdtempSync(join(tmpdir(), "watch-threads-"));
+    directories.push(dir);
+    const calls = join(dir, "calls.jsonl");
+    writeFileSync(calls, "");
+    writeFileSync(join(dir, "pages.json"), JSON.stringify(pages));
+    const gh = join(dir, "gh");
+    writeFileSync(
+      gh,
+      `#!${process.execPath}
+import { appendFileSync, readFileSync } from "node:fs";
+const args = process.argv.slice(2);
+const after = args.find((arg) => arg.startsWith("after="))?.slice(6) ?? null;
+const served = readFileSync(${JSON.stringify(calls)}, "utf8").split("\\n").filter(Boolean).length;
+appendFileSync(${JSON.stringify(calls)}, JSON.stringify(after) + "\\n");
+const pages = JSON.parse(readFileSync(${JSON.stringify(join(dir, "pages.json"))}, "utf8"));
+console.log(JSON.stringify({ data: { repository: { pullRequest: { reviewThreads: pages[served] } } } }));
+`
+    );
+    chmodSync(gh, 0o755);
+    process.env.PATH = `${dir}:${originalPath}`;
+    const reader = new GhGitHubReader(new WatchDeadline(0, Date.now));
+    const afters = (): (string | null)[] =>
+      readFileSync(calls, "utf8")
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => JSON.parse(line) as string | null);
+    try {
+      return { threads: await reader.reviewThreads(context), afters: afters() };
+    } catch (error) {
+      return { error, afters: afters() };
+    }
+  }
+
+  it("keeps walking pages until the cursor is exhausted", async () => {
+    const result = await readThreads([
+      page("next", [thread("one")]),
+      page("last", [thread("two")]),
+      page(null, [thread("three")]),
+    ]);
+    expect(result.threads?.map((item) => item.id)).toEqual([
+      "one",
+      "two",
+      "three",
+    ]);
+    expect(result.afters).toEqual([null, "next", "last"]);
+  });
+
+  it("drops resolved threads and keeps unresolved ones on every page", async () => {
+    const result = await readThreads([
+      page("next", [thread("early", true), thread("one")]),
+      page(null, [thread("two", true), thread("late")]),
+    ]);
+    expect(result.threads?.map((item) => item.id)).toEqual(["one", "late"]);
+  });
+
+  it("counts Bugbot review passes across every page", async () => {
+    const result = await readThreads([
+      page("next", [thread("one", false, "RUN_ID: run-1")]),
+      page(null, [thread("two", false, "RUN_ID: run-2")]),
+    ]);
+    expect(result.threads?.map((item) => item.bugbotReviewPasses)).toEqual([
+      2, 2,
+    ]);
+  });
+
+  it("rejects a page that omits pageInfo instead of assuming one page", async () => {
+    const result = await readThreads([{ nodes: [thread("one")] }]);
+    expect(result.error).toBeInstanceOf(WatcherQueryError);
+    expect(result.afters).toEqual([null]);
+  });
+
+  it("rejects a page that promises more pages without a cursor", async () => {
+    for (const pageInfo of [
+      { hasNextPage: true, endCursor: null },
+      { hasNextPage: true },
+      { hasNextPage: true, endCursor: "" },
+    ]) {
+      const result = await readThreads([
+        { pageInfo, nodes: [thread("one")] },
+        page(null, [thread("two")]),
+      ]);
+      expect(result.error).toBeInstanceOf(WatcherQueryError);
+      expect(result.afters).toEqual([null]);
+    }
+  });
+
+  it("rejects a thread cursor that does not advance instead of paging on", async () => {
+    const result = await readThreads([
+      page("same", []),
+      page("same", []),
+      page(null, []),
+    ]);
+    expect(result.error).toMatchObject({
+      failure: {
+        kind: "missing-key",
+        retryable: true,
+        detail: expect.stringContaining(
+          "reviewThreads.pageInfo.endCursor must advance"
+        ),
+      },
+    });
+    expect(result.afters).toEqual([null, "same"]);
+  });
 });
 
 describe("context and stack discovery", () => {

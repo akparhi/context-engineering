@@ -7,7 +7,7 @@
   },
   "efforts": ["low", "medium", "high"],
   "defaultEffort": "session",
-  "available": ["opus", "fable", "sonnet", "haiku"],
+  "available": ["fable", "opus", "sonnet", "haiku"],
   "roles": [
     { "role": "feature, refactoring", "models": "default @medium", "skill": "alchemy" },
     { "role": "bug-fix", "models": "strongest @high", "skill": "alchemy" },
@@ -27,6 +27,7 @@
     { "role": "arena cross-judge pool", "models": "panel @high", "skill": "arena" },
     { "role": "swarm workers", "models": "default @medium", "skill": "swarm" },
     { "role": "architect runners", "models": "panel @high", "skill": "architect" },
-    { "role": "interrogate reviewers", "models": "panel @high", "skill": "interrogate" }
+    { "role": "interrogate reviewers", "models": "panel @high", "skill": "interrogate" },
+    { "role": "code-reviewer", "models": "strongest @high", "skill": "code-review" }
   ]
 }

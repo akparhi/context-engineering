@@ -2,7 +2,7 @@
   "name": "arcane",
   "displayName": "arcane",
   "icon": "./assets/arcane-icon.png",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Hybrid of superpowers + pstack workflows, for claude-code.",
   "author": {
     "name": "Anand Kumar Parhi"
@@ -25,8 +25,8 @@
       "description": "Model for the default tier, used by: feature, refactoring; judgment and prose; how explorer; how explainer; why investigators; why synthesizer; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: opus",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -38,11 +38,11 @@
     "strongest_model": {
       "type": "string",
       "title": "Strongest model",
-      "description": "Model for the strongest tier, used by: bug-fix; perf-issue; hillclimb; strongest judgment. astra and sol need the switchboard plugin.",
+      "description": "Model for the strongest tier, used by: bug-fix; perf-issue; hillclimb; strongest judgment; code-reviewer. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: opus",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -57,8 +57,8 @@
       "description": "Model for the fast tier, used by: trivial edits; retro investigator. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: sonnet",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -73,8 +73,8 @@
       "description": "One subagent of the panel tier, used by: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. none drops the slot. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: opus",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -90,8 +90,8 @@
       "description": "One subagent of the panel tier, used by: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. none drops the slot. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: sonnet",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -107,8 +107,8 @@
       "description": "One subagent of the panel tier, used by: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. none drops the slot. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: none",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -137,8 +137,8 @@
       "description": "Model for this alchemy role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: default (opus) @medium",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -153,8 +153,8 @@
       "description": "Model for this alchemy role. The models.json value follows the strongest tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: strongest (opus) @high",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -169,8 +169,8 @@
       "description": "Model for this alchemy role. The models.json value follows the strongest tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: strongest (opus) @high",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -185,8 +185,8 @@
       "description": "Model for this alchemy role. The models.json value follows the strongest tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: strongest (opus) @high",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -201,8 +201,8 @@
       "description": "Model for this alchemy role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: default (opus) @medium",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -217,8 +217,8 @@
       "description": "Model for this alchemy role. The models.json value follows the strongest tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: strongest (opus) @high",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -233,8 +233,8 @@
       "description": "Model for this alchemy role. The models.json value follows the fast tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: fast (sonnet) @low",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -249,8 +249,8 @@
       "description": "Model for this how role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: default (opus) @low",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -265,8 +265,8 @@
       "description": "Model for this how role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: default (opus) @medium",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -281,8 +281,8 @@
       "description": "Model for this why role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: default (opus) @low",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -297,8 +297,8 @@
       "description": "Model for this why role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: default (opus) @high",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -313,8 +313,8 @@
       "description": "Model for this reflect role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: default (opus) @low",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -329,8 +329,8 @@
       "description": "Model for this reflect role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: default (opus) @medium",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -345,8 +345,8 @@
       "description": "Model for this retro role. The models.json value follows the fast tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: fast (sonnet) @low",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -373,8 +373,8 @@
       "description": "Model for this swarm role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: default (opus) @medium",
-        "opus",
         "fable",
+        "opus",
         "sonnet",
         "haiku",
         "inherit-parent",
@@ -394,6 +394,22 @@
       "title": "Role: interrogate reviewers",
       "description": "Comma-separated models for interrogate, one subagent each. Keep the models.json value to follow the panel tier. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "default": "models.json: panel (opus, sonnet) @high"
+    },
+    "role_code_reviewer": {
+      "type": "string",
+      "title": "Role: code-reviewer",
+      "description": "Model for this code-review role. The models.json value follows the strongest tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
+      "options": [
+        "models.json: strongest (opus) @high",
+        "fable",
+        "opus",
+        "sonnet",
+        "haiku",
+        "inherit-parent",
+        "astra",
+        "sol"
+      ],
+      "default": "models.json: strongest (opus) @high"
     }
   },
   "agents": [

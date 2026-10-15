@@ -157,6 +157,11 @@ function missing(path: string, value?: unknown): never {
     ...(value === undefined ? {} : { rawValue: raw(value) }),
   });
 }
+function advanceCursor(cursors: Set<string>, after: string, label: string) {
+  if (!after || cursors.has(after))
+    missing(`${label}.pageInfo.endCursor must advance`, after);
+  cursors.add(after);
+}
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -725,11 +730,7 @@ export class GhGitHubReader implements T.GitHubReader {
       after = page.hasNextPage
         ? string(page.endCursor, "reviewThreads.pageInfo.endCursor")
         : null;
-      if (after !== null) {
-        if (!after || cursors.has(after))
-          missing("reviewThreads.pageInfo.endCursor must advance", after);
-        cursors.add(after);
-      }
+      if (after !== null) advanceCursor(cursors, after, "reviewThreads");
     } while (after !== null);
     return parseReviewThreads(nodes);
   }
@@ -779,11 +780,7 @@ export async function resolveChecks(
     }
     checks.push(...page.checks);
     after = page.endCursor;
-    if (after !== null) {
-      if (cursors.has(after))
-        missing("contexts.pageInfo.endCursor must advance", after);
-      cursors.add(after);
-    }
+    if (after !== null) advanceCursor(cursors, after, "contexts");
   } while (after !== null);
   const fallback = nonEmpty(checks);
   if (fallback !== null)

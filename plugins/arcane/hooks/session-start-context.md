@@ -25,7 +25,7 @@ When the intent is already specific, enter that skill directly. Invoke every ski
 - **Vague new project or subsystem** (no stated purpose or success criteria), or "brainstorm", "grill me" / "interview me": `arcane:brainstorm`, before any design.
 - **Understanding code**: `arcane:how` for how it works, `arcane:why` for why it is this way, `arcane:teach` to explain it.
 - **Tests**: `arcane:test-audit` whenever writing, changing, or reviewing tests; `arcane:tdd` when a failing test comes first.
-- **Reviewing a change**: `arcane:interrogate`; `arcane:deslop` and `arcane:thermo-nuclear-code-quality-review` for a harsh maintainability pass.
+- **Reviewing a change**: `arcane:interrogate`; `arcane:code-review` for parallel correctness and code-quality reviewers; `arcane:deslop` for a slop pass.
 - **Before every `git commit` or PR creation**: always `arcane:deslop` on the diff.
 - **Creating, updating, or tidying a PR**: `arcane:pr`. After opening: `arcane:babysit`; failing checks: `arcane:fix-ci`; review comments: `arcane:get-pr-comments`; conflicts: `arcane:fix-merge-conflicts`.
 - **TypeScript**: `arcane:typescript-best-practices` when reading or editing `.ts` or `.tsx`.
@@ -40,5 +40,6 @@ Arcane skills name a role. Its model comes from the JSON below: arcane's `models
 - Find the role in `roles`. Its `models` names a tier, which `tiers` maps to a model, or it names the model directly. A list is a panel: one subagent per entry.
 - Pass that model as the `Agent` call's `model`. A role missing from `roles` omits `model`, so it runs on the parent session's model.
 - If the `Agent` tool rejects a model, use the closest valid slug of the same family from its error message, and say so.
+- Only models in `available` can be passed as `model`; `inherit-parent` omits `model`. Dispatch any other model as `subagent_type: "<model>-<effort>"` when the resolved effort (the role's `@<effort>`, else `defaultEffort`) is a level and that agent type exists, else as `subagent_type: "<model>"`, with no `model` and no effort: the agent type carries both. If no agent type matches, use `opus` with the effort agent below, and say so.
 - A role value may carry a reasoning effort, as in `opus @high` or `strongest @high`; strip it before resolving the tier and passing `model`. A tier's effort applies to every panel entry. A value without one takes `defaultEffort`, where `session` sets no effort. A level from `efforts` picks the effort agent from the `subagent_type` you would otherwise use: `arcane:alchemy-agent` becomes `arcane:alchemy-agent-<level>`; `general-purpose`, or none, becomes `arcane:effort-<level>`. The model you pass still picks the model.
 

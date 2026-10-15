@@ -212,7 +212,7 @@
   "outputStyle": "terse",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
-  "effortLevel": "medium",
+  "effortLevel": "high",
   "promptSuggestionEnabled": false,
   "pluginConfigs": {
     "switchboard@akparhi": {
