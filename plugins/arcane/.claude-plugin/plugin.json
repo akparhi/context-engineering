@@ -2,7 +2,7 @@
   "name": "arcane",
   "displayName": "arcane",
   "icon": "./assets/arcane-icon.png",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Hybrid of superpowers + pstack workflows, for claude-code.",
   "author": {
     "name": "Anand Kumar Parhi"
@@ -38,7 +38,7 @@
     "strongest_model": {
       "type": "string",
       "title": "Strongest model",
-      "description": "Model for the strongest tier, used by: bug-fix; perf-issue; hillclimb; strongest judgment; code-reviewer. astra and sol need the switchboard plugin.",
+      "description": "Model for the strongest tier, used by: bug-fix; perf-issue; hillclimb; strongest judgment; reviewer. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: opus",
         "fable",
@@ -395,10 +395,10 @@
       "description": "Comma-separated models for interrogate, one subagent each. Keep the models.json value to follow the panel tier. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "default": "models.json: panel (opus, sonnet) @high"
     },
-    "role_code_reviewer": {
+    "role_reviewer": {
       "type": "string",
-      "title": "Role: code-reviewer",
-      "description": "Model for this code-review role. The models.json value follows the strongest tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
+      "title": "Role: reviewer",
+      "description": "Model for this review role. The models.json value follows the strongest tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: strongest (opus) @high",
         "fable",

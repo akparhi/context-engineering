@@ -12,7 +12,7 @@ Invoke the `arcane:alchemy` skill and follow its instructions when a task meets 
 
 It routes to the right arcane skill from there. For smaller tasks, such as a contained change to one file with an obvious test, a question, or a one-line edit, work directly and verify on the real artifact.
 
-User instructions (CLAUDE.md, direct requests) take precedence. Other session-start mandates, such as superpowers, still apply. Their skill checks run as before, and when a task meets the criteria above they route implementation through alchemy.
+User instructions (CLAUDE.md, direct requests) take precedence. Other session-start mandates still apply. Their skill checks run as before, and when a task meets the criteria above they route implementation through alchemy.
 
 ## Skills Usage
 
@@ -25,7 +25,7 @@ When the intent is already specific, enter that skill directly. Invoke every ski
 - **Vague new project or subsystem** (no stated purpose or success criteria), or "brainstorm", "grill me" / "interview me": `arcane:brainstorm`, before any design.
 - **Understanding code**: `arcane:how` for how it works, `arcane:why` for why it is this way, `arcane:teach` to explain it.
 - **Tests**: `arcane:test-audit` whenever writing, changing, or reviewing tests; `arcane:tdd` when a failing test comes first.
-- **Reviewing a change**: `arcane:interrogate`; `arcane:code-review` for parallel correctness and code-quality reviewers; `arcane:deslop` for a slop pass.
+- **Reviewing a change**: `arcane:interrogate`; `arcane:review` for parallel correctness, code-quality and adversarial reviewers, and for reviewing plans and specs; `arcane:deslop` for a slop pass.
 - **Before every `git commit` or PR creation**: always `arcane:deslop` on the diff.
 - **Creating, updating, or tidying a PR**: `arcane:pr`. After opening: `arcane:babysit`; failing checks: `arcane:fix-ci`; review comments: `arcane:get-pr-comments`; conflicts: `arcane:fix-merge-conflicts`.
 - **TypeScript**: `arcane:typescript-best-practices` when reading or editing `.ts` or `.tsx`.

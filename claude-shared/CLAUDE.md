@@ -14,11 +14,11 @@
 
 <important if="you are planning, writing a spec, or writing an implementation plan">
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
-- Use the adversarial-review agent to review research, specs and implementation plans.
+- Use the `arcane:review` skill to review research, specs and implementation plans.
 </important>
 
 <important if="you finished a code change that will be committed or merged">
-- Use the `arcane:code-review` skill on it; add adversarial-review for risky changes (auth, data, migrations, concurrency).
+- Use the `arcane:review` skill on it.
 </important>
 
 <important if="the task involves a browser: opening pages, clicking, filling forms, screenshots, or web scraping">

@@ -1,5 +1,5 @@
 {
-  "cleanupPeriodDays": 21,
+  "cleanupPeriodDays": 30,
   "syncClaudeAiSkills": false,
   "syncClaudeAiPlugins": false,
   "env": {
@@ -225,7 +225,7 @@
         "sol": true,
         "sol_low": false,
         "sol_medium": false,
-        "sol_high": true,
+        "sol_high": false,
         "sol_xhigh": false,
         "luna": false,
         "luna_low": false,
@@ -234,6 +234,11 @@
         "luna_xhigh": false,
         "deepseek": true,
         "fast": true
+      }
+    },
+    "arcane@akparhi": {
+      "options": {
+        "role_reviewer": "sol"
       }
     }
   },
