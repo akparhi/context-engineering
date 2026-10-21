@@ -28,7 +28,48 @@ Pick lenses by target unless the user names them:
    - Code targets: review only added or modified code; trace cross-file and cross-package side effects, but do not report pre-existing issues in untouched code unless the change newly reaches or exposes them.
    - Correctness lens only: finish the independent audit before reading any PR/MR discussion, then follow the rubric's rule for incorporating it.
    - Do not modify the target repository; put scratch scripts and reproductions in `/tmp`. Do not spawn nested subagents.
-   - Return prioritized findings with `file:line` evidence, in the order the rubric specifies, in the final message. This overrides the rubric's report format: write no report files.
-4. After all finish, synthesize the results with findings first, deduplicated across reviewers. Weight overlapping findings more heavily, resolve disagreements with your own judgment, and keep summaries brief. Verify an adversarial finding's construction against the code before acting on it.
+   - Return the findings in the final message as the JSON in [Output](#output), in the order the rubric specifies, with no fences or prose around it. This overrides the rubric's report format: write no report files.
+4. After all finish, merge the reviewers' JSON into one result in the same schema. Deduplicate by location and defect, keep the highest priority, and list every lens that raised it in `lenses`. Weight overlapping findings more heavily, resolve disagreements with your own judgment, and drop findings you refute. Verify an adversarial finding's construction against the code before acting on it. The patch is incorrect when any kept finding is P0 or P1.
 
 If individual background summaries are already visible to the user, do not restate them wholesale. Surface the unified verdict, the highest-signal findings, and any remaining uncertainty.
+
+## Output
+
+Each reviewer returns this JSON, and the synthesis returns one merged copy of it:
+
+```json
+{
+  "findings": [
+    {
+      "title": "[P1] <imperative, at most 80 chars>",
+      "body": "<one Markdown paragraph: why it is a problem, citing files, lines, or functions>",
+      "confidence_score": 0.0,
+      "priority": 1,
+      "lenses": ["correctness"],
+      "code_location": {
+        "absolute_file_path": "<file path>",
+        "line_range": { "start": 1, "end": 1 }
+      }
+    }
+  ],
+  "overall_correctness": "patch is correct | patch is incorrect",
+  "overall_explanation": "<1 to 3 sentences justifying the verdict>",
+  "overall_confidence_score": 0.0,
+  "plan": {
+    "verifiers": ["<unit: who verifies it>"],
+    "one_way_steps": ["<step: undo cost, point of no return, handle holder>"],
+    "builder_questions": ["<question>"],
+    "assumptions": ["<assumption (testable | not testable)>"]
+  },
+  "checked": "<what the reviewer examined>",
+  "not_checked": "<what it did not>"
+}
+```
+
+- `priority` is 0 to 3, matching the title tag. P0 blocks release or major use. P1 is urgent. P2 is normal. P3 is nice to have.
+- `lenses` names the lens or lenses that raised the finding: `correctness`, `quality`, or `adversarial`.
+- `code_location` overlaps the diff, or the reviewed document for a plan. Keep the range to 10 lines or fewer.
+- For a plan or spec, `patch is correct` means the plan is ready to act on.
+- `plan`, `checked`, and `not_checked` are optional. The adversarial lens fills them; the synthesis unions them across reviewers.
+
+Reply to a human with the verdict and the highest-signal findings in prose, worst first, then the merged JSON under it. When the caller asks for JSON only, such as a gate or a script, return the merged JSON alone, with no fences or prose.

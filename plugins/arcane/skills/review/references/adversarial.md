@@ -85,19 +85,13 @@ Locate findings by section heading and line in the document.
 </plan_target>
 
 <output_contract>
-Keep the output compact and specific. Start with the verdict:
-- `needs-attention` if there is any material risk worth blocking on.
-- `approve` only if you cannot support any substantive adversarial finding.
-Then a terse ship/no-ship summary, not a neutral recap.
-Every finding includes:
-- severity: critical, high, medium, or low
-- title
-- location: file and line range, or document section and line
-- the construction, or the obstacle that blocked it
-- confidence from 0 to 1
-- a concrete recommendation
-For a plan, also return the verifier list, the one-way steps, the builder questions, and the assumptions.
-End with `Checked:` what you examined and `Not checked:` what you did not.
+Return the JSON in the review skill's Output section. Map this lens onto it:
+- Verdict: `approve` is `patch is correct`; `needs-attention`, any material risk worth blocking on, is `patch is incorrect`. Put the terse ship or no-ship call in `overall_explanation`.
+- Severity: critical is P0, high is P1, medium is P2, low is P3, in both the title tag and `priority`.
+- `body` carries the construction, or the obstacle that blocked it, and the concrete recommendation.
+- `confidence_score` is the 0 to 1 confidence.
+- For a plan, fill `plan` with the verifier list, the one-way steps, the builder questions, and the assumptions.
+- Fill `checked` with what you examined and `not_checked` with what you did not.
 </output_contract>
 
 <final_check>
