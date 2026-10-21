@@ -107,6 +107,7 @@
       "mcp__t3-code__t3_thread_transfers",
       "mcp__t3-code__t3_thread_update",
       "mcp__t3-code__t3_thread_wait",
+      "mcp__t3-code__t3_workflow_stop",
       "mcp__t3-code__t3_worktree_handoff",
       "mcp__t3-code__t3_worktree_list",
       "mcp__t3-code__t3_worktree_status",
@@ -125,7 +126,6 @@
     "keybindings-help": "off",
     "plugin-authoring": "off",
     "update-config": "off",
-    "superpowers:diagnosing-superpowers": "off",
     "dataviz": "off",
     "claude-api": "off"
   },
@@ -199,6 +199,7 @@
     "telemetry@builtin": false,
     "context7@claude-plugins-official": false,
     "switchboard@akparhi": true,
+    "skill-creator@claude-plugins-official": true,
     "arcane@akparhi": true
   },
   "extraKnownMarketplaces": {
@@ -213,6 +214,11 @@
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
   "effortLevel": "high",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "high"
+    }
+  },
   "promptSuggestionEnabled": false,
   "pluginConfigs": {
     "switchboard@akparhi": {
