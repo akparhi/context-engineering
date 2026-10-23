@@ -27,7 +27,7 @@ Launch all reviewers in a single message with the `Agent` tool, one per entry of
 
 Each reviewer gets `subagent_type: "general-purpose"`, `readonly: true`, and `model` set to its entry of the `interrogate reviewers` role in [Arcane Models](#arcane-models).
 
-Read `references/reviewer-prompt.md` and fill in the same template for every reviewer with the stated intent, the diff or file contents, the rubric from `references/rubric.md`, and the code-quality lens from `references/code-quality-review.md`.
+Read `references/reviewer-prompt.md` and fill in the same template for every reviewer with the stated intent, the diff or file contents, the rubric from `references/rubric.md`, and the code-quality lens from `references/code-quality-review.md`. Pick each subagent's reasoning level for the job, per the Subagents section of the **alchemy** skill.
 
 ## Step 4, Synthesize
 

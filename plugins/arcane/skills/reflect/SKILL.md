@@ -25,7 +25,7 @@ It covers the three layouts (flat `<id>.jsonl`, nested `<id>/<id>.jsonl`, subage
 
 One message, three `Agent` calls, `subagent_type: "general-purpose"`. Reviewers need MCP access to look up the tickets, chat threads, and observability traces the transcript references, so pick a subagent_type that retains MCP access. The prompt forbids file writes. The parent applies edits.
 
-Each reviewer and the synthesizer name a role in [Arcane Models](#arcane-models).
+Each reviewer and the synthesizer name a role in [Arcane Models](#arcane-models). Pick each subagent's reasoning level for the job, per the Subagents section of the **alchemy** skill.
 
 | Lens | Role | Prompt template |
 |---|---|---|
