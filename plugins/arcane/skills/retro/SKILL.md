@@ -25,7 +25,7 @@ Ask only when the question has two readings that need different evidence.
 
 Sources, in order of use:
 
-- **Transcripts.** Claude Code writes them to `~/.claude/projects/<encoded-cwd>/`. The layouts are flat `<id>.jsonl`, nested `<id>/<id>.jsonl`, and subagent `<id>/subagents/<child>.jsonl`. Select them for any scope with `node {SKILLBASE}/scripts/select-transcripts.mjs`, which prints paths newest first, one per line. Filters combine:
+- **Transcripts.** Claude Code writes them to `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/<encoded-cwd>/`. `node <plugin>/skills/reflect/scripts/claude-project-dir.mjs` prints this session's directory. The layouts are flat `<id>.jsonl`, nested `<id>/<id>.jsonl`, and subagent `<id>/subagents/<child>.jsonl`. Select them for any scope with `node {SKILLBASE}/scripts/select-transcripts.mjs`, which prints paths newest first, one per line. Filters combine:
   - `--opening "<opening prompt fragment>"`: the current session, newest match only.
   - `--session <id>`, `--project <dir name fragment>`.
   - `--since`/`--until <YYYY-MM-DD>`, by session start.

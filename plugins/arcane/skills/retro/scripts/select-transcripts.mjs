@@ -85,7 +85,7 @@ export const skillMarker = (name) =>
   new RegExp(`Base directory for this skill: [^"\\\\\\n]*/${escape(name)}(?=\\\\[nr]|"|$)`);
 
 export async function selectTranscripts(options) {
-  const projectsDir = options.projectsDir ?? join(homedir(), ".claude", "projects");
+  const projectsDir = options.projectsDir ?? join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"), "projects");
   const marker = options.skill ? skillMarker(options.skill) : null;
   const selected = [];
   for (const path of candidates(projectsDir, options.project)) {
