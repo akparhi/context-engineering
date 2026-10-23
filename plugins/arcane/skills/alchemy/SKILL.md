@@ -5,6 +5,8 @@ description: Alchemy agent style for concise, detailed responses, deliberate sub
 
 # Alchemy
 
+Bundled skills live at `../<name>/SKILL.md` from this file, so put this file's absolute path in every `alchemy-agent` prompt.
+
 ## Platform Adaptation
 
 These skills use Claude Code tool names (the `Skill` tool, the `Agent` tool, `AskUserQuestion`) and the Claude model names the `Agent` tool accepts, as [Arcane Models](#arcane-models) list them. On Claude Code they work as written. Other runtimes can discover the same Agent Skills tree, but they must use their own tool, model, and configuration equivalents.

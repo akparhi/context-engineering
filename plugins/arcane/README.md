@@ -17,6 +17,9 @@ arcane has no server or telemetry. Anything its skills ask your agent to read, i
 
 ## Links
 
-- [Skills, slash commands, runtime setup, and model configuration](https://github.com/michael-denyer/pstack-claude/blob/main/docs/reference.md)
-- [Issues and support](https://github.com/michael-denyer/pstack-claude/issues)
-- [Security policy](https://github.com/michael-denyer/pstack-claude/blob/main/SECURITY.md)
+- [Upstream pstack-claude reference](https://github.com/michael-denyer/pstack-claude/blob/main/docs/reference.md). It also covers `setup-pstack` and `pstack-models.md`, which arcane replaces with `models.json` and `/config`.
+- [Issues and support](https://github.com/akparhi/context-engineering/issues)
+
+## License
+
+MIT. arcane's modifications and additions are © 2026 Anand Kumar Parhi. The pstack-claude port is © 2026 Michael Denyer, original pstack © 2026 Lauren Tan, and imported cursor-team-kit skills © 2026 Cursor. The license texts and [NOTICE.md](skills/alchemy/references/licenses/NOTICE.md) are in [`skills/alchemy/references/licenses/`](skills/alchemy/references/licenses/).

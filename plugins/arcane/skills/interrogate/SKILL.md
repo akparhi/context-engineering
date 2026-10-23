@@ -25,7 +25,7 @@ Before spawning reviewers, state the intent in one clear paragraph from the user
 
 Launch all reviewers in a single message with the `Agent` tool, one per entry of the `interrogate reviewers` role in [Arcane Models](#arcane-models), labeled Reviewer A, B, and so on to match the entry count.
 
-Each reviewer gets `subagent_type: "general-purpose"`, `readonly: true`, and `model` set to its entry of the `interrogate reviewers` role in [Arcane Models](#arcane-models).
+Each reviewer gets `subagent_type: "general-purpose"`, a brief to read only and edit nothing, and `model` set to its entry of the `interrogate reviewers` role in [Arcane Models](#arcane-models).
 
 Read `references/reviewer-prompt.md` and fill in the same template for every reviewer with the stated intent, the diff or file contents, the rubric from `references/rubric.md`, and the code-quality lens from `references/code-quality-review.md`. Pick each subagent's reasoning level for the job, per the Subagents section of the **alchemy** skill.
 

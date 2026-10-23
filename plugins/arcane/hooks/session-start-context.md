@@ -23,6 +23,7 @@ User instructions (CLAUDE.md, direct requests) take precedence. Other session-st
 When the intent is already specific, enter that skill directly. Invoke every skill listed for the below activities, even when alchemy is not in play:
 
 - **Vague new project or subsystem** (no stated purpose or success criteria), or "brainstorm", "grill me" / "interview me": `arcane:brainstorm`, before any design.
+- **Design**: `arcane:architect` before code that crosses a function boundary; `arcane:arena` for design or code bakeoffs.
 - **Understanding code**: `arcane:how` for how it works, `arcane:why` for why it is this way, `arcane:teach` to explain it.
 - **Tests**: `arcane:test-audit` whenever writing, changing, or reviewing tests; `arcane:tdd` when a failing test comes first.
 - **Reviewing a change**: `arcane:interrogate`; `arcane:review` for parallel correctness, code-quality and adversarial reviewers, and for reviewing plans and specs; `arcane:deslop` for a slop pass.
@@ -40,6 +41,6 @@ Arcane skills name a role. Its model comes from the JSON below: arcane's `models
 - Find the role in `roles`. Its `models` names a tier, which `tiers` maps to a model, or it names the model directly. A list is a panel: one subagent per entry.
 - Pass that model as the `Agent` call's `model`. A role missing from `roles` omits `model`, so it runs on the parent session's model.
 - If the `Agent` tool rejects a model, use the closest valid slug of the same family from its error message, and say so.
-- Only models in `available` can be passed as `model`; `inherit-parent` omits `model`. Dispatch any other model as `subagent_type: "<model>-<effort>"` when the resolved effort (the role's `@<effort>`, else `defaultEffort`) is a level and that agent type exists, else as `subagent_type: "<model>"`, with no `model` and no effort: the agent type carries both. If no agent type matches, use `opus` with the effort field below, and say so.
+- Only models in `available` can be passed as `model`; `inherit-parent` omits `model`. Dispatch any other model as `subagent_type: "<model>-<effort>"` when the resolved effort (the role's `@<effort>`, else `defaultEffort`) is a level and that agent type exists, else as `subagent_type: "<model>"`, with no `model` and no effort: the agent type carries both. This overrides a skill's `subagent_type` for that entry. If no agent type matches, use `opus` with the effort field below, and say so.
 - A role value may carry a reasoning effort, as in `opus @high` or `strongest @high`; strip it before resolving the tier and passing `model`. A tier's effort applies to every panel entry. A value without one takes `defaultEffort`, where `session` sets no effort. A level from `efforts` goes in the `Agent` call's `effort` field; keep the `subagent_type` you would otherwise use. `session` omits `effort`.
 

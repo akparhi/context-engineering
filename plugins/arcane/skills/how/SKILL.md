@@ -7,7 +7,7 @@ description: Use for "how does X work", code walkthroughs before changing someth
 
 Explore the codebase to answer "how does X work?" questions. Produce architectural explanations at the level of a senior engineer onboarding onto a subsystem, enough to build a working mental model, not so much that it reads like annotated source code.
 
-Every spawn is an `Agent` subagent with `subagent_type: "general-purpose"` and `readonly: true`. Explorers use the `how explorer` role in [Arcane Models](#arcane-models), and every explainer uses the `how explainer` role. Pick each subagent's reasoning level for the job, per the Subagents section of the **alchemy** skill.
+Every spawn is an `Agent` subagent with `subagent_type: "general-purpose"`, briefed to read only and edit nothing. Explorers use the `how explorer` role in [Arcane Models](#arcane-models), and every explainer uses the `how explainer` role. Pick each subagent's reasoning level for the job, per the Subagents section of the **alchemy** skill.
 
 ## 1. Assess complexity
 
