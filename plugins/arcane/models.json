@@ -2,6 +2,7 @@
   "tiers": {
     "default": "opus",
     "strongest": "opus",
+    "worker": "sonnet",
     "fast": "sonnet",
     "panel": ["opus", "sonnet"]
   },
@@ -9,7 +10,7 @@
   "defaultEffort": "session",
   "available": ["fable", "opus", "sonnet", "haiku"],
   "roles": [
-    { "role": "feature, refactoring", "models": "default @medium", "skill": "alchemy" },
+    { "role": "feature, refactoring", "models": "worker @medium", "skill": "alchemy" },
     { "role": "bug-fix", "models": "strongest @high", "skill": "alchemy" },
     { "role": "perf-issue", "models": "strongest @high", "skill": "alchemy" },
     { "role": "hillclimb", "models": "strongest @high", "skill": "alchemy" },

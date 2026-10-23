@@ -22,7 +22,7 @@
     "default_model": {
       "type": "string",
       "title": "Default model",
-      "description": "Model for the default tier, used by: feature, refactoring; judgment and prose; how explorer; how explainer; why investigators; why synthesizer; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers. astra and sol need the switchboard plugin.",
+      "description": "Model for the default tier, used by: judgment and prose; how explorer; how explainer; why investigators; why synthesizer; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: opus",
         "fable",
@@ -55,6 +55,22 @@
       "type": "string",
       "title": "Fast model",
       "description": "Model for the fast tier, used by: trivial edits; retro investigator. astra and sol need the switchboard plugin.",
+      "options": [
+        "models.json: sonnet",
+        "fable",
+        "opus",
+        "sonnet",
+        "haiku",
+        "inherit-parent",
+        "astra",
+        "sol"
+      ],
+      "default": "models.json: sonnet"
+    },
+    "worker_model": {
+      "type": "string",
+      "title": "Worker model",
+      "description": "Model for the worker tier, used by: feature, refactoring. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: sonnet",
         "fable",
@@ -134,9 +150,9 @@
     "role_feature_refactoring": {
       "type": "string",
       "title": "Role: feature, refactoring",
-      "description": "Model for this alchemy role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
+      "description": "Model for this alchemy role. The models.json value follows the worker tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
-        "models.json: default (opus) @medium",
+        "models.json: worker (sonnet) @medium",
         "fable",
         "opus",
         "sonnet",
@@ -145,7 +161,7 @@
         "astra",
         "sol"
       ],
-      "default": "models.json: default (opus) @medium"
+      "default": "models.json: worker (sonnet) @medium"
     },
     "role_bug_fix": {
       "type": "string",

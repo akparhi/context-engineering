@@ -35,7 +35,7 @@ const tierUsers = (tier) =>
   models.roles.filter((r) => parseRole(r.models).tier === tier).map((r) => r.role).join('; ');
 
 const userConfig = {};
-for (const tier of ['default', 'strongest', 'fast']) {
+for (const tier of ['default', 'strongest', 'fast', 'worker']) {
   userConfig[`${tier}_model`] = picker(
     `${tier[0].toUpperCase()}${tier.slice(1)} model`,
     `Model for the ${tier} tier, used by: ${tierUsers(tier)}. ${SWITCHBOARD_NOTE}`,

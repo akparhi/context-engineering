@@ -34,6 +34,7 @@ while IFS= read -r line; do
     *'"default": "'*) chosen "${CLAUDE_PLUGIN_OPTION_DEFAULT_MODEL:-}" && line=$(printf '%s' "$line" | sed "s|: \".*\"|: \"$value\"|") ;;
     *'"strongest": "'*) chosen "${CLAUDE_PLUGIN_OPTION_STRONGEST_MODEL:-}" && line=$(printf '%s' "$line" | sed "s|: \".*\"|: \"$value\"|") ;;
     *'"fast": "'*) chosen "${CLAUDE_PLUGIN_OPTION_FAST_MODEL:-}" && line=$(printf '%s' "$line" | sed "s|: \".*\"|: \"$value\"|") ;;
+    *'"worker": "'*) chosen "${CLAUDE_PLUGIN_OPTION_WORKER_MODEL:-}" && line=$(printf '%s' "$line" | sed "s|: \".*\"|: \"$value\"|") ;;
     *'"defaultEffort": "'*) chosen "${CLAUDE_PLUGIN_OPTION_DEFAULT_EFFORT:-}" && line=$(printf '%s' "$line" | sed "s|: \".*\"|: \"$value\"|") ;;
     *'"panel": ['*) [ -z "$panel_changed" ] || line=$(printf '%s' "$line" | sed "s|\[.*\]|$(json_list "$panel")|") ;;
     *'"role": "'*)
