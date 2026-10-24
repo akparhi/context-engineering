@@ -30,7 +30,6 @@ When the intent is already specific, enter that skill directly. Invoke every ski
 - **Before every `git commit` or PR creation**: always `arcane:deslop` on the diff.
 - **Creating, updating, or tidying a PR**: `arcane:pr`. After opening: `arcane:babysit`; failing checks: `arcane:fix-ci`; review comments: `arcane:get-pr-comments`; conflicts: `arcane:fix-merge-conflicts`.
 - **TypeScript**: `arcane:typescript-best-practices` when reading or editing `.ts` or `.tsx`.
-- **Proving app behavior**: `arcane:create-verification-skill` when the repo has no scripted way to drive the app; `arcane:maintain-verification-skill` to audit an existing one.
 
 </EXTREMELY_IMPORTANT>
 

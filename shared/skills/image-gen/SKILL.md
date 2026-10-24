@@ -1,6 +1,6 @@
 ---
 name: image-gen
-description: Use when the user asks to generate, draw, or create an image, icon, illustration, mockup, or asset, or to edit an existing image, including images a coding task needs: replacing placeholder or hero images, OG/social cards, 404 or empty-state art, and product photos for seed data. Uses OpenAI image generation through the Codex ChatGPT login.
+description: Use when the user asks to generate, draw, or create an image, icon, illustration, mockup, or asset, or to edit an existing image, including images a coding task needs: replacing placeholder or hero images, OG/social cards, 404 or empty-state art, and product photos.
 ---
 
 Generate or edit images with OpenAI's hosted image tool via the user's Codex login (`codex login` must already be done). The script sits next to this file; `<skill-dir>` below means this skill's directory (`~/.claude/skills/image-gen` when installed globally).
