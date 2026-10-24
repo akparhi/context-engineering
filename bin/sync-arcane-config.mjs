@@ -77,6 +77,13 @@ for (const { role, models: value, skill } of models.roles) {
   }
 }
 
+userConfig.terse_reminder = {
+  type: 'boolean',
+  title: 'Terse style: remind every prompt',
+  description: "Repeat the terse output style's core rules on every prompt. Turn off if /output-style uses another style.",
+  default: true,
+};
+
 manifest.userConfig = userConfig;
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 console.log(`arcane userConfig: ${Object.keys(userConfig).length} options`);

@@ -258,6 +258,6 @@
   "switchModelsOnFlag": false,
   "fileCheckpointingEnabled": true,
   "terminalProgressBarEnabled": false,
-  "tipsEnabled": false,
-  "crossSessionInbound": "refuse"
+  "crossSessionInbound": "refuse",
+  "tipsEnabled": false
 }

@@ -2,7 +2,7 @@
   "name": "arcane",
   "displayName": "arcane",
   "icon": "./assets/arcane-icon.png",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Hybrid of superpowers + pstack workflows, for claude-code.",
   "author": {
     "name": "Anand Kumar Parhi"
@@ -426,6 +426,12 @@
         "sol"
       ],
       "default": "models.json: strongest (opus) @high"
+    },
+    "terse_reminder": {
+      "type": "boolean",
+      "title": "Terse style: remind every prompt",
+      "description": "Repeat the terse output style's core rules on every prompt. Turn off if /output-style uses another style.",
+      "default": true
     }
   }
 }

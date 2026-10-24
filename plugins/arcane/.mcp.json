@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "codegraph": {
+      "type": "stdio",
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/codegraph-mcp.sh",
+      "env": {
+        "CODEGRAPH_TELEMETRY": "0",
+        "DO_NOT_TRACK": "1"
+      }
+    }
+  }
+}
