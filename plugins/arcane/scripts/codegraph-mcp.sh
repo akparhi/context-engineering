@@ -3,6 +3,37 @@
 # arcane's plugin data and indexes the repo in the background; the server picks
 # the index up once it exists.
 set -eu
+
+# No index here and none on the way: serve zero tools, since the real server's schema and
+# instructions cost every session and subagent context. Keep the lookup in sync with hooks/reminders.sh.
+min_code_files=500
+root=$(git rev-parse --show-toplevel 2>/dev/null || true)
+code_files() {
+  git -C "$root" ls-files | grep -cE '\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|py|go|rs|java|c|h|cc|cpp|cxx|hpp|cs|php|rb|swift|kt|kts|dart|svelte|vue|astro|scala|lua|m|mm|sol)$' || true
+}
+dir="${CLAUDE_PROJECT_DIR:-$PWD}"
+while [ ! -f "$dir/.codegraph/codegraph.db" ] && [ "$dir" != / ]; do dir=$(dirname "$dir"); done
+indexed=false
+[ -f "$dir/.codegraph/codegraph.db" ] && indexed=true
+# A linked worktree has a .git file; indexing each one would copy the repo's index per lane.
+will_index=false
+if [ -n "$root" ] && [ -d "$root/.git" ] && [ "$(code_files)" -ge "$min_code_files" ]; then
+  will_index=true
+fi
+if [ "$indexed" = false ] && [ "$will_index" = false ]; then
+  exec node -e '
+    require("readline").createInterface({ input: process.stdin }).on("line", (line) => {
+      let m;
+      try { m = JSON.parse(line); } catch { return; }
+      if (m.id === undefined) return;
+      const result = m.method === "initialize"
+        ? { protocolVersion: m.params?.protocolVersion ?? "2025-06-18", capabilities: {}, serverInfo: { name: "codegraph", version: "off" } }
+        : m.method === "tools/list" ? { tools: [] } : m.method === "ping" ? {} : undefined;
+      const reply = result ? { result } : { error: { code: -32601, message: "codegraph is off: no index here" } };
+      process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id: m.id, ...reply }) + "\n");
+    });'
+fi
+
 version=1.6.2
 data="${CLAUDE_PLUGIN_DATA:?}"
 marker="$data/codegraph-$version.installed"
@@ -32,16 +63,8 @@ if ! command -v codegraph >/dev/null 2>&1; then
   fi
 fi
 
-# init is a no-op on a built index and repairs a partial one. A linked worktree has a
-# .git file; indexing each one would copy the repo's index per lane. Repos under
-# min_code_files stay unindexed, since grep covers them; `codegraph init` opts one in.
-min_code_files=500
-root=$(git rev-parse --show-toplevel 2>/dev/null || true)
-code_files() {
-  git -C "$root" ls-files | grep -cE '\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|py|go|rs|java|c|h|cc|cpp|cxx|hpp|cs|php|rb|swift|kt|kts|dart|svelte|vue|astro|scala|lua|m|mm|sol)$' || true
-}
-if [ -n "$root" ] && [ -d "$root/.git" ] &&
-  { [ -f "$root/.codegraph/codegraph.db" ] || [ "$(code_files)" -ge "$min_code_files" ]; }; then
+# init is a no-op on a built index and repairs a partial one.
+if [ -n "$root" ] && [ -d "$root/.git" ] && { [ -f "$root/.codegraph/codegraph.db" ] || [ "$will_index" = true ]; }; then
   nohup nice codegraph init "$root" </dev/null >/dev/null 2>&1 &
 fi
 
