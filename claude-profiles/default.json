@@ -61,6 +61,7 @@
       "RemoteTrigger",
       "ShareOnboardingGuide",
       "ReportFindings",
+      "PublishPlugin",
       "ListMcpResourcesTool",
       "ReadMcpResourceTool",
       "ReadMcpResourceDirTool",
@@ -113,8 +114,7 @@
       "mcp__t3-code__t3_worktree_status",
       "mcp__t3-code__task_cancel",
       "mcp__t3-code__task_status",
-      "mcp__t3-code__request_secret",
-      "PublishPlugin"
+      "mcp__t3-code__request_secret"
     ],
     "defaultMode": "bypassPermissions"
   },
@@ -166,26 +166,6 @@
           }
         ]
       }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cat \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/output-styles/reminder.md\" 2>/dev/null"
-          }
-        ]
-      }
     ]
   },
   "disableRemoteControl": true,
@@ -211,7 +191,7 @@
       }
     }
   },
-  "outputStyle": "terse",
+  "outputStyle": "arcane:terse",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
   "effortLevel": "high",
