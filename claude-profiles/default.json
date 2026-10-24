@@ -44,7 +44,7 @@
       "WebFetch",
       "WebSearch",
       "Write",
-      "mcp__plugin_arcane_codegraph__*"
+      "mcp__plugin_bureau_codegraph__*"
     ],
     "deny": [
       "Read(./dist/**)",
@@ -183,7 +183,7 @@
     "context7@claude-plugins-official": false,
     "switchboard@akparhi": true,
     "skill-creator@claude-plugins-official": true,
-    "arcane@akparhi": true
+    "bureau@akparhi": true
   },
   "extraKnownMarketplaces": {
     "akparhi": {
@@ -193,7 +193,7 @@
       }
     }
   },
-  "outputStyle": "arcane:terse",
+  "outputStyle": "bureau:terse",
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": false,
   "effortLevel": "high",
@@ -228,7 +228,7 @@
         "fast": true
       }
     },
-    "arcane@akparhi": {
+    "bureau@akparhi": {
       "options": {
         "role_reviewer": "sol"
       }

@@ -1,8 +1,8 @@
 #!/bin/sh
 # Refresh the cached copy of this marketplace's plugins after editing them.
 #
-#   bun run reinstall            # arcane and switchboard
-#   bun run reinstall arcane
+#   bun run reinstall            # bureau and switchboard
+#   bun run reinstall bureau
 #
 # Claude Code runs plugins from ~/.claude/plugins/cache, not this repo, and
 # `claude plugin update` skips a plugin whose version did not change.
@@ -10,9 +10,9 @@
 # Restart open sessions afterward.
 set -eu
 
-[ $# -gt 0 ] || set -- arcane switchboard
+[ $# -gt 0 ] || set -- bureau switchboard
 
-node "$(dirname "$0")/sync-arcane-config.mjs"
+node "$(dirname "$0")/sync-bureau-config.mjs"
 node "$(dirname "$0")/sync-switchboard-config.mjs"
 claude plugin marketplace update akparhi
 settings="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json"

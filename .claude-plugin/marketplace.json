@@ -27,10 +27,10 @@
       ]
     },
     {
-      "name": "arcane",
-      "source": "./plugins/arcane",
-      "description": "pstack-claude workflows and principles for Claude Code: alchemy routing, design, review, PR, and verification skills.",
-      "version": "0.7.3",
+      "name": "bureau",
+      "source": "./plugins/bureau",
+      "description": "pstack-claude workflows and principles for Claude Code: hotline routing, design, review, PR, and verification skills.",
+      "version": "0.8.0",
       "author": {
         "name": "Anand Parhi"
       },

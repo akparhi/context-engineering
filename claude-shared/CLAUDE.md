@@ -1,6 +1,6 @@
 # Directives: Just do it
 
-- Clear directive → do it. No confirm, no alternatives, no options menu. Includes destructive-but-recoverable git actions. (`arcane:principle-never-block-on-the-human`)
+- Clear directive → do it. No confirm, no alternatives, no options menu. Includes destructive-but-recoverable git actions. (`bureau:principle-never-block-on-the-human`)
 - Be autonomous, and stop only when you absolutely need me. Report in one line what I can't see: CI bypasses, failed checks, unexpected repo state. Then keep going.
 - **IMPORTANT**:
   - Irreversible + unrecoverable (data loss, outward-facing sends): one short confirm.
@@ -8,17 +8,17 @@
 
 # Working Principles
 
-- Load cited `arcane:principle-*` skills before acting on their rule.
+- Load cited `bureau:principle-*` skills before acting on their rule.
 - Always kill processes you started (dev servers etc.) once no longer needed.
 - Research docs, reports and scratch output go in `.tmp/` at repo root; if missing, create it with a `.gitignore` containing `*`.
 
 <important if="you are planning, writing a spec, or writing an implementation plan">
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
-- Use the `arcane:review` skill to review research, specs and implementation plans.
+- Use the `bureau:review` skill to review research, specs and implementation plans.
 </important>
 
 <important if="you finished a code change that will be committed or merged">
-- Use the `arcane:review` skill on it.
+- Use the `bureau:review` skill on it.
 </important>
 
 <important if="the task involves a browser: opening pages, clicking, filling forms, screenshots, or web scraping">
@@ -30,12 +30,12 @@
 </important>
 
 <important if="you are running the same test or check more than once">
-- Write a reusable script and reuse it. (`arcane:principle-build-the-lever`)
+- Write a reusable script and reuse it. (`bureau:principle-build-the-lever`)
 </important>
 
 <important if="the goal is large or multi-phase, or the task produces noisy output with a small conclusion (multi-search research, browser exploration, log-heavy debugging, QA, verification)">
 
-**CRITICAL RULE**: act as orchestrator, and spawn subagents. Orchestrator gets the report, not the trail. Always guard the context window. (`arcane:principle-guard-the-context-window`)
+**CRITICAL RULE**: act as orchestrator, and spawn subagents. Orchestrator gets the report, not the trail. Always guard the context window. (`bureau:principle-guard-the-context-window`)
 
 - **Large/multi-phase goals:** always delegate self-contained chunks (implementers per task, reviewers, research fan-out); main session stays coordinator.
 - **Noisy-process tasks:** go to a subagent even as single tasks.
@@ -47,7 +47,7 @@
   - **deepseek** (agent type): use as another panel model for swarm/arena.
 - **Subagent effort:** use medium or high based on task.
 - Switchboard agent types (astra, sol, deepseek) carry their own model and effort; NEVER pass `model` or `effort` for them.
-  - Dispatch as `subagent_type: "<name>"`. Its prompt is only "Complete the delegated task.", not `arcane:alchemy-agent`'s; when an arcane role uses one, tell it in the brief to read the `arcane:alchemy` skill and name the playbook step.
+  - Dispatch as `subagent_type: "<name>"`. Its prompt is only "Complete the delegated task.", not `bureau:field-agent`'s; when a bureau role uses one, tell it in the brief to read the `bureau:hotline` skill and name the playbook step.
   - Agent type missing from the Agent tool's list → use `opus` and say so.
 - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
 - **DO NOT fan out** for small targeted tasks or one-off debugging asks.
@@ -55,7 +55,7 @@
 
 # Global Coding Standards
 
-**Write for the next reader** — they lack your context. Readability wins over any rule below. (`arcane:principle-minimize-reader-load`)
+**Write for the next reader** — they lack your context. Readability wins over any rule below. (`bureau:principle-minimize-reader-load`)
 
 **YAGNI: laziest thing that works.** Understand the problem first (read what the change touches, trace real flow), then climb this ladder and stop at the first rung that holds:
 
@@ -66,16 +66,16 @@
 5. Only then: minimum implementation.
 
 - Laziest = reuse over new code, not avoid new code/deps. Decide and move.
-- **IMPORTANT**: Fix root cause, not every caller (`arcane:principle-fix-root-causes`). **Fewest files, shortest diff** (`arcane:principle-laziness-protocol`).
+- **IMPORTANT**: Fix root cause, not every caller (`bureau:principle-fix-root-causes`). **Fewest files, shortest diff** (`bureau:principle-laziness-protocol`).
 - Mark deliberate shortcuts with ceiling + upgrade path: `// yagni: global lock, per-account if throughput matters`.
 - **CRITICAL**: Never simplify away anything I explicitly asked for. Ladder governs implementation, not requirements.
 
 <important if="you are making a non-trivial structural change: new module, abstraction, layer, or service boundary">
-- Happy path reads top-to-bottom without chasing callers; errors, invalid states, cleanup explicit. (`arcane:principle-minimize-reader-load`)
+- Happy path reads top-to-bottom without chasing callers; errors, invalid states, cleanup explicit. (`bureau:principle-minimize-reader-load`)
 - Abstract on what varies (storage, transport, vendor SDK, auth, tenancy, clock/randomness), never on caller count. Can't name the axis → duplicate.
-- Abstraction must hide complexity from callers — no pass-through wrappers. (`arcane:principle-laziness-protocol`)
+- Abstraction must hide complexity from callers — no pass-through wrappers. (`bureau:principle-laziness-protocol`)
 - Dependencies point inward: core never imports frameworks, DBs, HTTP, queues, UI, vendor types — core-owned ports, wired at edge.
-- Business rules in the model; controllers/handlers/hooks/serializers only translate. (`arcane:principle-boundary-discipline`)
+- Business rules in the model; controllers/handlers/hooks/serializers only translate. (`bureau:principle-boundary-discipline`)
 - Organize by feature, not `utils/`/`common/`/`*Service`. One term per concept, domain language.
 - Split command from query; split functions mixing abstraction levels or hiding side effects.
 </important>
@@ -83,9 +83,9 @@
 <important if="you are touching persistence, caches, queues, messaging, schemas, APIs, events, or anything crossing a service or version boundary">
 - Important writes name source of truth + consistency/durability/visibility expectation.
 - Derived data (caches, indexes, projections) declares staleness, lag, rebuild path.
-- Assume crashes, partial writes, timeouts, duplicates, reordering, stale replicas, unknown success → retried/replayed/queued work idempotent or transactional, no casual exactly-once. (`arcane:principle-make-operations-idempotent`)
+- Assume crashes, partial writes, timeouts, duplicates, reordering, stale replicas, unknown success → retried/replayed/queued work idempotent or transactional, no casual exactly-once. (`bureau:principle-make-operations-idempotent`)
 - Schemas/APIs/events/enums are versioned contracts: survive old code, old data, rolling upgrades, in-flight messages. Additive, nullable by default.
-- Validate at trust boundaries; make invalid states unrepresentable over checking everywhere. (`arcane:principle-boundary-discipline`, `arcane:principle-type-system-discipline`)
+- Validate at trust boundaries; make invalid states unrepresentable over checking everywhere. (`bureau:principle-boundary-discipline`, `bureau:principle-type-system-discipline`)
 </important>
 
 <important if="you are writing or editing a code comment">

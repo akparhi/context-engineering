@@ -18,7 +18,7 @@ codex-profiles/     full Codex config.toml profiles
 codex-shared/       AGENTS.md, agent roles and macOS sound hooks
 shared/skills/      skills used by both Claude and Codex
 plugins/            this repo is also a plugin marketplace
-  arcane/           pstack-claude workflows and principles
+  bureau/           pstack-claude workflows and principles
   switchboard/      local gateway that runs Codex models inside Claude Code
 bin/setup.mjs       Claude installer
 bin/reinstall-plugin.sh  refresh installed plugins after editing them
@@ -78,19 +78,19 @@ Install from any machine, no clone needed:
 
 ```bash
 claude plugin marketplace add akparhi/context-engineering
-claude plugin install arcane@akparhi
+claude plugin install bureau@akparhi
 claude plugin install switchboard@akparhi
 ```
 
 Inside Claude Code, the same is `/plugin marketplace add akparhi/context-engineering`, then `/plugin install <name>@akparhi`. Add `--scope project` to enable a plugin for one repo only. Restart Claude Code after installing.
 
-Claude Code runs plugins from its own cache, not from this repo. After editing a plugin here, run `bun run reinstall` (both plugins) or `bun run reinstall arcane`, then restart open sessions.
+Claude Code runs plugins from its own cache, not from this repo. After editing a plugin here, run `bun run reinstall` (both plugins) or `bun run reinstall bureau`, then restart open sessions.
 
-### arcane
+### bureau
 
-A fork of [pstack-claude](https://github.com/michael-denyer/pstack-claude), the Claude Code port of [pstack](https://github.com/cursor/plugins/tree/main/pstack). A SessionStart hook injects a routing mandate: multi-file changes, design choices and unknown bugs go through the `arcane:alchemy` skill, which picks a playbook (bug fix, feature, refactoring, perf, PR, shipping and more). The same context lists which skill to use for each activity, such as `arcane:architect` for design, `arcane:test-audit` for tests, and `arcane:pr` for PRs. Principle skills load on their own when their situation comes up.
+A fork of [pstack-claude](https://github.com/michael-denyer/pstack-claude), the Claude Code port of [pstack](https://github.com/cursor/plugins/tree/main/pstack). A SessionStart hook injects a routing mandate: multi-file changes, design choices and unknown bugs go through the `bureau:hotline` skill, which picks a playbook (bug fix, feature, refactoring, perf, PR, shipping and more). The same context lists which skill to use for each activity, such as `bureau:architect` for design, `bureau:test-audit` for tests, and `bureau:pr` for PRs. Principle skills load on their own when their situation comes up.
 
-Every subagent model comes from one file, [`plugins/arcane/models.json`](plugins/arcane/models.json), which the hook injects each session. Edit it and reinstall to change a role's model. Each user can also override its tiers, default effort, and each role in `/config`, without editing the file. `bun run reinstall` regenerates those `/config` options from `models.json` with `bin/sync-arcane-config.mjs`. Differences from upstream: Claude Code only (no Codex, Copilot, Pi or Muse support), no `setup-pstack`, `in-your-own-words`, `bro` or `ketchup-video` skill, `help` instead of `poteto-help`, `models.json` and `/config` instead of the `pstack-models.md` sheet, efforts limited to low, medium and high, opus instead of fable as the strongest model, `review` instead of thermos, `pr` instead of `make-pr-easy-to-review`, and arcane-only skills (`brainstorm`, `retro`, `show-me`, `test-audit`). `statechart` comes from Lauren's official plugin. See [`plugins/arcane/README.md`](plugins/arcane/README.md).
+Every subagent model comes from one file, [`plugins/bureau/models.json`](plugins/bureau/models.json), which the hook injects each session. Edit it and reinstall to change a role's model. Each user can also override its tiers, default effort, and each role in `/config`, without editing the file. `bun run reinstall` regenerates those `/config` options from `models.json` with `bin/sync-bureau-config.mjs`. Differences from upstream: Claude Code only (no Codex, Copilot, Pi or Muse support), no `setup-pstack`, `in-your-own-words`, `bro` or `ketchup-video` skill, `help` instead of `poteto-help`, `models.json` and `/config` instead of the `pstack-models.md` sheet, efforts limited to low, medium and high, opus instead of fable as the strongest model, `review` instead of thermos, `pr` instead of `make-pr-easy-to-review`, and bureau-only skills (`brainstorm`, `retro`, `show-me`, `test-audit`). `statechart` comes from Lauren's official plugin. See [`plugins/bureau/README.md`](plugins/bureau/README.md).
 
 ### switchboard
 
