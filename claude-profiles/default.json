@@ -23,7 +23,8 @@
     "CLAUDE_CODE_ARTIFACT_PREVIEW": "false",
     "CLAUDE_CODE_ENABLE_AUTO_MODE": "false",
     "CLAUDE_CODE_ENABLE_EXPERIMENTAL_ADVISOR_TOOL": "false",
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "false"
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "false",
+    "CLAUDE_CODE_FORK_SUBAGENT": "0"
   },
   "attribution": {
     "sessionUrl": false
@@ -42,7 +43,8 @@
       "TodoWrite",
       "WebFetch",
       "WebSearch",
-      "Write"
+      "Write",
+      "mcp__plugin_arcane_codegraph__*"
     ],
     "deny": [
       "Read(./dist/**)",
@@ -198,6 +200,9 @@
   "modelSettings": {
     "claude-opus-5-5": {
       "effortLevel": "high"
+    },
+    "claude-haiku-5-5": {
+      "effortLevel": "medium"
     }
   },
   "promptSuggestionEnabled": false,
