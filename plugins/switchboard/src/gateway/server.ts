@@ -688,7 +688,7 @@ export function createNativeGateway({
       }
       const external = externalModel(body.model);
       assertProviderEnabled(external, enabledProviders);
-      const signal = providerSignal(abort.signal, external, timeoutMs);
+      const signal = providerSignal(abort.signal, timeoutMs);
       const agentId = header(req.headers['x-claude-code-agent-id']);
       const metadata = requestIdentity(
         parsed,
@@ -735,11 +735,9 @@ export function createNativeGateway({
 
 class RequestTooLarge extends Error {}
 
-function providerSignal(disconnected: AbortSignal, model: string | null, timeoutMs?: number) {
-  if (model !== null && (openaiSlug(model) !== undefined || model.startsWith('switchboard/zen/')) && timeoutMs === undefined) {
-    return disconnected;
-  }
-  return AbortSignal.any([disconnected, AbortSignal.timeout(timeoutMs ?? 180000)]);
+// Wall-clock only when configured: long silent thinking turns outlast any fixed default.
+function providerSignal(disconnected: AbortSignal, timeoutMs?: number) {
+  return timeoutMs === undefined ? disconnected : AbortSignal.any([disconnected, AbortSignal.timeout(timeoutMs)]);
 }
 
 async function readRequest(req: http.IncomingMessage) {
