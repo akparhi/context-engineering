@@ -1,5 +1,5 @@
 {
-  "version": "0.7.2",
+  "version": "0.8.0",
   "author": {
     "name": "akparhi"
   },
@@ -11,7 +11,7 @@
   "userConfig": {
     "fast": {
       "type": "boolean",
-      "title": "Fast mode for Sol and Luna (uses more Codex allowance; never Astra)",
+      "title": "Fast mode for Sol, Terra and Luna (uses more Codex allowance; never Astra)",
       "description": "",
       "default": false
     },
@@ -72,6 +72,36 @@
     "astra_xhigh": {
       "type": "boolean",
       "title": "Show astra-xhigh subagent",
+      "description": "",
+      "default": false
+    },
+    "terra": {
+      "type": "boolean",
+      "title": "Show Terra subagent",
+      "description": "",
+      "default": true
+    },
+    "terra_low": {
+      "type": "boolean",
+      "title": "Show terra-low subagent",
+      "description": "",
+      "default": false
+    },
+    "terra_medium": {
+      "type": "boolean",
+      "title": "Show terra-medium subagent",
+      "description": "",
+      "default": false
+    },
+    "terra_high": {
+      "type": "boolean",
+      "title": "Show terra-high subagent",
+      "description": "",
+      "default": false
+    },
+    "terra_xhigh": {
+      "type": "boolean",
+      "title": "Show terra-xhigh subagent",
       "description": "",
       "default": false
     },

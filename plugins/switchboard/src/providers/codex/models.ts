@@ -4,6 +4,7 @@ import { EFFORTS, type Effort } from './responses.ts';
 export const MODELS = {
   'sol': 'gpt-6.1-sol',
   'astra': 'gpt-6-astra',
+  'terra': 'gpt-6.1-terra',
   'luna': 'gpt-6-luna',
 };
 
@@ -20,7 +21,7 @@ export function modelProvider(id: string): string | undefined {
 }
 
 /** Aliases `/config` fast mode moves to Codex's priority tier. Astra never: the owner keeps it on the default tier. */
-export const FAST_MODELS: ReadonlySet<string> = new Set(['sol', 'luna']);
+export const FAST_MODELS: ReadonlySet<string> = new Set(['sol', 'terra', 'luna']);
 
 /** Fast mode is opt-in; Codex bills the priority tier at a higher usage rate. */
 export const fastMode = (options: PluginOptions) => String(options.fast) === 'true';
@@ -28,6 +29,7 @@ export const fastMode = (options: PluginOptions) => String(options.fast) === 'tr
 export const LABELS: Readonly<Record<string, string>> = {
   sol: 'Sol',
   astra: 'Astra',
+  terra: 'Terra',
   luna: 'Luna',
 };
 
@@ -35,6 +37,7 @@ export const LABELS: Readonly<Record<string, string>> = {
 export const DESCRIPTIONS: Readonly<Record<string, string>> = {
   sol: 'Latest workhorse model for coding and everyday work.',
   astra: 'Frontier intelligence for the most demanding work.',
+  terra: 'GPT-6.1 Terra Codex model.',
   luna: 'Fast and affordable model for easier tasks.',
 };
 

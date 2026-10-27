@@ -253,7 +253,7 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
   );
   assert.deepEqual(pickerModels, Object.keys(MODELS));
   assert(result.settings.modelPicker.options.every((row: { behavesAs: string }) => row.behavesAs === 'claude-sonnet-4-6'));
-  assert.deepEqual(result.agents.sort(), ['astra', 'luna', 'sol']);
+  assert.deepEqual(result.agents.sort(), ['astra', 'luna', 'sol', 'terra']);
   assert.equal(result.settings.permissions.disableAutoMode, 'disable');
   assert(result.args.includes('--dangerously-skip-permissions'));
   assert.deepEqual(result.models, ['sol']);
@@ -261,15 +261,15 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
   assert.deepEqual(withoutProviders.settings.modelPicker.options, []);
   assert.deepEqual(withoutProviders.agents, []);
   const zen = JSON.parse((await launch({ OPENCODE_API_KEY: 'zen-fixture' })).stdout);
-  assert.deepEqual(zen.agents.sort(), ['astra', 'deepseek', 'luna', 'sol']);
+  assert.deepEqual(zen.agents.sort(), ['astra', 'deepseek', 'luna', 'sol', 'terra']);
   assert.deepEqual(zen.settings.modelPicker.options.map((option: { model: string }) => option.model), Object.keys(MODELS));
   const badKey = await launch({ OPENCODE_API_KEY: 'bad key' });
   assert.match(badKey.stderr, /deepseek unavailable: Invalid OpenCode Zen API key/);
-  assert.deepEqual(JSON.parse(badKey.stdout).agents.sort(), ['astra', 'luna', 'sol']);
+  assert.deepEqual(JSON.parse(badKey.stdout).agents.sort(), ['astra', 'luna', 'sol', 'terra']);
   const zenDisabled = JSON.parse(
     (await launch({ OPENCODE_API_KEY: 'zen-fixture', SWITCHBOARD_ENABLED_PROVIDERS: 'openai' })).stdout,
   );
-  assert.deepEqual(zenDisabled.agents.sort(), ['astra', 'luna', 'sol']);
+  assert.deepEqual(zenDisabled.agents.sort(), ['astra', 'luna', 'sol', 'terra']);
 
   const launchFiltered = (selection: string, args: string[] = []) =>
     launch({ SWITCHBOARD_MODELS: selection }, args);
@@ -285,7 +285,7 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
   const all = JSON.parse((await launchFiltered('all')).stdout);
   assert.equal(all.settings.modelPicker.options.length, Object.keys(MODELS).length);
   const plus = JSON.parse((await launchFiltered('+sol')).stdout);
-  assert.deepEqual(plus.agents.sort(), ['astra', 'luna', 'sol']);
+  assert.deepEqual(plus.agents.sort(), ['astra', 'luna', 'sol', 'terra']);
   // A saved selection may still name retired zen models; they are skipped.
   const saved = JSON.parse(
     (await launchFiltered('switchboard/zen/deepseek-v4.1-flash,luna')).stdout,
@@ -321,7 +321,7 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
     }),
   );
   const configured = await launch({});
-  assert.deepEqual(JSON.parse(configured.stdout).agents.sort(), ['astra', 'luna', 'sol-high']);
+  assert.deepEqual(JSON.parse(configured.stdout).agents.sort(), ['astra', 'luna', 'sol-high', 'terra']);
   await rm(path.join(cwd, 'claude', 'settings.json'));
   const hidden = JSON.parse(
     (await launchFiltered('', ['--', '--model', 'sol'])).stdout,
@@ -354,7 +354,7 @@ test('launcher keeps the full worker catalog under 30 KB', () => {
     Object.fromEntries(Object.keys(OPENAI_WORKERS).map((name) => [workerOptionKey(name), true])),
     true,
   );
-  assert.equal(Object.keys(agents).length, 16);
+  assert.equal(Object.keys(agents).length, 21);
   const definitions = JSON.stringify(agents);
   const definitionBytes = Buffer.byteLength(definitions);
   assert(definitionBytes < 30000, `representative worker JSON was ${definitionBytes} bytes`);
@@ -362,7 +362,7 @@ test('launcher keeps the full worker catalog under 30 KB', () => {
 
 test('default config registers one session-effort worker per selected model', () => {
   const all = workerDefinitions(true);
-  assert.deepEqual(Object.keys(all), ['sol', 'astra', 'luna']);
+  assert.deepEqual(Object.keys(all), ['sol', 'astra', 'terra', 'luna']);
   for (const worker of Object.values(all)) {
     assert.equal('effort' in worker, false);
     assert.match(worker.description, /^gpt-[^,]+, session reasoning\./);
@@ -376,7 +376,7 @@ test('default config registers one session-effort worker per selected model', ()
 test('config toggles effort variants and base workers, still filtered by picker models', () => {
   const options = { sol: false, sol_xhigh: true, luna_low: 'true', astra: 'false' };
   const agents = workerDefinitions(true, undefined, options);
-  assert.deepEqual(Object.keys(agents), ['sol-xhigh', 'luna', 'luna-low']);
+  assert.deepEqual(Object.keys(agents), ['sol-xhigh', 'terra', 'luna', 'luna-low']);
   assert.deepEqual(agents['luna-low'], {
     ...agents['luna'],
     description: 'gpt-6-luna, low reasoning. Native coding, investigation, and review.',
@@ -461,6 +461,6 @@ console.log(JSON.stringify({args:process.argv.slice(2),gateway:!!process.env.SWI
 test('OpenAI models carry short picker labels', () => {
   assert.deepEqual(
     Object.keys(MODELS).map((model) => LABELS[model]),
-    ['Sol', 'Astra', 'Luna'],
+    ['Sol', 'Astra', 'Terra', 'Luna'],
   );
 });

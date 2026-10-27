@@ -149,11 +149,11 @@ function normalizeModels(value: string | undefined, previous?: string): string |
   for (const model of persisted) {
     // Bare IDs mirror the MODELS keys in src/providers/codex/models.ts; this file can't import src.
     if (
-      !/^(astra|sol|luna|switchboard\/[a-z]+\/[A-Za-z0-9][A-Za-z0-9._:-]*)$/.test(model) ||
+      !/^(astra|sol|terra|luna|switchboard\/[a-z]+\/[A-Za-z0-9][A-Za-z0-9._:-]*)$/.test(model) ||
       model.startsWith('switchboard/openai/')
     ) {
       throw new Error(
-        `Invalid picker model ID: ${JSON.stringify(model)}. Use OpenAI aliases such as astra, sol or luna (not switchboard/openai/...), other full switchboard/<provider>/<model> IDs, or all/none.`,
+        `Invalid picker model ID: ${JSON.stringify(model)}. Use OpenAI aliases such as astra, sol, terra or luna (not switchboard/openai/...), other full switchboard/<provider>/<model> IDs, or all/none.`,
       );
     }
   }

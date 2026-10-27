@@ -10,7 +10,7 @@ const manifest = JSON.parse(readFileSync(manifestPath));
 const userConfig = {
   fast: {
     type: 'boolean',
-    title: 'Fast mode for Sol and Luna (uses more Codex allowance; never Astra)',
+    title: 'Fast mode for Sol, Terra and Luna (uses more Codex allowance; never Astra)',
     description: '',
     default: false,
   },

@@ -219,7 +219,7 @@ test('setup renames the launch command, persists picker models, and keeps them a
   await assert.rejects(f.install(['--command', 'bad name']), /Invalid launch command/);
   await assert.rejects(f.install(['--models', 'sool']), /Invalid picker model/);
   await assert.rejects(f.install(['--models', 'opus']), /Invalid picker model/);
-  await assert.rejects(f.install(['--models', 'switchboard/openai/gpt-6-astra']), /Invalid picker model.*astra, sol or luna/);
+  await assert.rejects(f.install(['--models', 'switchboard/openai/gpt-6-astra']), /Invalid picker model.*astra, sol, terra or luna/);
   // A picker row can display a context tag, so that is the spelling a user copies out of
   // /model. It names a row and must persist as the untagged ID, which stays valid whether
   // or not the tag is on, and must not persist twice alongside its own plain spelling.
