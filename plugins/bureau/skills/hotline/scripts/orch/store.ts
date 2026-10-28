@@ -1296,10 +1296,10 @@ function branchPullRequest({
     repo,
     localRepository,
   });
-  // A reused head branch keeps its closed and merged PRs; the open one is the
-  // live link.
-  const open = local.filter((item) => item.state === "OPEN");
-  const candidates = open.length > 0 ? open : local;
+  // A branch may have closed or merged historical PRs after stack surgery.
+  // Prefer its sole active PR, but retain historical anchors when none is open.
+  const active = local.filter((row) => row.state === "OPEN");
+  const candidates = active.length > 0 ? active : local;
   const row = candidates[0];
   if (row === undefined) {
     const ignored =

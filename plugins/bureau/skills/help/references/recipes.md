@@ -6,7 +6,7 @@ Swap in the real paths, skills, and done checks. Informal wording works.
 
 - `/hotline read <thread>. restate the underlying issue in your own words, in plain english.`
 - `/brainstorm <vague new idea>`
-- `/sharpen <your task>`
+- `/sharpen <the prompt you're about to send>`
 - `/hotline investigate why <symptom>. give me what we know, what data you used, and your best hypotheses. don't change any code yet.`
 - `use /how to understand <subsystem>. then use /why to find out why it broke recently.`
 - `/recall my work on <topic> from last week, then read <issue>.`

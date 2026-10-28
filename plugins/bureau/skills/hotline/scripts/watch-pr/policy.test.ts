@@ -1103,13 +1103,13 @@ describe("polling deadline sleeps", () => {
       const polling = { ...options, interval: 60, timeout: 5 };
       const dependencies = {
         reader,
+        deadline: new WatchDeadline(polling.timeout, () => now),
         clock: {
           now: () => now,
           observedAt: () => "2026-07-26T00:00:00.000Z",
           async sleep(seconds: number) { sleeps.push(seconds); now += seconds; },
         },
         emit() {},
-        deadline: new WatchDeadline(polling.timeout, () => now),
       };
       const result = mode === "queued-stack"
         ? await runQueued({ dependencies, contexts: [context(1)], options: polling })
@@ -1134,13 +1134,13 @@ describe("polling deadline sleeps", () => {
             return reads === 1 ? pending.checksFastPath(pr) : passed.checksFastPath(pr);
           },
         },
+        deadline: new WatchDeadline(0, () => now),
         clock: {
           now: () => now,
           observedAt: () => "2026-07-26T00:00:00.000Z",
           async sleep(seconds) { sleeps.push(seconds); now += seconds; },
         },
         emit() {},
-        deadline: new WatchDeadline(0, () => now),
       },
       contexts: [context(1)], mode: "single", statusOnly: false,
       options: { ...options, interval: 60, timeout: 0 },
