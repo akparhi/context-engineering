@@ -11,6 +11,7 @@
 - Load cited `bureau:principle-*` skills before acting on their rule.
 - Always kill processes you started (dev servers etc.) once no longer needed.
 - Research docs, reports and scratch output go in `.tmp/` at repo root; if missing, create it with a `.gitignore` containing `*`.
+- Utility scripts: bun + TypeScript, never Python.
 
 <important if="you are planning, writing a spec, or writing an implementation plan">
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
