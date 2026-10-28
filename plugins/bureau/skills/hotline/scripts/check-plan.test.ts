@@ -113,3 +113,32 @@ test("checks prose following a multi-backtick span and unmatched delimiters", ()
 	const unmatched = runPlan("Use ``unclosed: bad` here.\n", 1);
 	expect(unmatched.stderr).toContain("mid-sentence colon");
 });
+
+const runEdited = (plan: string) => {
+	const directory = mkdtempSync(join(tmpdir(), "check-plan-test-"));
+	const file = join(directory, "plan.md");
+	writeFileSync(file, plan);
+	try {
+		const result = spawnSync("node", [checker, file], { encoding: "utf8" });
+		expect(result.status).toBe(1);
+		return result;
+	} finally {
+		rmSync(directory, { recursive: true, force: true });
+	}
+};
+
+test("fenced examples cannot supply How to read this guidance", () => {
+	const plan = validPlan.replace(/(## How to read this\n)([\s\S]*?)(?=\n## )/, (_, heading, body) => `${heading}\`\`\`markdown\n${body}\n\`\`\`\n`);
+	expect(runEdited(plan).stderr).toContain('How to read this lacks "One box is one unit of work"');
+});
+
+test("fenced examples cannot supply program markers", () => {
+	const plan = validPlan.replace(/(## Program checklist\n)([\s\S]*?)(?=\n## )/, (_, heading, body) => `${heading}${body.replaceAll("hourly", "frequent")}\n\`\`\`text\nhourly\n\`\`\`\n`);
+	expect(runEdited(plan).stderr).toContain('Program checklist lacks "/hourly|every hour/"');
+});
+
+test("fenced examples cannot supply review gate evidence", () => {
+	const plan = validPlan.replace(/(\*\*Review gate\.\*\*)([\s\S]*?)(?=\*\*Merge\.\*\*)/, (_, heading) => `${heading}\n- [ ] Review the change.\n\`\`\`text\nscreenshot video operator\n\`\`\`\n`);
+	const { stderr } = runEdited(plan);
+	for (const word of ["screenshot", "video", "operator"]) expect(stderr).toContain(`Review gate lacks "${word}"`);
+});
