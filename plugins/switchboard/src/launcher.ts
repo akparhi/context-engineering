@@ -131,6 +131,9 @@ async function main() {
   // and can outlive the child whose exit releases settingsDir and the gateway.
   // Keep ordinary background subagent tasks available within this owned session.
   settings.disableAgentView = true;
+  if (!connectorsAllowed(options, process.cwd())) {
+    settings.disableClaudeAiConnectors ??= true;
+  }
   filterPicker(settings, process.env.SWITCHBOARD_MODELS, defaultModels);
   const callerSettings = structuredClone(settings);
   const agents = workerDefinitions(
@@ -822,6 +825,14 @@ async function pluginOptions(): Promise<PluginOptions> {
   } catch {
     return {};
   }
+}
+
+/** claude.ai connectors stay off unless cwd sits under a `claudeai_connectors_dirs` entry. */
+export function connectorsAllowed(options: PluginOptions, cwd: string): boolean {
+  return String(options.claudeai_connectors_dirs ?? '')
+    .split(',')
+    .map((dir) => dir.trim().replace(/^~(?=$|[\\/])/, os.homedir()))
+    .some((dir) => dir !== '' && (cwd === dir || cwd.startsWith(path.join(dir, path.sep))));
 }
 
 async function savedSelection(args: string[]) {

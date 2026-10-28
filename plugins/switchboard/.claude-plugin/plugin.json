@@ -140,6 +140,12 @@
       "title": "Show DeepSeek subagent (needs a Zen key)",
       "description": "",
       "default": true
+    },
+    "claudeai_connectors_dirs": {
+      "type": "string",
+      "title": "Dirs where claude.ai connectors load (comma-separated, ~ allowed); off everywhere else",
+      "description": "",
+      "default": ""
     }
   }
 }

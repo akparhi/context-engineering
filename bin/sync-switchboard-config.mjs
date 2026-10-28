@@ -33,6 +33,13 @@ userConfig[DEEPSEEK.worker] = {
   default: true,
 };
 
+userConfig.claudeai_connectors_dirs = {
+  type: 'string',
+  title: 'Dirs where claude.ai connectors load (comma-separated, ~ allowed); off everywhere else',
+  description: '',
+  default: '',
+};
+
 manifest.userConfig = userConfig;
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 console.log(`switchboard userConfig: ${Object.keys(userConfig).length} options`);

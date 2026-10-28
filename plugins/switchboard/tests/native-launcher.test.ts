@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import {
   checkLauncherArgumentLimit,
+  connectorsAllowed,
   workerDefinitions,
 } from '../src/launcher.ts';
 import {
@@ -463,4 +464,14 @@ test('OpenAI models carry short picker labels', () => {
     Object.keys(MODELS).map((model) => LABELS[model]),
     ['Sol', 'Astra', 'Terra', 'Luna'],
   );
+});
+
+test('claude.ai connectors load only under configured dirs', () => {
+  const options = { claudeai_connectors_dirs: '~/Projects/Alaan, /work/client' };
+  const home = os.homedir();
+  assert.equal(connectorsAllowed(options, path.join(home, 'Projects', 'Alaan', 'api')), true);
+  assert.equal(connectorsAllowed(options, '/work/client'), true);
+  assert.equal(connectorsAllowed(options, path.join(home, 'Projects', 'AlaanOther')), false);
+  assert.equal(connectorsAllowed(options, path.join(home, 'Projects', 'Home')), false);
+  assert.equal(connectorsAllowed({}, home), false);
 });
