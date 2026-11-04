@@ -32,7 +32,7 @@ const parseRole = (value) => {
 };
 
 const tierUsers = (tier) =>
-  models.roles.filter((r) => parseRole(r.models).tier === tier).map((r) => r.role).join('; ');
+  models.roles.filter((r) => parseRole(r.models).tier === tier).map((r) => r.role).join('; ') || 'no role yet';
 
 const userConfig = {};
 for (const tier of ['default', 'strongest', 'fast', 'worker']) {

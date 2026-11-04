@@ -271,7 +271,7 @@
     ]
   },
   "alwaysThinkingEnabled": false,
-  "effortLevel": "high",
+  "effortLevel": "medium",
   "modelSettings": {
     "claude-opus-5-5": {
       "effortLevel": "medium"
@@ -305,7 +305,7 @@
         "luna_high": false,
         "luna_xhigh": false,
         "deepseek": true,
-        "fast": false,
+        "fast": true,
         "claudeai_connectors_dirs": "~/Projects/Alaan"
       }
     },
