@@ -118,7 +118,10 @@ describe("checks fallback chain", () => {
       fastPath: { kind: "none-reported" },
       rollupPages: [{ kind: "no-rollup" }],
     });
-    expect(await resolveChecks(reader, context)).toEqual({ kind: "no-checks" });
+    expect(await resolveChecks(reader, context)).toEqual({
+      kind: "no-checks",
+      checks: [],
+    });
     expect(reader.calls).toEqual(["checksFastPath", "checkRollupPage:null"]);
   });
 
