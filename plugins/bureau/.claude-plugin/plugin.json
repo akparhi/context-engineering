@@ -22,7 +22,7 @@
     "default_model": {
       "type": "string",
       "title": "Default model",
-      "description": "Model for the default tier, used by: bug-fix; perf-issue; hillclimb; judgment and prose; how explainer; why investigators; why synthesizer; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers. astra and sol need the switchboard plugin.",
+      "description": "Model for the default tier, used by: bug-fix; perf-issue; hillclimb; judgment and prose; how explainer; why investigators; why synthesizer; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers; no-comments reviewer. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: opus",
         "fable",
@@ -426,6 +426,22 @@
         "sol"
       ],
       "default": "models.json: strongest (opus) @high"
+    },
+    "role_no_comments_reviewer": {
+      "type": "string",
+      "title": "Role: no-comments reviewer",
+      "description": "Model for this no-comments role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
+      "options": [
+        "models.json: default (opus) @medium",
+        "fable",
+        "opus",
+        "sonnet",
+        "haiku",
+        "inherit-parent",
+        "astra",
+        "sol"
+      ],
+      "default": "models.json: default (opus) @medium"
     },
     "terse_reminder": {
       "type": "boolean",

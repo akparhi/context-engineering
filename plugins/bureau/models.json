@@ -29,6 +29,7 @@
     { "role": "swarm workers", "models": "default @medium", "skill": "swarm" },
     { "role": "architect runners", "models": "panel @high", "skill": "architect" },
     { "role": "interrogate reviewers", "models": "panel @high", "skill": "interrogate" },
-    { "role": "reviewer", "models": "strongest @high", "skill": "review" }
+    { "role": "reviewer", "models": "strongest @high", "skill": "review" },
+    { "role": "no-comments reviewer", "models": "worker @medium", "skill": "no-comments" }
   ]
 }
