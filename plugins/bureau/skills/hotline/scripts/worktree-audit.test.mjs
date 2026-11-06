@@ -6,6 +6,9 @@ import { dirname, join, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { audit, classify, defaultTranscriptRoots, duSize, lastChats, pathSpellings, symlinkTargets } from "./worktree-audit.mjs";
+
+// Every runtime directory at its default under home, whatever this shell has set.
+const noEnv = { claudeConfigDir: "", codexHome: "" };
 import { removeDuring } from "./remove-during.test-helper.mjs";
 
 const script = join(import.meta.dir, "./worktree-audit.mjs");
@@ -365,7 +368,7 @@ for (const dir of ["sessions", "archived_sessions"]) {
     const session = join(fixture.root, ".codex", dir, "2026/10/05/rollout.jsonl");
     mkdirSync(dirname(session), { recursive: true });
     writeFileSync(session, `${JSON.stringify({ type: "session_meta", payload: { cwd: chatted } })}\n`);
-    const transcripts = defaultTranscriptRoots({ env: {}, home: fixture.root });
+    const transcripts = defaultTranscriptRoots({ ...noEnv, home: fixture.root });
     expect(transcripts).toEqual([join(fixture.root, ".codex", dir)]);
     const { rows, warnings } = runAudit(fixture, { transcripts });
     expect(warnings).toEqual([]);
@@ -384,7 +387,7 @@ test.skipIf(noChmod)("an inaccessible default transcript root keeps a recently u
   chmodSync(codex, 0o000);
   locked.push(codex);
 
-  const transcripts = defaultTranscriptRoots({ env: {}, home: fixture.root });
+  const transcripts = defaultTranscriptRoots({ ...noEnv, home: fixture.root });
   const { rows, warnings } = runAudit(fixture, { transcripts });
   expect(rowFor(rows, chatted).slice(6, 8)).toEqual(["-", "review"]);
   expect(warnings).toHaveLength(1);
@@ -606,33 +609,33 @@ describe("default transcripts roots", () => {
   const claude = "/home/u/.claude/projects";
   // These paths are POSIX literals, which path.join spells with backslashes on Windows.
   const roots = ({ exists, ...options }) =>
-    defaultTranscriptRoots({ ...options, home, stat: (path) => exists(gitPath(path)) ? {} : undefined }).map(gitPath);
+    defaultTranscriptRoots({ ...noEnv, ...options, home, stat: (path) => exists(gitPath(path)) ? {} : undefined }).map(gitPath);
 
   test("every runtime directory that exists", () => {
     const present = new Set([claude, "/home/u/.codex/sessions"]);
     const exists = (path) => present.has(path);
-    expect(roots({ env: {}, exists })).toEqual([claude, "/home/u/.codex/sessions"]);
+    expect(roots({ exists })).toEqual([claude, "/home/u/.codex/sessions"]);
   });
 
   test("Codex's sessions and archived_sessions, under CODEX_HOME when set", () => {
     const present = new Set(["/home/u/.codex/sessions", "/home/u/.codex/archived_sessions", "/cx/sessions", "/cx/archived_sessions"]);
     const exists = (path) => present.has(path);
-    expect(roots({ env: {}, exists })).toEqual(["/home/u/.codex/sessions", "/home/u/.codex/archived_sessions"]);
-    expect(roots({ env: { CODEX_HOME: "/cx" }, exists })).toEqual(["/cx/sessions", "/cx/archived_sessions"]);
+    expect(roots({ exists })).toEqual(["/home/u/.codex/sessions", "/home/u/.codex/archived_sessions"]);
+    expect(roots({ codexHome: "/cx", exists })).toEqual(["/cx/sessions", "/cx/archived_sessions"]);
   });
 
   test("Claude Code's projects under CLAUDE_CONFIG_DIR when set", () => {
     const exists = (path) => path === claude || path === "/cc/projects";
-    expect(roots({ env: { CLAUDE_CONFIG_DIR: "/cc" }, exists })).toEqual(["/cc/projects"]);
+    expect(roots({ claudeConfigDir: "/cc", exists })).toEqual(["/cc/projects"]);
   });
 
   test("Claude Code's directory when no runtime directory exists, so the audit warns about it", () => {
-    expect(roots({ env: {}, exists: () => false })).toEqual([claude]);
+    expect(roots({ exists: () => false })).toEqual([claude]);
   });
 
   test.each(["EACCES", "EPERM", "EIO", "ELOOP"])("a %s while discovering a root retains it for the audit", (code) => {
     const inaccessible = join(home, ".codex", "sessions");
-    const found = defaultTranscriptRoots({ env: {}, home, stat: (path) => {
+    const found = defaultTranscriptRoots({ ...noEnv, home, stat: (path) => {
       if (path === inaccessible) throw Object.assign(new Error("cannot inspect root"), { code });
       return gitPath(path) === claude ? {} : undefined;
     } });
@@ -640,7 +643,7 @@ describe("default transcripts roots", () => {
   });
 
   test.each(["ENOENT", "ENOTDIR"])("a %s while discovering a root omits it", (code) => {
-    expect(defaultTranscriptRoots({ env: {}, home, stat: (path) => {
+    expect(defaultTranscriptRoots({ ...noEnv, home, stat: (path) => {
       if (gitPath(path) === claude) return {};
       throw Object.assign(new Error("root is absent"), { code });
     } }).map(gitPath)).toEqual([claude]);

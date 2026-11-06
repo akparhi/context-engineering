@@ -83,9 +83,14 @@ export function parseWorktrees(output) {
   return worktrees;
 }
 
-export function defaultTranscriptRoots({ env = process.env, home = homedir(), stat = statSync } = {}) {
-  const claude = join(env.CLAUDE_CONFIG_DIR || join(home, ".claude"), "projects");
-  const codex = env.CODEX_HOME || join(home, ".codex");
+export function defaultTranscriptRoots({
+  claudeConfigDir = process.env.CLAUDE_CONFIG_DIR,
+  codexHome = process.env.CODEX_HOME,
+  home = homedir(),
+  stat = statSync,
+} = {}) {
+  const claude = join(claudeConfigDir || join(home, ".claude"), "projects");
+  const codex = codexHome || join(home, ".codex");
   const found = [claude, join(codex, "sessions"), join(codex, "archived_sessions")].filter((root) => {
     try {
       return stat(root, { throwIfNoEntry: false }) !== undefined;
