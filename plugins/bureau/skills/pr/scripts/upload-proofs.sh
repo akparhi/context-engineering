@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Publishes proof files (png/webm/…) to a per-PR `proofs/<slug>` branch and prints markdown for a PR body.
+# Publishes proof files (png/webm/…) to a per-PR `refs/proofs/<slug>` ref and prints markdown for a PR body.
+# Outside refs/heads/ so clones and fetches never download the media; links pin the commit SHA.
 # Videos (max 2 min) also get an 800px 16fps GIF preview at 1.25x speed, since GitHub plays video only from its attachment host.
 set -euo pipefail
 
@@ -11,7 +12,7 @@ shift
 
 repo_url=$(gh repo view --json url -q .url)
 branch_slug=$(tr '[:upper:]' '[:lower:]' <<<"${slug//\//-}")
-ref=refs/heads/proofs/$branch_slug
+ref=refs/proofs/$branch_slug
 # Throwaway index: never touches the working tree, checkout, or hooks.
 export GIT_INDEX_FILE
 GIT_INDEX_FILE=$(mktemp -u)
