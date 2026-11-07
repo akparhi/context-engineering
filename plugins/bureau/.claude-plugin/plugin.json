@@ -22,7 +22,7 @@
     "default_model": {
       "type": "string",
       "title": "Default model",
-      "description": "Model for the default tier, used by: bug-fix; perf-issue; hillclimb; judgment and prose; how explainer; why investigators; why synthesizer; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers; no-comments reviewer. astra and sol need the switchboard plugin.",
+      "description": "Model for the default tier, used by: bug-fix; perf-issue; hillclimb; judgment and prose; how explainer; why investigators; why synthesizer; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: opus",
         "fable",
@@ -70,7 +70,7 @@
     "worker_model": {
       "type": "string",
       "title": "Worker model",
-      "description": "Model for the worker tier, used by: feature, refactoring; trivial edits; how explorer; retro investigator. astra and sol need the switchboard plugin.",
+      "description": "Model for the worker tier, used by: feature, refactoring; trivial edits; how explorer; retro investigator; no-comments reviewer. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: sonnet",
         "fable",
@@ -430,9 +430,9 @@
     "role_no_comments_reviewer": {
       "type": "string",
       "title": "Role: no-comments reviewer",
-      "description": "Model for this no-comments role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
+      "description": "Model for this no-comments role. The models.json value follows the worker tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
-        "models.json: default (opus) @medium",
+        "models.json: worker (sonnet) @medium",
         "fable",
         "opus",
         "sonnet",
@@ -441,7 +441,7 @@
         "astra",
         "sol"
       ],
-      "default": "models.json: default (opus) @medium"
+      "default": "models.json: worker (sonnet) @medium"
     },
     "terse_reminder": {
       "type": "boolean",

@@ -40,6 +40,8 @@
 
 - **Large/multi-phase goals:** always delegate self-contained chunks (implementers per task, reviewers, research fan-out); main session stays coordinator.
 - **Noisy-process tasks:** go to a subagent even as single tasks.
+- **Implementation subagents:** Use `sonnet @high` or `opus @high` depending on task complexity.
+- **Review subagents:** ALWAYS use GPT model subagents(`sol`) for code or adversarial reviews.
 - **Subagent model:** least-powerful that fits. ALWAYS pass `model` explicitly on every Agent call, and tell workers to do the same for their helpers.
   - **haiku**: transcription, exploration, summarization, classification, extraction, smoke tests, web fetching.
   - **sonnet**: testing, judgment, research, deep exploration.
@@ -67,7 +69,9 @@
 5. Only then: minimum implementation.
 
 - Laziest = reuse over new code, not avoid new code/deps. Decide and move.
-- **IMPORTANT**: Fix root cause, not every caller (`bureau:principle-fix-root-causes`). **Fewest files, shortest diff** (`bureau:principle-laziness-protocol`).
+- **IMPORTANT rules**:
+    - Fix root cause, not every caller (`bureau:principle-fix-root-causes`).
+    - **Fewest files, shortest diff** (`bureau:principle-laziness-protocol`).
 - Mark deliberate shortcuts with ceiling + upgrade path: `// yagni: global lock, per-account if throughput matters`.
 - **CRITICAL**: Never simplify away anything I explicitly asked for. Ladder governs implementation, not requirements.
 

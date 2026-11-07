@@ -274,13 +274,10 @@
     ]
   },
   "alwaysThinkingEnabled": false,
-  "effortLevel": "medium",
+  "effortLevel": "high",
   "modelSettings": {
     "claude-opus-5-5": {
-      "effortLevel": "medium"
-    },
-    "claude-haiku-5-5": {
-      "effortLevel": "medium"
+      "effortLevel": "high"
     }
   },
   "promptSuggestionEnabled": false,
@@ -302,13 +299,13 @@
         "terra_medium": false,
         "terra_high": false,
         "terra_xhigh": false,
-        "luna": false,
+        "luna": true,
         "luna_low": false,
         "luna_medium": false,
         "luna_high": false,
         "luna_xhigh": false,
         "deepseek": true,
-        "fast": true,
+        "fast": false,
         "claudeai_connectors_dirs": "~/Projects/Alaan"
       }
     },
