@@ -88,6 +88,7 @@ interface ModelOption {
 interface LaunchSettings {
   modelPicker: { options: ModelOption[] };
   permissions?: Record<string, unknown>;
+  env?: Record<string, string>;
   [key: string]: unknown;
 }
 
@@ -127,6 +128,9 @@ async function main() {
   const settings = pickerSettings(codexSignedIn);
   const defaultModels = settings.modelPicker.options.map((option) => option.model);
   await mergeSettings(args, settings);
+  const native = await nativeSettings(args);
+  // Claude's own precedence: flag settings over native settings over the process env.
+  const claudeEnv: NodeJS.ProcessEnv = { ...process.env, ...native.env, ...settings.env };
   // The supervisor does not transfer --agents or our session-local gateway env,
   // and can outlive the child whose exit releases settingsDir and the gateway.
   // Keep ordinary background subagent tasks available within this owned session.
@@ -178,6 +182,7 @@ async function main() {
     approvalBridge,
     approvalProviders,
     blockAnthropic: !anthropic,
+    anthropicUrl: claudeEnv.ANTHROPIC_BASE_URL || undefined,
     guardAuto: true,
     onEvent: traceEvent,
   });
@@ -190,14 +195,25 @@ async function main() {
     throw new Error('Gateway did not bind a local port.');
   }
   const settingsFile = path.join(settingsDir, 'settings.json');
-  const { selectedModel, modelArgument } = await initialSelection(args, settings, anthropic);
+  const { selectedModel, modelArgument } = initialSelection(args, settings, anthropic, native.model);
   if (modelArgument) {
     applyModelArgument(args, modelArgument);
   }
   configureApproval(settings, approvalProviders, selectedModel, anthropic);
+  const childEnvironment = gatewayEnvironment(
+    address.port,
+    token,
+    anthropic,
+    claudeEnv.ANTHROPIC_CUSTOM_HEADERS,
+  );
+  // Native settings `env` outranks the inherited process env, so name the gateway in flag settings.
+  settings.env = {
+    ...settings.env,
+    ANTHROPIC_BASE_URL: childEnvironment.ANTHROPIC_BASE_URL,
+    ANTHROPIC_CUSTOM_HEADERS: childEnvironment.ANTHROPIC_CUSTOM_HEADERS,
+  };
   await writeFile(settingsFile, JSON.stringify(settings), { mode: 0o600 });
   const definitions = JSON.stringify(agents);
-  const childEnvironment = gatewayEnvironment(address.port, token, anthropic);
   const claudePath = resolveExecutable('claude', {
     configuredPath: claudeExecutable,
     env: childEnvironment,
@@ -301,10 +317,8 @@ function validateSessionLaunch(args: string[]) {
       'Switchboard sessions must stay attached to their launcher. Exit and use --resume <session-id> to continue with a fresh gateway; whole-session background handoff is unsupported.',
     );
   }
-  if (process.env.ANTHROPIC_BASE_URL) {
-    throw new Error(
-      'Start without ANTHROPIC_BASE_URL; this launcher supplies the central gateway.',
-    );
+  if (process.env.SWITCHBOARD_GATEWAY_TOKEN) {
+    throw new Error('Already inside a Switchboard session; start switchboard from a plain shell.');
   }
   if (args.some((arg) => arg === '--agents' || arg.startsWith('--agents='))) {
     throw new Error('This launcher supplies --agents; use agent files for additional agents.');
@@ -597,8 +611,12 @@ async function mergeSettings(args: string[], settings: LaunchSettings) {
   }
 }
 
-async function initialSelection(args: string[], settings: LaunchSettings, anthropic: boolean) {
-  const savedModel = await savedSelection(args);
+function initialSelection(
+  args: string[],
+  settings: LaunchSettings,
+  anthropic: boolean,
+  savedModel: string | undefined,
+) {
   let requested =
     explicitModel(args) ??
     process.env.ANTHROPIC_MODEL ??
@@ -835,8 +853,10 @@ export function connectorsAllowed(options: PluginOptions, cwd: string): boolean 
     .some((dir) => dir !== '' && (cwd === dir || cwd.startsWith(path.join(dir, path.sep))));
 }
 
-async function savedSelection(args: string[]) {
-  let savedModel: string | undefined;
+/** The user, project and local settings Claude would merge, limited to what the launcher reads. */
+async function nativeSettings(args: string[]) {
+  let model: string | undefined;
+  let env: Record<string, string> = {};
   const sourcesIndex = args.lastIndexOf('--setting-sources');
   const sources = (
     args.findLast((arg) => arg.startsWith('--setting-sources='))?.slice(18) ??
@@ -853,13 +873,14 @@ async function savedSelection(args: string[]) {
     try {
       const value = JSON.parse(await readFile(filename, 'utf8'));
       if (typeof value.model === 'string') {
-        savedModel = value.model;
+        model = value.model;
       }
+      env = { ...env, ...value.env };
     } catch {
       /* Claude handles missing or invalid native settings itself. */
     }
   }
-  return savedModel;
+  return { model, env };
 }
 
 /** Client compatibility only, not provider equivalence. This profile defaults to 200K
@@ -904,7 +925,12 @@ function translateTrafficPolicy(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   };
 }
 
-function gatewayEnvironment(port: number, token: string, anthropic: boolean) {
+function gatewayEnvironment(
+  port: number,
+  token: string,
+  anthropic: boolean,
+  customHeaders: string | undefined,
+) {
   const env = translateTrafficPolicy({ ...process.env });
   delete env.OPENCODE_API_KEY;
   return {
@@ -923,7 +949,7 @@ function gatewayEnvironment(port: number, token: string, anthropic: boolean) {
     SWITCHBOARD_MOD_GATEWAY_URL: `http://127.0.0.1:${port}`,
     ...(!anthropic ? { ANTHROPIC_AUTH_TOKEN: token } : {}),
     ANTHROPIC_CUSTOM_HEADERS: [
-      process.env.ANTHROPIC_CUSTOM_HEADERS,
+      customHeaders,
       `x-switchboard-gateway-token: ${token}`,
     ]
       .filter(Boolean)

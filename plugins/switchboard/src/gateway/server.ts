@@ -87,6 +87,8 @@ export interface GatewayOptions {
   approvalProviders?: readonly ('openai')[];
   /** No Anthropic credentials: also block passthrough if no reviewer is available. */
   blockAnthropic?: boolean;
+  /** Claude upstream, such as the user's own ANTHROPIC_BASE_URL proxy. */
+  anthropicUrl?: string;
   guardAuto?: boolean;
   permissionModes?: PermissionModes;
   modBridge?: ModBridge;
@@ -154,6 +156,7 @@ export function createNativeGateway({
   approvalBridge,
   approvalProviders: _approvalProviders = approvalBridge ? ['openai'] : [],
   blockAnthropic,
+  anthropicUrl = ANTHROPIC_URL,
   guardAuto,
   permissionModes,
   modBridge = new ModBridge(),
@@ -424,7 +427,7 @@ export function createNativeGateway({
     if (req.method === 'POST') {
       forwarded = cleaned === body ? raw : Buffer.from(JSON.stringify(cleaned));
     }
-    const upstream = await fetchImpl(ANTHROPIC_URL + url.pathname + url.search, {
+    const upstream = await fetchImpl(anthropicUrl.replace(/\/+$/, '') + url.pathname + url.search, {
       method: req.method ?? 'GET',
       headers,
       body: forwarded,

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import http from 'node:http';
+import type { AddressInfo } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -457,6 +459,70 @@ console.log(JSON.stringify({args:process.argv.slice(2),gateway:!!process.env.SWI
     launch(['-p', '--settings={"disableAllHooks":true}', '--model', 'luna']),
     /Switchboard models need hooks/,
   );
+});
+
+test('Claude traffic chains through the gateway to the user ANTHROPIC_BASE_URL proxy', {
+  skip: process.platform === 'win32',
+}, async (t) => {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), 'launcher-upstream-'));
+  t.after(() => removeTemporary(cwd));
+  const received: { url?: string; authorization?: string; gatewayToken?: unknown }[] = [];
+  const upstream = http.createServer((req, res) => {
+    received.push({
+      url: req.url,
+      authorization: req.headers.authorization,
+      gatewayToken: req.headers['x-switchboard-gateway-token'],
+    });
+    res.writeHead(200, { 'content-type': 'application/json' }).end('{}');
+  });
+  await new Promise<void>((resolve) => upstream.listen(0, '127.0.0.1', resolve));
+  t.after(() => upstream.close());
+  const proxy = `http://127.0.0.1:${(upstream.address() as AddressInfo).port}/proxy/`;
+  await mkdir(path.join(cwd, 'bin'));
+  await mkdir(path.join(cwd, 'claude'));
+  // Claude applies settings `env` over its inherited process env, flag settings last.
+  await writeClaudeFixture(
+    path.join(cwd, 'bin'),
+    `#!/usr/bin/env node
+const fs=require('node:fs'),http=require('node:http'),path=require('node:path');const args=process.argv.slice(2);
+if(args.includes('plugin')&&args.includes('list')){console.log('[]');process.exit(0)}
+if(args[0]==='--version'){console.log('2.1.272');process.exit(0)}
+if(args[0]==='auth'){console.log('{"loggedIn":true}');process.exit(0)}
+const read=(file)=>{try{return JSON.parse(fs.readFileSync(file,'utf8')).env??{}}catch{return {}}};
+const env={...process.env,...read(path.join(process.env.CLAUDE_CONFIG_DIR,'settings.json')),...read(args[args.indexOf('--settings')+1])};
+const headers={'content-type':'application/json',authorization:'Bearer '+env.ANTHROPIC_AUTH_TOKEN};
+for(const line of env.ANTHROPIC_CUSTOM_HEADERS.split('\\n')){const i=line.indexOf(':');headers[line.slice(0,i).trim()]=line.slice(i+1).trim()}
+const post=(url,headers,body,done)=>{const req=http.request(url,{method:'POST',headers},(res)=>{res.resume();res.on('end',()=>done(res.statusCode))});req.on('error',()=>done(0));req.end(body)};
+post(process.env.SWITCHBOARD_MOD_GATEWAY_URL+'/switchboard/mod/session',{'content-type':'application/json','x-switchboard-gateway-token':process.env.SWITCHBOARD_GATEWAY_TOKEN},JSON.stringify({sessionId:'fixture',event:'start'}),()=>
+  post(env.ANTHROPIC_BASE_URL+'/v1/messages',headers,JSON.stringify({model:'claude-sonnet-4-6',messages:[]}),(status)=>console.log(status)));
+`,
+  );
+  const launcher = fileURLToPath(new URL('../src/launcher.ts', import.meta.url));
+  const proxyEnv = { ANTHROPIC_BASE_URL: proxy, ANTHROPIC_AUTH_TOKEN: 'user-proxy-token' };
+  for (const source of ['user settings', 'process env']) {
+    received.length = 0;
+    await writeFile(
+      path.join(cwd, 'claude', 'settings.json'),
+      JSON.stringify(source === 'user settings' ? { env: proxyEnv } : {}),
+    );
+    const { stdout } = await promisify(execFile)(process.execPath, [launcher, '--', '-p'], {
+      cwd,
+      timeout: 20000,
+      env: {
+        PATH: path.join(cwd, 'bin') + path.delimiter + process.env.PATH,
+        HOME: cwd,
+        CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
+        CODEX_HOME: cwd,
+        ...(source === 'process env' ? proxyEnv : {}),
+      },
+    });
+    assert.equal(stdout.trim(), '200', source);
+    assert.deepEqual(
+      received,
+      [{ url: '/proxy/v1/messages', authorization: 'Bearer user-proxy-token', gatewayToken: undefined }],
+      `${source}: the gateway forwards with the user's proxy auth and keeps its own token`,
+    );
+  }
 });
 
 test('OpenAI models carry short picker labels', () => {
