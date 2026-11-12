@@ -3,7 +3,7 @@
 #
 #   SessionStart      main agent   CodeGraph usage block (codegraph-instructions.md)
 #   UserPromptSubmit  main agent   terse-reminder.md, codegraph-reminder.md
-#   SubagentStart     subagent     CodeGraph usage block, as JSON
+#   SubagentStart     subagent     subagent-start-context.md, hotline's principle index, CodeGraph usage block, as JSON
 #
 # Terse rules repeat each prompt so the style survives long sessions and compaction; turn them
 # off with /config terse_reminder. The usage block stands in for the CLAUDE.md section that
@@ -12,30 +12,37 @@
 # at or above the project directory.
 set -eu
 event=$1
+hooks="${CLAUDE_PLUGIN_ROOT}/hooks"
 
-# Terse rules: every prompt, any repo, unless turned off.
-if [ "$event" = UserPromptSubmit ] && [ "${CLAUDE_PLUGIN_OPTION_TERSE_REMINDER:-}" != false ]; then
-  cat "${CLAUDE_PLUGIN_ROOT}/hooks/terse-reminder.md"
-fi
+indexed() {
+  PATH="$PATH:${CLAUDE_PLUGIN_DATA:-}/node_modules/.bin"
+  command -v codegraph >/dev/null 2>&1 || return 1
+  dir="${CLAUDE_PROJECT_DIR:-$PWD}"
+  # Look for the index file, since ~/.codegraph/ is CodeGraph's global state, not an index.
+  while [ ! -f "$dir/.codegraph/codegraph.db" ] && [ "$dir" != / ]; do dir=$(dirname "$dir"); done
+  [ -f "$dir/.codegraph/codegraph.db" ]
+}
 
-# Codegraph parts: exit quietly unless the CLI exists and the repo is indexed.
-PATH="$PATH:${CLAUDE_PLUGIN_DATA:-}/node_modules/.bin"
-command -v codegraph >/dev/null 2>&1 || exit 0
-dir="${CLAUDE_PROJECT_DIR:-$PWD}"
-# Look for the index file, since ~/.codegraph/ is CodeGraph's global state, not an index.
-while [ ! -f "$dir/.codegraph/codegraph.db" ] && [ "$dir" != / ]; do dir=$(dirname "$dir"); done
-[ -f "$dir/.codegraph/codegraph.db" ] || exit 0
-
-block="${CLAUDE_PLUGIN_ROOT}/hooks/codegraph-instructions.md"
 case "$event" in
   # Main agent: the full usage block.
   SessionStart)
-    cat "$block" ;;
-  # Main agent: one line naming the question types that belong to the graph.
+    if indexed; then cat "$hooks/codegraph-instructions.md"; fi
+    ;;
+
+  # Main agent: terse rules in any repo, plus one line naming the question types that belong to the graph.
   UserPromptSubmit)
-    cat "${CLAUDE_PLUGIN_ROOT}/hooks/codegraph-reminder.md" ;;
-  # Subagent: the full usage block, as JSON because SubagentStart ignores plain stdout.
+    if [ "${CLAUDE_PLUGIN_OPTION_TERSE_REMINDER:-}" != false ]; then cat "$hooks/terse-reminder.md"; fi
+    if indexed; then cat "$hooks/codegraph-reminder.md"; fi
+    ;;
+
+  # Subagent: skill rules, principle index, and the usage block. JSON, because SubagentStart ignores plain stdout.
   SubagentStart)
-    node -e 'process.stdout.write(JSON.stringify({hookSpecificOutput: {hookEventName: "SubagentStart",
-      additionalContext: require("fs").readFileSync(process.argv[1], "utf8")}}))' "$block" ;;
+    skills=$(cat "$hooks/subagent-start-context.md")
+    # Hotline's SKILL.md owns the principle index: its "## Principles" section, up to "## Autonomy".
+    principles=$(sed -n '/^## Principles$/,/^## Autonomy$/p' "${CLAUDE_PLUGIN_ROOT}/skills/hotline/SKILL.md" | sed '$d')
+    codegraph=$(if indexed; then cat "$hooks/codegraph-instructions.md"; fi)
+    context=$(printf '%s\n\n%s\n\n%s' "$skills" "$principles" "$codegraph")
+    node -e 'process.stdout.write(JSON.stringify({hookSpecificOutput: {
+      hookEventName: "SubagentStart", additionalContext: process.argv[1]}}))' "$context"
+    ;;
 esac
