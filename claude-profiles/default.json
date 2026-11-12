@@ -6,7 +6,7 @@
     "ANTHROPIC_BASE_URL": "http://127.0.0.1:8317",
     "ANTHROPIC_AUTH_TOKEN": "123456",
     "CLAUDE_CODE_PROMPT_CACHE_TTL": "1h",
-    "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-1[1m]",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-2[1m]",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5[1m]",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5-5[1m]",
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "250000",
@@ -274,10 +274,10 @@
     ]
   },
   "alwaysThinkingEnabled": false,
-  "effortLevel": "high",
+  "effortLevel": "medium",
   "modelSettings": {
     "claude-opus-5-5": {
-      "effortLevel": "high"
+      "effortLevel": "medium"
     }
   },
   "promptSuggestionEnabled": false,
