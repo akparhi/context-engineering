@@ -274,39 +274,24 @@
     ]
   },
   "alwaysThinkingEnabled": false,
-  "effortLevel": "medium",
+  "effortLevel": "high",
   "modelSettings": {
     "claude-opus-5-5": {
-      "effortLevel": "medium"
+      "effortLevel": "high"
     }
   },
   "promptSuggestionEnabled": false,
   "pluginConfigs": {
     "switchboard@akparhi": {
       "options": {
+        "gpt_effort": "session",
         "astra": true,
-        "astra_low": false,
-        "astra_medium": false,
-        "astra_high": false,
-        "astra_xhigh": false,
         "sol": true,
-        "sol_low": false,
-        "sol_medium": false,
-        "sol_high": false,
-        "sol_xhigh": false,
         "terra": true,
-        "terra_low": false,
-        "terra_medium": false,
-        "terra_high": false,
-        "terra_xhigh": false,
         "luna": true,
-        "luna_low": false,
-        "luna_medium": false,
-        "luna_high": false,
-        "luna_xhigh": false,
-        "deepseek": true,
+        "deepseek": false,
         "fast": false,
-        "claudeai_connectors_dirs": "~/Projects/Alaan"
+        "claudeai_connectors_dirs": "~/Projects/Alaan/none"
       }
     },
     "bureau@akparhi": {

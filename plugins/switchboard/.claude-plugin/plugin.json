@@ -1,5 +1,5 @@
 {
-  "version": "0.8.0",
+  "version": "0.9.0",
   "author": {
     "name": "akparhi"
   },
@@ -15,35 +15,24 @@
       "description": "",
       "default": false
     },
+    "gpt_effort": {
+      "type": "string",
+      "title": "GPT effort for Sol, Astra, Terra and Luna subagents",
+      "description": "session follows the session effort.",
+      "options": [
+        "session",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ],
+      "default": "session"
+    },
     "sol": {
       "type": "boolean",
       "title": "Show Sol subagent",
       "description": "",
       "default": true
-    },
-    "sol_low": {
-      "type": "boolean",
-      "title": "Show sol-low subagent",
-      "description": "",
-      "default": false
-    },
-    "sol_medium": {
-      "type": "boolean",
-      "title": "Show sol-medium subagent",
-      "description": "",
-      "default": false
-    },
-    "sol_high": {
-      "type": "boolean",
-      "title": "Show sol-high subagent",
-      "description": "",
-      "default": false
-    },
-    "sol_xhigh": {
-      "type": "boolean",
-      "title": "Show sol-xhigh subagent",
-      "description": "",
-      "default": false
     },
     "astra": {
       "type": "boolean",
@@ -51,89 +40,17 @@
       "description": "",
       "default": true
     },
-    "astra_low": {
-      "type": "boolean",
-      "title": "Show astra-low subagent",
-      "description": "",
-      "default": false
-    },
-    "astra_medium": {
-      "type": "boolean",
-      "title": "Show astra-medium subagent",
-      "description": "",
-      "default": false
-    },
-    "astra_high": {
-      "type": "boolean",
-      "title": "Show astra-high subagent",
-      "description": "",
-      "default": false
-    },
-    "astra_xhigh": {
-      "type": "boolean",
-      "title": "Show astra-xhigh subagent",
-      "description": "",
-      "default": false
-    },
     "terra": {
       "type": "boolean",
       "title": "Show Terra subagent",
       "description": "",
       "default": true
     },
-    "terra_low": {
-      "type": "boolean",
-      "title": "Show terra-low subagent",
-      "description": "",
-      "default": false
-    },
-    "terra_medium": {
-      "type": "boolean",
-      "title": "Show terra-medium subagent",
-      "description": "",
-      "default": false
-    },
-    "terra_high": {
-      "type": "boolean",
-      "title": "Show terra-high subagent",
-      "description": "",
-      "default": false
-    },
-    "terra_xhigh": {
-      "type": "boolean",
-      "title": "Show terra-xhigh subagent",
-      "description": "",
-      "default": false
-    },
     "luna": {
       "type": "boolean",
       "title": "Show Luna subagent",
       "description": "",
       "default": true
-    },
-    "luna_low": {
-      "type": "boolean",
-      "title": "Show luna-low subagent",
-      "description": "",
-      "default": false
-    },
-    "luna_medium": {
-      "type": "boolean",
-      "title": "Show luna-medium subagent",
-      "description": "",
-      "default": false
-    },
-    "luna_high": {
-      "type": "boolean",
-      "title": "Show luna-high subagent",
-      "description": "",
-      "default": false
-    },
-    "luna_xhigh": {
-      "type": "boolean",
-      "title": "Show luna-xhigh subagent",
-      "description": "",
-      "default": false
     },
     "deepseek": {
       "type": "boolean",

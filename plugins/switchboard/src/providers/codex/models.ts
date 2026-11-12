@@ -47,28 +47,24 @@ export interface Worker {
   effort?: Effort;
 }
 
-/** Every worker `/config` can show: one per alias, plus an `<alias>-<effort>` variant per effort below `max`. */
+/** One worker per alias, named after it. */
 export const OPENAI_WORKERS: Readonly<Record<string, Worker>> = Object.freeze(
-  Object.fromEntries(
-    (Object.keys(MODELS) as Alias[]).flatMap((model) => [
-      [model, { model }],
-      ...EFFORTS.filter((effort) => effort !== 'max').map((effort) => [`${model}-${effort}`, { model, effort }]),
-    ]),
-  ),
+  Object.fromEntries((Object.keys(MODELS) as Alias[]).map((model) => [model, { model }])),
 );
 
 /** Switchboard's `/config` values, as Claude Code stores them under `pluginConfigs[<id>].options`. */
 export type PluginOptions = Readonly<Record<string, unknown>>;
 
-/** The `/config` key that shows a worker: `sol`, `sol_high`. */
-export const workerOptionKey = (name: string) => name.replace('-', '_');
+/** `/config` choices for every OpenAI worker's effort. `session` follows the session's; `max` is never offered. */
+export const GPT_EFFORTS = ['session', ...EFFORTS.filter((effort) => effort !== 'max')] as const;
 
-/** Workers whose `/config` toggle is on; unset shows base workers and hides effort variants. */
+/** Workers whose `/config` toggle is not off, all at the `gpt_effort` choice. */
 export function enabledWorkers(options: PluginOptions): Record<string, Worker> {
+  const choice = String(options.gpt_effort);
+  const effort = EFFORTS.find((level) => level === choice && level !== 'max');
   return Object.fromEntries(
-    Object.entries(OPENAI_WORKERS).filter(([name, worker]) => {
-      const value = String(options[workerOptionKey(name)]);
-      return value === 'true' || (value !== 'false' && worker.effort === undefined);
-    }),
+    Object.entries(OPENAI_WORKERS)
+      .filter(([name]) => String(options[name]) !== 'false')
+      .map(([name, worker]) => [name, effort ? { ...worker, effort } : worker]),
   );
 }

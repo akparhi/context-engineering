@@ -17,7 +17,6 @@ import {
   LABELS,
   MODELS,
   OPENAI_WORKERS,
-  workerOptionKey,
 } from '../src/providers/codex/models.ts';
 import { removeTemporary } from './temporary.ts';
 
@@ -318,13 +317,13 @@ result(JSON.stringify({settings,agents:Object.keys(agents),models:args.filter(x=
     JSON.stringify({
       pluginConfigs: {
         'switchboard@akparhi': {
-          options: { sol: false, sol_high: true },
+          options: { sol: false, gpt_effort: 'high' },
         },
       },
     }),
   );
   const configured = await launch({});
-  assert.deepEqual(JSON.parse(configured.stdout).agents.sort(), ['astra', 'luna', 'sol-high', 'terra']);
+  assert.deepEqual(JSON.parse(configured.stdout).agents.sort(), ['astra', 'luna', 'terra']);
   await rm(path.join(cwd, 'claude', 'settings.json'));
   const hidden = JSON.parse(
     (await launchFiltered('', ['--', '--model', 'sol'])).stdout,
@@ -354,10 +353,10 @@ test('launcher keeps the full worker catalog under 30 KB', () => {
   const agents = workerDefinitions(
     true,
     undefined,
-    Object.fromEntries(Object.keys(OPENAI_WORKERS).map((name) => [workerOptionKey(name), true])),
+    Object.fromEntries(Object.keys(OPENAI_WORKERS).map((name) => [name, true])),
     true,
   );
-  assert.equal(Object.keys(agents).length, 21);
+  assert.equal(Object.keys(agents).length, 5);
   const definitions = JSON.stringify(agents);
   const definitionBytes = Buffer.byteLength(definitions);
   assert(definitionBytes < 30000, `representative worker JSON was ${definitionBytes} bytes`);
@@ -376,18 +375,14 @@ test('default config registers one session-effort worker per selected model', ()
   assert.deepEqual(workerDefinitions(true, []), {});
 });
 
-test('config toggles effort variants and base workers, still filtered by picker models', () => {
-  const options = { sol: false, sol_xhigh: true, luna_low: 'true', astra: 'false' };
+test('config hides workers and sets one effort for all, still filtered by picker models', () => {
+  const options = { sol: false, astra: 'false', gpt_effort: 'low' };
   const agents = workerDefinitions(true, undefined, options);
-  assert.deepEqual(Object.keys(agents), ['sol-xhigh', 'terra', 'luna', 'luna-low']);
-  assert.deepEqual(agents['luna-low'], {
-    ...agents['luna'],
-    description: 'gpt-6-luna, low reasoning. Native coding, investigation, and review.',
-    effort: 'low',
-  });
-  assert.equal(agents['sol-xhigh'].model, 'sol');
-  assert.equal(agents['sol-xhigh'].effort, 'xhigh');
-  assert.deepEqual(Object.keys(workerDefinitions(true, ['luna'], options)), ['luna', 'luna-low']);
+  assert.deepEqual(Object.keys(agents), ['terra', 'luna']);
+  assert.equal(agents['luna'].effort, 'low');
+  assert.match(agents['luna'].description, /^gpt-6-luna, low reasoning\./);
+  assert.equal(workerDefinitions(true, undefined, { gpt_effort: 'max' })['luna'].effort, undefined);
+  assert.deepEqual(Object.keys(workerDefinitions(true, ['luna'], options)), ['luna']);
   assert.deepEqual(workerDefinitions(false, undefined, options), {});
 });
 

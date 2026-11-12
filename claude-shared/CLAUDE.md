@@ -49,7 +49,7 @@
   - **sol** (agent type): independent and adversarial review. Verify its findings before acting on them; never accept blindly.
   - **deepseek** (agent type): use as another panel model for swarm/arena.
 - **Subagent effort:** use medium or high based on task.
-- Switchboard agent types (astra, sol, deepseek) carry their own model and effort; NEVER pass `model` or `effort` for them.
+- Switchboard agent types (astra, sol, terra, deepseek) carry their own model and effort; NEVER pass `model` or `effort` for them.
   - Dispatch as `subagent_type: "<name>"`. Its prompt is only "Complete the delegated task.", not `bureau:field-agent`'s; when a bureau role uses one, tell it in the brief to read the `bureau:hotline` skill and name the playbook step.
   - Agent type missing from the Agent tool's list → use `opus` and say so.
 - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
