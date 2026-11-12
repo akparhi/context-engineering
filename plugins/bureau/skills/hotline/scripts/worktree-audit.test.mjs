@@ -317,6 +317,22 @@ test("a commit only the worktree's HEAD reflog reaches holds it, a rebased branc
   expect([row(rebased)[2], row(rebased)[3], row(rebased)[7]]).toEqual(["YES", "clean", "safe"]);
 });
 
+test("the REMOTE column counts commits on each side of the pushed branch", () => {
+  const fixture = createFixture();
+  const behind = addWorktree(fixture, "behind");
+  commit(behind, "pushed by someone else");
+  git("-C", behind, "push", "origin", "behind");
+  git("-C", behind, "reset", "--hard", "HEAD~1");
+  const diverged = addWorktree(fixture, "diverged");
+  commit(diverged, "theirs");
+  git("-C", diverged, "push", "origin", "diverged");
+  git("-C", diverged, "reset", "--hard", "HEAD~1");
+  commit(diverged, "mine");
+  const { rows } = runAudit(fixture);
+  expect(rowFor(rows, behind)[4]).toBe("behind1");
+  expect(rowFor(rows, diverged)[4]).toBe("ahead1,behind1");
+});
+
 // Windows caps a path near 260 bytes, so a mebibyte of status output would take thousands of files there.
 test.skipIf(process.platform === "win32")("untracked files are counted when git status prints more than a mebibyte", () => {
   const fixture = createFixture();
@@ -789,6 +805,75 @@ describe("the trunk comes from the remote", () => {
     git("--git-dir", fixture.remote, "symbolic-ref", "HEAD", "refs/heads/missing");
     git("-C", fixture.repo, "symbolic-ref", "--delete", "refs/remotes/origin/HEAD");
     assertAncestorSafe(fixture);
+  });
+});
+
+// git resolves the shorthand origin/<name> to a tag or local branch of that name before the remote-tracking ref.
+describe("a local ref named origin/<name> does not stand in for the remote", () => {
+  const tagger = ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid"];
+  for (const [label, ...create] of [["a tag", "tag"], ["an annotated tag", ...tagger, "tag", "-a", "-m", "not the trunk"], ["a branch", "branch"]]) {
+    test(`${label} named origin/<trunk> at unmerged work leaves it in review`, () => {
+      const fixture = createFixture({ trunk: "release" });
+      const topic = addWorktree(fixture, "topic");
+      commit(topic, "unmerged work");
+      git("-C", fixture.repo, ...create, "origin/release", "topic");
+      const { rows, warnings } = runAudit(fixture);
+      expect(warnings).toEqual([]);
+      const row = rowFor(rows, topic);
+      expect([row[2], row[7]]).toEqual(["no", "review"]);
+    });
+  }
+
+  test("a stale tag named origin/<trunk> does not hide work that landed", () => {
+    const fixture = createFixture();
+    git("-C", fixture.repo, "tag", "origin/main");
+    const landed = addWorktree(fixture, "landed");
+    commit(landed, "landed on trunk");
+    git("-C", landed, "push", "origin", "HEAD:main");
+    const row = rowFor(runAudit(fixture).rows, landed);
+    expect([row[2], row[7]]).toEqual(["YES", "safe"]);
+  });
+
+  test("a tag named origin/<branch> does not change the REMOTE ahead count", () => {
+    const fixture = createFixture();
+    const topic = addWorktree(fixture, "topic");
+    commit(topic, "pushed");
+    git("-C", topic, "push", "origin", "topic");
+    commit(topic, "local only");
+    git("-C", fixture.repo, "tag", "origin/topic", "topic");
+    expect(rowFor(runAudit(fixture).rows, topic)[4]).toBe("ahead1");
+  });
+});
+
+// gh lists a branch's PRs newest first, and a branch can have several, one per base.
+describe("a branch with several PR records", () => {
+  for (const state of ["CLOSED", "MERGED"]) {
+    test(`an older open PR holds the worktree when a newer ${state} one is listed first`, () => {
+      const fixture = createFixture();
+      const topic = addWorktree(fixture, "topic");
+      const headRefOid = head(topic);
+      const { rows } = runAudit(fixture, {
+        prs: [
+          { number: 12, state, headRefName: "topic", headRefOid },
+          { number: 11, state: "OPEN", headRefName: "topic", headRefOid },
+        ],
+      });
+      expect(rowFor(rows, topic).slice(5, 8)).toEqual(["#11/OPEN", "-", "hold-open-pr"]);
+    });
+  }
+
+  test("without an open PR, the first record listed stands", () => {
+    const fixture = createFixture();
+    const topic = addWorktree(fixture, "topic");
+    commit(topic, "not on trunk");
+    const headRefOid = head(topic);
+    const { rows } = runAudit(fixture, {
+      prs: [
+        { number: 12, state: "CLOSED", headRefName: "topic", headRefOid },
+        { number: 11, state: "MERGED", headRefName: "topic", headRefOid },
+      ],
+    });
+    expect(rowFor(rows, topic).slice(5, 8)).toEqual(["#12/CLOSED", "-", "review"]);
   });
 });
 
