@@ -19,10 +19,16 @@
     "claude-code"
   ],
   "userConfig": {
+    "fast_mode": {
+      "type": "boolean",
+      "title": "Fast mode",
+      "description": "Trade depth for speed and cost: every role switches to its \"fast\" value in models.json, a lighter tier or a lower effort. Any model or role you pick below still wins.",
+      "default": false
+    },
     "default_model": {
       "type": "string",
       "title": "Default model",
-      "description": "Model for the default tier, used by: bug-fix; perf-issue; hillclimb; judgment and prose; how explainer; why investigators; why synthesizer; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers. astra and sol need the switchboard plugin.",
+      "description": "Model for the default tier, used by: bug-fix; perf-issue; hillclimb; judgment and prose; how explainer; why investigators; why synthesizer; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers. With fast mode on: bug-fix; perf-issue; hillclimb; judgment and prose; how explainer; why synthesizer; reflect judgment, divergent, synthesizer; swarm workers; reviewer. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: opus",
         "fable",
@@ -38,7 +44,7 @@
     "strongest_model": {
       "type": "string",
       "title": "Strongest model",
-      "description": "Model for the strongest tier, used by: strongest judgment; reviewer. astra and sol need the switchboard plugin.",
+      "description": "Model for the strongest tier, used by: strongest judgment; reviewer. With fast mode on: strongest judgment. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: opus",
         "fable",
@@ -54,7 +60,7 @@
     "fast_model": {
       "type": "string",
       "title": "Fast model",
-      "description": "Model for the fast tier, used by: no role yet. astra and sol need the switchboard plugin.",
+      "description": "Model for the fast tier, used by: no role yet. With fast mode on: trivial edits; how explorer; why investigators; reflect tooling; retro investigator; no-comments reviewer. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: haiku",
         "fable",
@@ -70,7 +76,7 @@
     "worker_model": {
       "type": "string",
       "title": "Worker model",
-      "description": "Model for the worker tier, used by: feature, refactoring; trivial edits; how explorer; retro investigator; no-comments reviewer. astra and sol need the switchboard plugin.",
+      "description": "Model for the worker tier, used by: feature, refactoring; trivial edits; how explorer; retro investigator; no-comments reviewer. With fast mode on: feature, refactoring. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: sonnet",
         "fable",
@@ -86,7 +92,7 @@
     "panel_model_1": {
       "type": "string",
       "title": "Panel model 1",
-      "description": "One subagent of the panel tier, used by: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. none drops the slot. astra and sol need the switchboard plugin.",
+      "description": "One subagent of the panel tier, used by: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. With fast mode on: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. none drops the slot. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: opus",
         "fable",
@@ -103,7 +109,7 @@
     "panel_model_2": {
       "type": "string",
       "title": "Panel model 2",
-      "description": "One subagent of the panel tier, used by: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. none drops the slot. astra and sol need the switchboard plugin.",
+      "description": "One subagent of the panel tier, used by: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. With fast mode on: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. none drops the slot. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: sonnet",
         "fable",
@@ -120,7 +126,7 @@
     "panel_model_3": {
       "type": "string",
       "title": "Panel model 3",
-      "description": "One subagent of the panel tier, used by: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. none drops the slot. astra and sol need the switchboard plugin.",
+      "description": "One subagent of the panel tier, used by: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. With fast mode on: arena runners; arena cross-judge pool; architect runners; interrogate reviewers. none drops the slot. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: none",
         "fable",

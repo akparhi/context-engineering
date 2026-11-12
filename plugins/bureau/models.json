@@ -4,32 +4,149 @@
     "default": "opus",
     "worker": "sonnet",
     "fast": "haiku",
-    "panel": ["opus", "sonnet"]
+    "panel": [
+      "opus",
+      "sonnet"
+    ]
   },
-  "efforts": ["low", "medium", "high"],
+  "efforts": [
+    "low",
+    "medium",
+    "high"
+  ],
   "defaultEffort": "session",
-  "available": ["fable", "opus", "sonnet", "haiku"],
+  "available": [
+    "fable",
+    "opus",
+    "sonnet",
+    "haiku"
+  ],
   "roles": [
-    { "role": "feature, refactoring", "models": "worker @medium", "skill": "hotline" },
-    { "role": "bug-fix", "models": "default @high", "skill": "hotline" },
-    { "role": "perf-issue", "models": "default @high", "skill": "hotline" },
-    { "role": "hillclimb", "models": "default @medium", "skill": "hotline" },
-    { "role": "judgment and prose", "models": "default @medium", "skill": "hotline" },
-    { "role": "strongest judgment", "models": "strongest @high", "skill": "hotline" },
-    { "role": "trivial edits", "models": "worker @low", "skill": "hotline" },
-    { "role": "how explorer", "models": "worker @low", "skill": "how" },
-    { "role": "how explainer", "models": "default @medium", "skill": "how" },
-    { "role": "why investigators", "models": "default @low", "skill": "why" },
-    { "role": "why synthesizer", "models": "default @high", "skill": "why" },
-    { "role": "reflect tooling", "models": "default @low", "skill": "reflect" },
-    { "role": "reflect judgment, divergent, synthesizer", "models": "default @medium", "skill": "reflect" },
-    { "role": "retro investigator", "models": "worker @low", "skill": "retro" },
-    { "role": "arena runners", "models": "panel @medium", "skill": "arena" },
-    { "role": "arena cross-judge pool", "models": "panel @high", "skill": "arena" },
-    { "role": "swarm workers", "models": "default @medium", "skill": "swarm" },
-    { "role": "architect runners", "models": "panel @high", "skill": "architect" },
-    { "role": "interrogate reviewers", "models": "panel @high", "skill": "interrogate" },
-    { "role": "reviewer", "models": "strongest @high", "skill": "review" },
-    { "role": "no-comments reviewer", "models": "worker @medium", "skill": "no-comments" }
+    {
+      "role": "feature, refactoring",
+      "models": "worker @high",
+      "fast": "worker @medium",
+      "skill": "hotline"
+    },
+    {
+      "role": "bug-fix",
+      "models": "default @medium",
+      "fast": "worker @high",
+      "skill": "hotline"
+    },
+    {
+      "role": "perf-issue",
+      "models": "default @high",
+      "fast": "default @medium",
+      "skill": "hotline"
+    },
+    {
+      "role": "hillclimb",
+      "models": "worker @medium",
+      "fast": "worker @low",
+      "skill": "hotline"
+    },
+    {
+      "role": "judgment and prose",
+      "models": "default @medium",
+      "fast": "default @medium",
+      "skill": "hotline"
+    },
+    {
+      "role": "strongest judgment",
+      "models": "strongest @high",
+      "fast": "strongest @medium",
+      "skill": "hotline"
+    },
+    {
+      "role": "trivial edits",
+      "models": "worker @low",
+      "fast": "worker @low",
+      "skill": "hotline"
+    },
+    {
+      "role": "how explorer",
+      "models": "worker @low",
+      "fast": "worker @low",
+      "skill": "how"
+    },
+    {
+      "role": "how explainer",
+      "models": "default @medium",
+      "fast": "default @low",
+      "skill": "how"
+    },
+    {
+      "role": "why investigators",
+      "models": "default @low",
+      "fast": "default @low",
+      "skill": "why"
+    },
+    {
+      "role": "why synthesizer",
+      "models": "default @medium",
+      "fast": "default @low",
+      "skill": "why"
+    },
+    {
+      "role": "reflect tooling",
+      "models": "default @low",
+      "fast": "default @low",
+      "skill": "reflect"
+    },
+    {
+      "role": "reflect judgment, divergent, synthesizer",
+      "models": "default @medium",
+      "fast": "default @low",
+      "skill": "reflect"
+    },
+    {
+      "role": "retro investigator",
+      "models": "worker @low",
+      "fast": "worker @low",
+      "skill": "retro"
+    },
+    {
+      "role": "arena runners",
+      "models": "panel @medium",
+      "fast": "panel @low",
+      "skill": "arena"
+    },
+    {
+      "role": "arena cross-judge pool",
+      "models": "panel @high",
+      "fast": "panel @medium",
+      "skill": "arena"
+    },
+    {
+      "role": "swarm workers",
+      "models": "default @medium",
+      "fast": "default @low",
+      "skill": "swarm"
+    },
+    {
+      "role": "architect runners",
+      "models": "panel @high",
+      "fast": "panel @medium",
+      "skill": "architect"
+    },
+    {
+      "role": "interrogate reviewers",
+      "models": "panel @high",
+      "fast": "panel @medium",
+      "skill": "interrogate"
+    },
+    {
+      "role": "reviewer",
+      "models": "strongest @high",
+      "fast": "strongest @medium",
+      "skill": "review"
+    },
+    {
+      "role": "no-comments reviewer",
+      "models": "worker @medium",
+      "fast": "worker @low",
+      "skill": "no-comments"
+    }
   ]
 }

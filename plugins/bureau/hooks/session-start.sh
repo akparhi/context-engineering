@@ -1,10 +1,25 @@
 #!/bin/sh
 set -eu
+# Prints the routing rules, then the models section: models.json with /config values merged in.
+# With "models", prints only the models section, for subagents.
 # Literal plugin paths, so a static reader of hooks.json can follow them.
-cat "${CLAUDE_PLUGIN_ROOT}/hooks/session-start-context.md"
+[ "${1:-}" = models ] || cat "${CLAUDE_PLUGIN_ROOT}/hooks/session-start-context.md"
+cat "${CLAUDE_PLUGIN_ROOT}/hooks/models-context.md"
 
-# Prints models.json with /config values merged in. Edits line by line, so
-# models.json must keep each tier, setting, and role on its own line.
+# Lays models.json out one tier, setting, and role per line, for the line edits below and a compact
+# context. Each role has a normal "models" value and a "fast" one; the mode picks which stays as "models".
+models=$(node -e '
+const m = JSON.parse(require("fs").readFileSync(process.argv[1]));
+const fast = process.argv[2] === "true";
+const value = (x) => Array.isArray(x) ? `[${x.map((e) => JSON.stringify(e)).join(", ")}]` : JSON.stringify(x);
+const entries = (o) => Object.entries(o).map(([k, x]) => `"${k}": ${value(x)}`);
+const role = ({ fast: fastValue, ...r }) => `    { ${entries({ ...r, models: fast ? fastValue : r.models }).join(", ")} }`;
+const line = ([k, x]) =>
+  k === "roles" ? `  "roles": [\n${x.map(role).join(",\n")}\n  ]`
+  : x.constructor === Object ? `  "${k}": {\n${entries(x).map((e) => "    " + e).join(",\n")}\n  }`
+  : `  "${k}": ${value(x)}`;
+console.log(`{\n${Object.entries(m).map(line).join(",\n")}\n}`);
+' "${CLAUDE_PLUGIN_ROOT}/models.json" "${CLAUDE_PLUGIN_OPTION_FAST_MODE:-}")
 
 # Succeeds when a /config value replaces the file's; "models.json: .." or blank keeps it.
 chosen() {
@@ -54,5 +69,7 @@ while IFS= read -r line; do
       ;;
   esac
   printf '%s\n' "$line"
-done <"${CLAUDE_PLUGIN_ROOT}/models.json"
+done <<EOF
+$models
+EOF
 printf '```\n'

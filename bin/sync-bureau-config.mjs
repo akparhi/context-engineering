@@ -31,10 +31,17 @@ const parseRole = (value) => {
   return { tier, effortSuffix: effort ? ` @${effort}` : '' };
 };
 
-const tierUsers = (tier) =>
-  models.roles.filter((r) => parseRole(r.models).tier === tier).map((r) => r.role).join('; ') || 'no role yet';
+const usersOf = (tier, field) =>
+  models.roles.filter((r) => parseRole(r[field]).tier === tier).map((r) => r.role).join('; ') || 'no role yet';
+const tierUsers = (tier) => `${usersOf(tier, 'models')}. With fast mode on: ${usersOf(tier, 'fast')}`;
 
 const userConfig = {};
+userConfig.fast_mode = {
+  type: 'boolean',
+  title: 'Fast mode',
+  description: 'Trade depth for speed and cost: every role switches to its "fast" value in models.json, a lighter tier or a lower effort. Any model or role you pick below still wins.',
+  default: false,
+};
 for (const tier of ['default', 'strongest', 'fast', 'worker']) {
   userConfig[`${tier}_model`] = picker(
     `${tier[0].toUpperCase()}${tier.slice(1)} model`,

@@ -5,3 +5,4 @@
 - **Tests.** Use `bureau:test-audit` when writing, changing, or reviewing tests. Use `bureau:tdd` when the failing test comes first.
 - **Before every commit.** Run `bureau:deslop` on the diff.
 - **TypeScript.** Use `bureau:typescript-best-practices` when reading or editing `.ts` or `.tsx` files.
+- **Launching subagents.** Follow **Bureau models** below.

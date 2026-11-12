@@ -3,7 +3,7 @@
 #
 #   SessionStart      main agent   CodeGraph usage block (codegraph-instructions.md)
 #   UserPromptSubmit  main agent   terse-reminder.md, codegraph-reminder.md
-#   SubagentStart     subagent     subagent-start-context.md, hotline's principle index, CodeGraph usage block, as JSON
+#   SubagentStart     subagent     subagent-start-context.md, hotline's principle index, bureau models, CodeGraph usage block, as JSON
 #
 # Terse rules repeat each prompt so the style survives long sessions and compaction; turn them
 # off with /config terse_reminder. The usage block stands in for the CLAUDE.md section that
@@ -35,13 +35,15 @@ case "$event" in
     if indexed; then cat "$hooks/codegraph-reminder.md"; fi
     ;;
 
-  # Subagent: skill rules, principle index, and the usage block. JSON, because SubagentStart ignores plain stdout.
+  # Subagent: skill rules, principle index, model routing, and the usage block. JSON, because SubagentStart ignores plain stdout.
   SubagentStart)
     skills=$(cat "$hooks/subagent-start-context.md")
     # Hotline's SKILL.md owns the principle index: its "## Principles" section, up to "## Autonomy".
     principles=$(sed -n '/^## Principles$/,/^## Autonomy$/p' "${CLAUDE_PLUGIN_ROOT}/skills/hotline/SKILL.md" | sed '$d')
+    # Subagents spawn subagents too, so they get the same model routing as the main agent.
+    models=$("$hooks/session-start.sh" models)
     codegraph=$(if indexed; then cat "$hooks/codegraph-instructions.md"; fi)
-    context=$(printf '%s\n\n%s\n\n%s' "$skills" "$principles" "$codegraph")
+    context=$(printf '%s\n\n%s\n\n%s\n\n%s' "$skills" "$principles" "$models" "$codegraph")
     node -e 'process.stdout.write(JSON.stringify({hookSpecificOutput: {
       hookEventName: "SubagentStart", additionalContext: process.argv[1]}}))' "$context"
     ;;
