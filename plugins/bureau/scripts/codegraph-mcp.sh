@@ -16,8 +16,9 @@ while [ ! -f "$dir/.codegraph/codegraph.db" ] && [ "$dir" != / ]; do dir=$(dirna
 indexed=false
 [ -f "$dir/.codegraph/codegraph.db" ] && indexed=true
 # A linked worktree has a .git file; indexing each one would copy the repo's index per lane.
+# A codegraph.json opts in regardless of count, since its includeIgnored paths are invisible to ls-files.
 will_index=false
-if [ -n "$root" ] && [ -d "$root/.git" ] && [ "$(code_files)" -ge "$min_code_files" ]; then
+if [ -n "$root" ] && [ -d "$root/.git" ] && { [ -f "$root/codegraph.json" ] || [ "$(code_files)" -ge "$min_code_files" ]; }; then
   will_index=true
 fi
 if [ "$indexed" = false ] && [ "$will_index" = false ]; then
