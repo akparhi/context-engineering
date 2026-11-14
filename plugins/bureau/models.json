@@ -24,8 +24,8 @@
   "roles": [
     {
       "role": "feature, refactoring",
-      "models": "worker @high",
-      "fast": "worker @medium",
+      "models": "default @medium",
+      "fast": "default @low",
       "skill": "hotline"
     },
     {
@@ -73,19 +73,19 @@
     {
       "role": "how explainer",
       "models": "default @medium",
-      "fast": "default @low",
+      "fast": "worker @medium",
       "skill": "how"
     },
     {
       "role": "why investigators",
       "models": "default @low",
-      "fast": "default @low",
+      "fast": "worker @medium",
       "skill": "why"
     },
     {
       "role": "why synthesizer",
       "models": "default @medium",
-      "fast": "default @low",
+      "fast": "worker @medium",
       "skill": "why"
     },
     {
@@ -102,7 +102,7 @@
     },
     {
       "role": "retro investigator",
-      "models": "worker @low",
+      "models": "worker @medium",
       "fast": "worker @low",
       "skill": "retro"
     },
