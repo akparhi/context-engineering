@@ -83,6 +83,7 @@ The default answer is `/hotline`, which runs most of the others when its steps n
 | Turn what a finished task taught into skill edits | [`/reflect`](../reflect/SKILL.md) |
 | Find out from past sessions why a skill, workflow, or habit went badly | [`/retro`](../retro/SKILL.md) |
 | Stop agents from repeating the same mistakes in this repo | [`/correct`](../correct/SKILL.md) |
+| Find the competing patterns and unenforced rules agents would copy, and get a plan that leaves one supported way per concern, enforced by code | [`/garden`](../garden/SKILL.md) |
 | Find their way around bureau | `/bureau:help` |
 
 If a skill directory next to this one is missing from the table, read its frontmatter and route by its description. The `principle-*` directories are covered under principles below.
@@ -94,6 +95,7 @@ Close calls:
 - `/architect` implements right after it settles the design. Add "with checkpoint" to review the design before it writes code.
 - `/review` runs fixed correctness and code-quality lenses over a change or a plan. `/interrogate` has different models attack the diff. `/blast-radius` looks for breakage outside the diff and proves the one fact that makes the change safe.
 - `/recall` rebuilds context across recent chats. `/ketchup` covers only this chat since the user's last message. Resuming one specific chat or branch is the Session pickup playbook.
+- `/correct` starts from mistakes the operator already corrected and fixes them now. `/garden` starts from the code, counts the competing ways to do each thing, and writes a plan without changing code.
 - `/reflect` turns one finished session into skill edits. `/retro` answers a question across many past sessions with measured evidence.
 - `/figure-it-out` designs one rigorous run. The Orchestrate playbook runs a program that spans days and many PRs. The Autonomous run playbook drives one task to a finish condition.
 

@@ -2,7 +2,7 @@
   "name": "bureau",
   "displayName": "bureau",
   "icon": "./assets/bureau-icon.png",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Hybrid of superpowers + pstack workflows, for claude-code.",
   "author": {
     "name": "Anand Kumar Parhi"
@@ -28,7 +28,7 @@
     "default_model": {
       "type": "string",
       "title": "Default model",
-      "description": "Model for the default tier, used by: bug-fix; perf-issue; hillclimb; judgment and prose; how explainer; why investigators; why synthesizer; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers. With fast mode on: bug-fix; perf-issue; hillclimb; judgment and prose; how explainer; why synthesizer; reflect judgment, divergent, synthesizer; swarm workers; reviewer. astra and sol need the switchboard plugin.",
+      "description": "Model for the default tier, used by: feature, refactoring; bug-fix; perf-issue; judgment and prose; how explainer; why investigators; why synthesizer; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers. With fast mode on: feature, refactoring; perf-issue; judgment and prose; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: opus",
         "fable",
@@ -44,7 +44,7 @@
     "strongest_model": {
       "type": "string",
       "title": "Strongest model",
-      "description": "Model for the strongest tier, used by: strongest judgment; reviewer. With fast mode on: strongest judgment. astra and sol need the switchboard plugin.",
+      "description": "Model for the strongest tier, used by: strongest judgment; reviewer. With fast mode on: strongest judgment; reviewer. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: opus",
         "fable",
@@ -60,7 +60,7 @@
     "fast_model": {
       "type": "string",
       "title": "Fast model",
-      "description": "Model for the fast tier, used by: no role yet. With fast mode on: trivial edits; how explorer; why investigators; reflect tooling; retro investigator; no-comments reviewer. astra and sol need the switchboard plugin.",
+      "description": "Model for the fast tier, used by: no role yet. With fast mode on: no role yet. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: haiku",
         "fable",
@@ -76,7 +76,7 @@
     "worker_model": {
       "type": "string",
       "title": "Worker model",
-      "description": "Model for the worker tier, used by: feature, refactoring; trivial edits; how explorer; retro investigator; no-comments reviewer. With fast mode on: feature, refactoring. astra and sol need the switchboard plugin.",
+      "description": "Model for the worker tier, used by: hillclimb; trivial edits; how explorer; retro investigator; no-comments reviewer. With fast mode on: bug-fix; hillclimb; trivial edits; how explorer; how explainer; why investigators; why synthesizer; retro investigator; no-comments reviewer. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: sonnet",
         "fable",
@@ -156,9 +156,9 @@
     "role_feature_refactoring": {
       "type": "string",
       "title": "Role: feature, refactoring",
-      "description": "Model for this hotline role. The models.json value follows the worker tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
+      "description": "Model for this hotline role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
-        "models.json: worker (sonnet) @medium",
+        "models.json: default (opus) @medium",
         "fable",
         "opus",
         "sonnet",
@@ -167,14 +167,14 @@
         "astra",
         "sol"
       ],
-      "default": "models.json: worker (sonnet) @medium"
+      "default": "models.json: default (opus) @medium"
     },
     "role_bug_fix": {
       "type": "string",
       "title": "Role: bug-fix",
       "description": "Model for this hotline role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
-        "models.json: default (opus) @high",
+        "models.json: default (opus) @medium",
         "fable",
         "opus",
         "sonnet",
@@ -183,7 +183,7 @@
         "astra",
         "sol"
       ],
-      "default": "models.json: default (opus) @high"
+      "default": "models.json: default (opus) @medium"
     },
     "role_perf_issue": {
       "type": "string",
@@ -204,9 +204,9 @@
     "role_hillclimb": {
       "type": "string",
       "title": "Role: hillclimb",
-      "description": "Model for this hotline role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
+      "description": "Model for this hotline role. The models.json value follows the worker tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
-        "models.json: default (opus) @medium",
+        "models.json: worker (sonnet) @medium",
         "fable",
         "opus",
         "sonnet",
@@ -215,7 +215,7 @@
         "astra",
         "sol"
       ],
-      "default": "models.json: default (opus) @medium"
+      "default": "models.json: worker (sonnet) @medium"
     },
     "role_judgment_and_prose": {
       "type": "string",
@@ -318,7 +318,7 @@
       "title": "Role: why synthesizer",
       "description": "Model for this why role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
-        "models.json: default (opus) @high",
+        "models.json: default (opus) @medium",
         "fable",
         "opus",
         "sonnet",
@@ -327,7 +327,7 @@
         "astra",
         "sol"
       ],
-      "default": "models.json: default (opus) @high"
+      "default": "models.json: default (opus) @medium"
     },
     "role_reflect_tooling": {
       "type": "string",
@@ -366,7 +366,7 @@
       "title": "Role: retro investigator",
       "description": "Model for this retro role. The models.json value follows the worker tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
-        "models.json: worker (sonnet) @low",
+        "models.json: worker (sonnet) @medium",
         "fable",
         "opus",
         "sonnet",
@@ -375,7 +375,7 @@
         "astra",
         "sol"
       ],
-      "default": "models.json: worker (sonnet) @low"
+      "default": "models.json: worker (sonnet) @medium"
     },
     "role_arena_runners": {
       "type": "string",
