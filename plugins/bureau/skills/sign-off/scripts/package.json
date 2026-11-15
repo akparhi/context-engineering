@@ -1,0 +1,19 @@
+{
+  "name": "@cursor-skill/sign-off",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json"
+  },
+  "dependencies": {
+    "@dbml/core": "12.0.0",
+    "@electric-sql/pglite": "0.5.16",
+    "elkjs": "0.9.3",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "playwright-core": "1.59.1",
+    "typescript": "7.0.2"
+  }
+}

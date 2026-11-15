@@ -1,0 +1,66 @@
+// Derived from base.sql and db.sql by @dbml/core's importer, for the diagram only. Do not edit.
+
+Enum "hold_status" {
+  "waiting"
+  "on_shelf"
+  "collected"
+  "lapsed"
+  "cancelled"
+  "paused"
+}
+
+Table "branches" {
+  "id" uuid [pk]
+  "name" text [not null]
+}
+
+Table "books" {
+  "id" uuid [pk]
+  "title" text [not null]
+  "author" text [not null]
+  "isbn" text
+}
+
+Table "members" {
+  "id" uuid [pk]
+  "name" text [not null]
+  "email" text [not null]
+  "home_branch_id" uuid [not null]
+}
+
+Table "copies" {
+  "id" uuid [pk]
+  "book_id" uuid [not null]
+  "branch_id" uuid [not null]
+  "shelf_code" text [not null]
+}
+
+Table "book_holds" {
+  "id" uuid [pk]
+  "book_id" uuid [not null]
+  "member_id" uuid [not null]
+  "status" hold_status [not null, default: 'waiting']
+  "placed_at" timestamptz [not null, default: `now()`]
+  "copy_id" uuid [note: 'Set when a returned copy is shelved for this hold.']
+  "pickup_by" timestamptz
+  "pickup_branch_id" uuid [not null, note: 'Branches live in another service, so no foreign key.']
+
+  Indexes {
+    (book_id, member_id) [unique, name: "book_holds_one_open_per_member"]
+    copy_id [unique, name: "book_holds_one_per_shelved_copy"]
+    (book_id, placed_at) [name: "book_holds_queue"]
+  }
+  Note: 'One row per hold. The queue for a book is its waiting rows in placed_at order.'
+}
+
+Ref:"branches"."id" <? "members"."home_branch_id"
+
+Ref:"books"."id" <? "copies"."book_id"
+
+Ref:"branches"."id" <? "copies"."branch_id"
+
+Ref:"books"."id" <? "book_holds"."book_id"
+
+Ref:"members"."id" <? "book_holds"."member_id"
+
+Ref:"copies"."id" ?<? "book_holds"."copy_id"

@@ -95,7 +95,10 @@ for (const name of fs.readdirSync(corpus)) {
     assert.equal(r.status, plain === 0 ? 0 : [11, 12, 13].includes(plain) ? 1 : 2);
     assert.equal(r.report, read(path.join(dir, "report.md")));
     assert.equal(read(path.join(r.out, "chart.mmd")), read(path.join(dir, "chart.mmd")));
-    assert.deepEqual(r.files, ["chart.mmd", "report.md", "tlc.out", ...named(r.report)].sort());
+    assert.deepEqual(
+      r.files,
+      ["chart.mmd", "report.json", "report.md", "tlc.out", ...named(r.report)].sort(),
+    );
     for (const f of r.files) assert.doesNotMatch(read(path.join(r.out, f)), /@!@!@/, f);
     assert.match(r.configs.ChartRun, /^INVARIANT ChartMark$/m);
     assert.match(r.configs.ChartRun, /^CONSTRAINT ChartBudget$/m);
@@ -574,7 +577,7 @@ test("a passing check above the chart budget writes no chart.mmd and gives the s
   const r = run(dir);
   assert.equal(r.status, 0);
   assert.equal(r.configs.ChartRun, undefined);
-  assert.deepEqual(r.files, ["report.md", "tlc.out"]);
+  assert.deepEqual(r.files, ["report.json", "report.md", "tlc.out"]);
   assert.match(
     r.report,
     /^TLC reached 1,234 states, more than the chart budget of 500, so the command wrote no chart\.mmd\.$/m,
@@ -1184,7 +1187,12 @@ test("an empty --out folder gets the chart and the report", () => {
   const r = run(path.join(corpus, "Login"), { args: ["--out", out] });
   assert.equal(r.stderr, "");
   assert.equal(read(path.join(out, "report.md")), read(path.join(corpus, "Login", "report.md")));
-  assert.deepEqual(fs.readdirSync(out).sort(), ["chart.mmd", "report.md", "tlc.out"]);
+  assert.deepEqual(fs.readdirSync(out).sort(), [
+    "chart.mmd",
+    "report.json",
+    "report.md",
+    "tlc.out",
+  ]);
 });
 
 for (const [what, config, words] of [

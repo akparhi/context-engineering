@@ -1,0 +1,86 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Holds", "version": "1.0.0" },
+  "paths": {
+    "/holds": {
+      "post": {
+        "operationId": "placeHold",
+        "summary": "Place a hold on a book that is out",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlaceHold" } } }
+        },
+        "responses": {
+          "201": { "description": "The hold is in line", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Hold" } } } },
+          "409": { "description": "The member already holds this book", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "422": { "description": "A copy is on the open shelf", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "get": {
+        "operationId": "listHolds",
+        "summary": "The signed-in member's holds",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["waiting", "on_shelf", "all"], "default": "all" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 } }
+        ],
+        "responses": {
+          "200": { "description": "The holds, newest first", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HoldList" } } } }
+        }
+      }
+    },
+    "/holds/{holdId}": {
+      "delete": {
+        "operationId": "cancelHold",
+        "summary": "Cancel a hold",
+        "parameters": [{ "name": "holdId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "204": { "description": "The hold is cancelled and the line moves up" },
+          "403": { "description": "The caller neither placed the hold nor works at the desk", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "No open hold with that id", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PlaceHold": {
+        "type": "object",
+        "required": ["bookId", "pickupBranchId"],
+        "properties": { "bookId": { "type": "string", "format": "uuid" }, "pickupBranchId": { "type": "string", "format": "uuid" } }
+      },
+      "Hold": {
+        "type": "object",
+        "required": ["id", "bookId", "status", "placedAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "bookId": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "status": { "type": "string", "enum": ["waiting", "on_shelf"] },
+          "place": { "type": ["integer", "null"], "description": "Place in line while waiting" },
+          "pickupBy": { "type": ["string", "null"], "format": "date-time" },
+          "placedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "HoldList": {
+        "type": "object",
+        "required": ["holds", "counts", "page"],
+        "properties": {
+          "holds": { "type": "array", "items": { "$ref": "#/components/schemas/Hold" } },
+          "counts": {
+            "type": "object",
+            "properties": { "waiting": { "type": "integer" }, "ready": { "type": "integer" } }
+          },
+          "page": {
+            "type": "object",
+            "properties": { "number": { "type": "integer" }, "size": { "type": "integer" }, "total": { "type": "integer" } }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["message"],
+        "properties": { "message": { "type": "string" } }
+      }
+    }
+  }
+}

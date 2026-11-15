@@ -1,3 +1,4 @@
+import { markOf } from "./mermaid.ts";
 import {
   type Bug,
   CHART_STATES,
@@ -8,6 +9,7 @@ import {
   must,
   type Property,
   RERUN_STATES,
+  type Rule,
   ruleKey,
   type Spec,
   type Stop,
@@ -37,6 +39,91 @@ const forever = (loop: { state: string }[], stutters: boolean | undefined) => {
 };
 
 const fenced = (text: string) => ["```", text, "```"].join("\n");
+
+/** One state of a bug path in `report.json`. `step` is the arrow label and `action` the TLC action that led here; the first state has neither. */
+export type ReportStep = { state: string; step?: string; action?: string };
+
+/** One rule in `report.json`. A broken rule has its shortest bug path when the chart traced one, and names the TLC output file when `report.md` points to it. */
+export type ReportRule =
+  { kind: Rule["kind"]; name: string; outcome: "holds" | "not checked" } | BrokenRule;
+
+type BrokenRule = {
+  kind: Rule["kind"];
+  name: string;
+  outcome: "broken";
+  path?: ReportStep[];
+  /** For a liveness counterexample: the index in `path` where the run starts to repeat. With `stutters`, the run stops in that state. */
+  loop?: { start: number; stutters: boolean };
+  counterexample?: string;
+};
+
+/** The chart that `chart.mmd` draws, as data. A state's `path` names it inside its parent states. `region` is set only
+ *  in a chart of regions. `mark` is the state's class in `chart.mmd`, and `group` keys `colors`. */
+export type ReportChart = {
+  states: { region?: string; path: string[]; start: boolean; group?: string; mark?: "breaks" | "mayBreak" }[];
+  arrows: { region?: string; from: string[]; to: string[]; step: string; when?: string }[];
+  colors: { [group: string]: string };
+};
+
+/** The contents of `report.json`: `report.md`'s verdicts and bug paths as data, and the chart when the out folder has one.
+ *  `v` changes when a field changes meaning or goes away. */
+export type ReportJson = { v: 1; module: string; chart?: ReportChart; rules: ReportRule[] };
+
+/** The `tlc-RULE.out` file the out folder holds for a broken rule: a property's counterexample, or a rule that breaks off the
+ *  chart. `compile`, `report.md` and `report.json` all name the file from this. */
+export function counterexampleFile({ rule, outcome, messages }: Verdict, found: Bug[]) {
+  const drawn = found.some((b) => b.rule.kind !== "property" && ruleKey(b.rule) === ruleKey(rule));
+  return outcome === "broken" && messages && !drawn ? `tlc-${rule.name}.out` : undefined;
+}
+
+function chartJson(chart: Chart): ReportChart {
+  const many = chart.regions.length > 1;
+  const states: ReportChart["states"] = [];
+  const arrows: ReportChart["arrows"] = [];
+  for (const r of chart.regions) {
+    const region = many ? { region: r.name } : {};
+    for (const s of r.states) {
+      const mark = markOf(s);
+      states.push({ ...region, path: s.path, start: s.start,
+        ...(s.group !== undefined && { group: String(s.group) }), ...(mark && { mark }) });
+    }
+    for (const a of r.steps) arrows.push({ ...region, from: a.from, to: a.to, step: a.label, ...(a.when && { when: a.when }) });
+  }
+  return { states, arrows, colors: chart.colors };
+}
+
+export function reportJson(
+  { spec, rules, properties }: { spec: Spec; rules: Verdict[]; properties: Property[] },
+  found: Bug[],
+  chart: Chart | undefined,
+  stories: Map<Bug, Story>,
+): ReportJson {
+  const bugs = new Map<string, Bug>();
+  for (const b of found) if (!bugs.has(ruleKey(b.rule))) bugs.set(ruleKey(b.rule), b);
+  const out: ReportRule[] = [];
+  for (const verdict of [...rules, ...properties]) {
+    const { rule, outcome } = verdict;
+    const { kind, name } = rule;
+    if (outcome !== "broken") {
+      out.push({ kind, name, outcome });
+      continue;
+    }
+    const bug = bugs.get(ruleKey(rule));
+    const entry: BrokenRule = { kind, name, outcome };
+    if (bug) {
+      entry.path = stepsOf(must(stories, bug)).map(({ step, state }, i) => ({
+        state,
+        ...(step && { step }),
+        ...(i > 0 && { action: bug.path[i - 1].action }),
+      }));
+      if (bug.loop !== undefined) entry.loop = { start: bug.loop, stutters: bug.stutters ?? false };
+    }
+    const file = counterexampleFile(verdict, found);
+    if (file) entry.counterexample = file;
+    out.push(entry);
+  }
+  return { v: 1, module: spec.module, ...(chart && { chart: chartJson(chart) }), rules: out };
+}
 
 export function report(
   {
@@ -129,12 +216,10 @@ export function report(
     );
   for (const bug of found) {
     const steps = `${bug.path.length} step${bug.path.length === 1 ? "" : "s"}`;
+    const verdict = properties.find((p) => bug.rule.kind === "property" && ruleKey(p.rule) === ruleKey(bug.rule));
+    const file = verdict && counterexampleFile(verdict, found);
     out.push("", `## ${bug.rule.name} breaks`);
-    out.push(
-      bug.rule.kind === "property"
-        ? `TLC's counterexample is in tlc-${bug.rule.name}.out. It has ${steps}:`
-        : `The shortest path has ${steps}:`,
-    );
+    out.push(file ? `TLC's counterexample is in ${file}. It has ${steps}:` : `The shortest path has ${steps}:`);
     const path = stepsOf(must(stories, bug));
     for (const [i, p] of path.entries()) out.push(`${i}. ${p.step ? `${p.step}: ` : ""}${p.state}`);
     if (bug.loop !== undefined) out.push(forever(path.slice(bug.loop), bug.stutters));
@@ -143,15 +228,13 @@ export function report(
   for (const b of found) drawn.add(ruleKey(b.rule));
   const holds: string[] = [];
   const unchecked: string[] = [];
-  for (const { rule, outcome, messages } of [...rules, ...properties]) {
+  for (const verdict of [...rules, ...properties]) {
+    const { rule, outcome } = verdict;
+    const file = counterexampleFile(verdict, found);
     if (outcome === "holds") holds.push(rule.name);
     else if (outcome === "not checked") unchecked.push(rule.name);
-    else if (messages && !drawn.has(ruleKey(rule)))
-      out.push(
-        "",
-        `## ${rule.name} breaks`,
-        `TLC found a counterexample. It is in tlc-${rule.name}.out.`,
-      );
+    else if (file && !drawn.has(ruleKey(rule)))
+      out.push("", `## ${rule.name} breaks`, `TLC found a counterexample. It is in ${file}.`);
   }
   if (holds.length) out.push("", "## Rules that hold", holds.join(", "));
   if (unchecked.length) out.push("", "## Rules not checked", unchecked.join(", "));

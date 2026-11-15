@@ -98,6 +98,12 @@ const MARK_STYLES = {
   mayBreak: "fill:#fff3e6,stroke:#e8730c,stroke-width:2.5px,color:#b85a06",
 };
 
+/** `breaks` when the state always breaks a rule, `mayBreak` when only some model states behind it do. */
+export function markOf(state: ChartState): "breaks" | "mayBreak" | undefined {
+  if (!state.breaks.length || state.works) return undefined;
+  return state.breaks.some((b) => b.always) ? "breaks" : "mayBreak";
+}
+
 export function mermaidLines(chart: Chart) {
   let next = 0;
   const marks: string[] = [];
@@ -138,9 +144,7 @@ export function mermaidLines(chart: Chart) {
         } else if (leaf) {
           const sid = idOf(leaf.path);
           out.push(`${indent}${sid}: ${esc(head)}`);
-          let mark: "breaks" | "mayBreak" | undefined =
-            leaf.breaks.length && !leaf.works ? "mayBreak" : undefined;
-          if (mark) for (const b of leaf.breaks) if (b.always) mark = "breaks";
+          const mark = markOf(leaf);
           if (mark) for (const b of leaf.breaks) rules[mark].add(b.rule.name);
           const trail = [leaf.lead && "bugPath", leaf.repeats && "repeats"];
           const color = leaf.group === undefined ? undefined : chart.colors[String(leaf.group)];

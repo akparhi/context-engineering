@@ -1,0 +1,32 @@
+{
+  "format": 1,
+  "id": "TIDE-3",
+  "kind": "design",
+  "title": "Tide times on the berth page",
+  "ask": "Approve the design for tide times on the berth page before anyone plans the build.",
+  "product": {
+    "problem": "Sailors leave the marina app to look up the tide, and some miss the window to clear the harbour bar.",
+    "users": [ { "who": "Sailor", "need": "Sees the next high and low tide on the page for their berth." } ],
+    "goals": [ "A sailor reads the next two tides without leaving the berth page." ],
+    "nonGoals": [ { "what": "Tide alerts", "why": "A later design, once sailors use the times." } ],
+    "requirements": [
+      { "id": "H1", "title": "Next tides on the berth page", "text": "The berth page shows the next high and low tide for the harbour, with their times and heights.", "who": "Sailor" }
+    ],
+    "rollout": []
+  },
+  "facts": {
+    "endpoints": [
+      {
+        "id": "tide-next", "method": "GET", "path": "/berths/:berthId/tides", "mark": "new",
+        "answers": "The next high and low tide at the harbour the berth is in.",
+        "who": { "text": "Anyone signed in to the marina app", "mark": "reused" },
+        "outcomes": [ { "status": 200, "when": "The harbour has a tide table for today.", "title": "Tides", "serves": ["H1"] } ],
+        "serves": ["H1"]
+      }
+    ]
+  },
+  "items": [
+    { "id": "sailors", "type": "part", "section": "Scope", "title": "What sailors get", "touches": ["scope"], "body": [ { "view": "spec" } ] },
+    { "id": "tide-api", "type": "part", "section": "API", "title": "Tide endpoint", "touches": ["api"], "body": [ { "view": "endpoints" } ] }
+  ]
+}

@@ -1,6 +1,6 @@
 import { mermaidLines } from "./backends/mermaid.ts";
 import { plainText } from "./backends/plain-text.ts";
-import { report } from "./backends/report.ts";
+import { counterexampleFile, report, reportJson } from "./backends/report.ts";
 import {
   type Answers,
   type Bug,
@@ -66,11 +66,11 @@ export function compile(result: CheckResult, view: CheckedView) {
   const files = new Map<string, Iterable<string | Uint8Array>>();
   if (chart) files.set("chart.mmd", inParts(mermaidLines(chart)));
   files.set("report.md", [text]);
+  files.set("report.json", [JSON.stringify(reportJson(result, found, chart, stories), null, 2)]);
   files.set("tlc.out", plainText(result.messages));
-  const drawn = new Set<string>();
-  for (const b of found) if (b.rule.kind !== "property") drawn.add(ruleKey(b.rule));
-  for (const { rule, outcome, messages } of [...result.rules, ...result.properties])
-    if (outcome === "broken" && messages && !drawn.has(ruleKey(rule)))
-      files.set(`tlc-${rule.name}.out`, plainText(messages));
+  for (const verdict of [...result.rules, ...result.properties]) {
+    const file = counterexampleFile(verdict, found);
+    if (file && verdict.messages) files.set(file, plainText(verdict.messages));
+  }
   return { report: text, files, exit: result.exit };
 }

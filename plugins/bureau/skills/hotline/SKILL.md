@@ -29,6 +29,7 @@ Remaining triggers:
 - Parallel fan-out → the **swarm** skill for coverage matrices, races, gauntlets, and exploration partitions. Use **arena** for design or code bakeoffs with base selection and grafting.
 - Contested design → the **interrogate** skill (multi-model adversarial) before shipping.
 - Nontrivial multi-step → write the throughput checkpoint (Feature step 3).
+- A finished plan a person must approve before work starts → present it through the [sign-off](../sign-off/SKILL.md) skill. Run `sign-off ingest` on a message that contains `sign-off:v1:`. When you resume a task whose plan is out for sign-off, run `sign-off status` before other work.
 - Any prose surface, your reply to the user included → the **unslop** skill. Write the reply per **Writing the reply**. Agent-facing prose also follows the **plugin-dev:skill-development** skill (Claude Code's authoring guidance for SKILL.md files).
 - Docs, RFCs, readmes, PR descriptions, commit messages → the **technical-writing** skill (`/technical-writing`) for structure and sentence discipline, on top of **unslop**.
 - Before commit → the **deslop** skill (`/deslop`).

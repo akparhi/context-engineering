@@ -1,0 +1,49 @@
+---
+title: "One locker door in the lobby"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: Behind the door
+    lg1: Out of the locker
+    lg2: Breaks ExtraDayOnlyOnce or OneParcelPerDoor
+    lg3: Path to the ExtraDayOnlyOnce or OneParcelPerDoor bug
+  }
+  class lg0 teal
+  class lg1 blue
+  class lg2 breaks
+  class lg3 bugPath
+  s0: Door empty
+  s1: Parcel in the locker
+  s2: Parcel in the locker, one more day
+  s3: Two parcels behind one door
+  s4: Parcel in the locker, two more days
+  s5: Parcel at the front desk
+  [*] --> s0
+  s0 --> s1: a courier drops it off
+  s1 --> s0: the resident opens the door
+  s1 --> s2: the resident asks for one more day
+  s1 --> s3: a courier drops it off
+  s2 --> s0: the resident opens the door
+  s2 --> s4: the resident asks for one more day
+  s2 --> s3: a courier drops it off
+  s3 --> s0: the resident opens the door
+  s4 --> s0: the resident opens the door
+  s4 --> s3: a courier drops it off
+  s1 --> s5: two days pass
+  s5 --> s0: the desk hands it over
+  s2 --> s5: the extra day passes
+  s4 --> s5: the extra day passes
+  classDef breaks fill:#ffecee,stroke:#e72e3b,stroke-width:2.5px,color:#cd2834
+  class s0 blue
+  class s0 bugPath
+  class s1 teal
+  class s1 bugPath
+  class s2 teal
+  class s2 bugPath
+  class s3 teal
+  class s3 breaks
+  class s3 bugPath
+  class s4 teal
+  class s4 breaks
+  class s4 bugPath
+  class s5 blue

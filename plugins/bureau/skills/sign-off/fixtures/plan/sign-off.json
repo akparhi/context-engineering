@@ -1,0 +1,388 @@
+{
+  "format": 1,
+  "id": "LIB-7",
+  "kind": "change",
+  "title": "Holds on books that are out",
+  "ask": "Approve the plan for holds on books that are out, and answer the question that blocks the endpoints.",
+  "revision": "r2",
+  "ticket": "https://tracker.example.com/browse/LIB-7",
+  "sources": [
+    { "label": "Figma", "url": "https://design.example.com/file/holds-on-books-that-are-out" },
+    { "label": "Desk survey", "url": "https://docs.example.com/library/desk-survey" }
+  ],
+  "note": "One feature across two repos. One rule in the model still breaks in this plan, and its note tells you why the plan accepts it.",
+  "repos": { "shelf-web": "repos/shelf-web" },
+  "product": {
+    "problem": "Members cannot reserve a book that is out. They ask at the desk, and the desk keeps a paper list for each book. Two members can be promised the same copy, and a returned copy can go back on the open shelf while someone still waits for it.",
+    "users": [
+      { "who": "Member", "need": "Places a hold from the book page, sees their place in line, and picks the copy up from the hold shelf." },
+      { "who": "Desk librarian", "need": "Shelves a returned copy for the next member in line, and cancels a hold when a member asks at the desk." }
+    ],
+    "notFor": "Branch managers. Reports on which books people wait for come in a later plan.",
+    "goals": [
+      "A member can hold any book whose copies are all out, without asking at the desk.",
+      "Each returned copy goes to the first member in line, and that member hears about it the same day."
+    ],
+    "nonGoals": [
+      { "what": "Holds on a book with a copy on the open shelf", "why": "The member can take that copy now." },
+      { "what": "Pausing a hold while away", "why": "Few members asked for it, and it doubles the cases the line must handle." },
+      { "what": "Text message alerts" }
+    ],
+    "requirements": [
+      { "id": "R1", "title": "Place a hold on a book that is out", "text": "When every copy of a book is lent, a member can join the line for it from the book page and sees their place.", "who": "Member" },
+      { "id": "R2", "title": "The first in line gets the returned copy", "text": "A returned copy goes to the first member in line, and nobody else can take it from the hold shelf.", "who": "Desk librarian" },
+      { "id": "R3", "title": "Three opening days to pick it up", "text": "The member hears the same day the copy is shelved, and has three opening days to collect it. After that it passes to the next member." },
+      { "id": "R4", "title": "See every hold in one place", "text": "A member sees each hold with their place in line, or the day to pick it up by.", "who": "Member" },
+      { "id": "R5", "title": "Cancel a hold", "text": "A member can cancel any hold, and a desk librarian can cancel one for them. The line moves up." }
+    ],
+    "rollout": [
+      { "stage": "Staff only", "says": "Desk librarians try holds on their own library cards for one week." },
+      { "stage": "Central branch", "says": "Members of the central branch see Place a hold on the book page." },
+      { "stage": "Every branch", "says": "Every member sees it, and the desk stops taking paper holds." }
+    ],
+    "metric": { "name": "Holds collected", "target": "8 in 10 holds end with the member picking the copy up", "readFrom": "The weekly hold report" }
+  },
+  "facts": {
+    "screens": [
+      {
+        "id": "book-out", "screen": "Book page", "label": "Every copy is out", "when": "A member opens a book whose copies are all lent.",
+        "on": "Opens a book that is out",
+        "regions": [
+          { "mark": "reused", "name": "Side menu", "component": "C1", "sketch": "nav",
+            "sample": { "items": [ { "t": "Catalogue", "open": true }, { "t": "My loans" }, { "t": "Account" } ] } },
+          { "mark": "new", "name": "Place a hold", "serves": ["R1"], "component": "C12", "sketch": "form",
+            "sample": { "title": "Place a hold", "fields": [ ["Pick up at", "Central branch"] ], "button": "Place hold", "note": "You would be 3rd in line." } }
+        ],
+        "serves": ["R1"],
+        "states": [ { "id": "out", "says": "Every copy is lent, so the page shows Place a hold where the shelf code would be." } ]
+      },
+      {
+        "id": "no-holds", "screen": "My holds", "label": "No holds", "when": "The member has no open holds.",
+        "on": "Opens My holds with nothing on hold",
+        "regions": [
+          { "mark": "changed", "name": "Menu entry", "serves": ["R4"], "component": "C2", "sketch": "nav",
+            "sample": { "items": [ { "t": "Catalogue" }, { "t": "My loans" }, { "t": "My holds", "entry": true }, { "t": "Account" } ] } },
+          { "mark": "new", "name": "Nothing on hold", "serves": ["R4"], "component": "C10", "sketch": "message",
+            "sample": { "tone": "empty", "title": "Nothing on hold", "text": "Find a book that is out and place a hold from its page." } }
+        ],
+        "serves": ["R4"]
+      },
+      {
+        "id": "holds", "screen": "My holds", "label": "Holds in line", "when": "The member has open holds, some waiting and one ready.",
+        "from": "book-out", "on": "Places a hold", "subtitle": "3 holds",
+        "regions": [
+          { "mark": "changed", "name": "Menu entry", "serves": ["R4"], "component": "C2", "sketch": "nav",
+            "sample": { "items": [ { "t": "Catalogue" }, { "t": "My loans" }, { "t": "My holds", "entry": true }, { "t": "Account" } ] } },
+          { "mark": "new", "name": "Counts", "serves": ["R4"], "component": "C4", "sketch": "figures",
+            "sample": { "figures": [ ["3", "holds"], ["1", "ready to pick up"] ] } },
+          { "mark": "new", "name": "Tabs", "serves": ["R4"], "component": "C5", "sketch": "tabs",
+            "sample": { "tabs": [ ["All", 3], ["Waiting", 2], ["Ready", 1] ] } },
+          { "mark": "copy", "name": "Search and filters", "component": "C6", "sketch": "filters",
+            "sample": { "search": "Title or author", "pills": ["Branch"] } },
+          { "mark": "new", "name": "Hold list", "serves": ["R1", "R4"], "component": "C7", "sketch": "table",
+            "sample": { "columns": ["Book", "Status", "Pick up by"],
+              "rows": [ ["The Salt Road", "2nd in line", ""], ["Winter Orchard", "Ready", "Friday"], ["A Short History of Bridges", "5th in line", ""] ] } },
+          { "mark": "reused", "name": "Pages", "component": "C8", "sketch": "pagination", "sample": { "text": "1 to 3 of 3" } }
+        ],
+        "serves": ["R1", "R4"],
+        "states": [ { "id": "list", "says": "Holds load newest first, 20 to a page." } ]
+      },
+      {
+        "id": "ready", "screen": "My holds", "label": "Ready to pick up", "when": "A copy waits on the hold shelf for the member.",
+        "from": "holds", "on": "Opens a ready hold", "subtitle": "Pick up by Friday", "chart": "sc:HoldQueue/On the hold shelf",
+        "regions": [
+          { "mark": "new", "name": "Pickup details", "serves": ["R3", "R5"], "component": "C9", "sketch": "sheet",
+            "sample": { "title": "Winter Orchard", "sub": "On the hold shelf at the central branch", "badge": "Ready",
+              "figures": [ ["Friday", "pick up by"], ["Desk 2", "where"] ], "rows": [ ["Shelved", "Tuesday"], ["Pick up by", "Friday, at closing"] ], "button": "Cancel hold" } }
+        ],
+        "serves": ["R3", "R5"],
+        "states": [ { "id": "ready", "says": "The sheet opens over the list and keeps the list's tab." } ]
+      }
+    ],
+    "components": [
+      { "id": "C1", "name": "AccountLayout", "role": "layout", "does": "The account frame with the side menu.", "mark": "reused", "repo": "shelf-web", "file": "src/layouts/account.tsx", "serves": ["R4"] },
+      { "id": "C2", "name": "SideMenu", "role": "component", "does": "Gains the My holds entry.", "mark": "changed", "parent": "C1", "file": "src/layouts/side-menu.tsx", "serves": ["R4"] },
+      { "id": "C3", "name": "MyHoldsPage", "role": "route", "does": "The page at /account/holds.", "mark": "new", "parent": "C1", "file": "src/routes/my-holds.tsx", "serves": ["R4"] },
+      { "id": "C4", "name": "HoldCounts", "role": "component", "does": "How many holds wait, and how many are ready.", "mark": "new", "parent": "C3", "reads": ["E2"], "serves": ["R4"] },
+      { "id": "C5", "name": "HoldTabs", "role": "component", "does": "Switches between all, waiting and ready holds.", "mark": "new", "parent": "C3", "serves": ["R4"] },
+      { "id": "C6", "name": "SearchFilters", "role": "component", "does": "The search box and filter pills from the loans page.", "mark": "reused", "parent": "C3", "repo": "shelf-web", "file": "src/components/search-filters.tsx", "serves": ["R4"] },
+      { "id": "C7", "name": "HoldTable", "role": "component", "does": "One row per hold, with its place in line or its pickup day.", "mark": "new", "parent": "C3", "reads": ["E2"], "serves": ["R1", "R4"] },
+      { "id": "C8", "name": "Pager", "role": "component", "does": "Previous and next page.", "mark": "reused", "parent": "C3", "repo": "shelf-web", "file": "src/components/pager.tsx", "serves": ["R4"] },
+      { "id": "C9", "name": "PickupSheet", "role": "component", "does": "Where and by when to pick up a ready copy, and Cancel hold.", "mark": "new", "parent": "C3", "reads": ["E2", "E3"], "serves": ["R3", "R5"] },
+      { "id": "C10", "name": "EmptyHolds", "role": "component", "does": "Says there are no holds and links to the catalogue.", "mark": "new", "parent": "C3", "serves": ["R4"] },
+      { "id": "C11", "name": "BookPage", "role": "route", "does": "Shows Place a hold when every copy is out.", "mark": "changed", "file": "src/routes/book.tsx", "serves": ["R1"] },
+      { "id": "C12", "name": "PlaceHoldForm", "role": "component", "does": "Picks the pickup branch and places the hold.", "mark": "new", "parent": "C11", "reads": ["E1"], "file": "src/books/place-hold-form.tsx", "serves": ["R1"] },
+      { "id": "C13", "name": "useHolds", "role": "data", "does": "Loads the holds, and loads them again after a cancel.", "mark": "new", "reads": ["E2", "E3"], "file": "src/holds/use-holds.ts", "serves": ["R4", "R5"], "shows": "C7" },
+      { "id": "C14", "name": "holdsClient", "role": "wiring", "does": "Calls the holds endpoints with the member's session.", "mark": "new", "reads": ["E1", "E2", "E3"], "file": "src/api/holds.ts", "serves": ["R1", "R4", "R5"] }
+    ],
+    "endpoints": [
+      {
+        "id": "E1", "method": "POST", "path": "/holds", "mark": "new",
+        "answers": "Puts the member in line for a book that is out, and says their place.",
+        "who": { "text": "Signed-in members", "mark": "reused" },
+        "outcomes": [
+          { "status": 201, "when": "Every copy is lent and the member was not in line.", "title": "In line", "shape": "Hold", "serves": ["R1"],
+            "body": [ { "name": "place", "type": "integer", "means": "Place in line, from 1" }, { "name": "status", "type": "'waiting'", "column": "book_holds.status" } ] },
+          { "status": 409, "when": "The member already holds this book.", "title": "Already in line", "shape": "Error", "serves": ["R1"] },
+          { "status": 422, "when": "A copy is on the open shelf.", "title": "Copy on the shelf", "shape": "Error", "serves": ["R1"] }
+        ],
+        "serves": ["R1"]
+      },
+      {
+        "id": "E2", "method": "GET", "path": "/holds", "mark": "new",
+        "answers": "The member's open holds with their counts, newest first.",
+        "who": { "text": "Signed-in members, for their own holds", "mark": "reused" },
+        "narrows": [
+          { "name": "status", "type": "waiting | on_shelf | all", "default": "all", "serves": ["R4"] },
+          { "name": "page", "type": "integer >= 1", "default": "1", "means": "20 holds to a page", "serves": ["R4"] }
+        ],
+        "outcomes": [
+          { "status": 200, "when": "Always, for a signed-in member.", "title": "Holds", "shape": "HoldList", "serves": ["R3", "R4"],
+            "body": [ { "name": "pickupBy", "type": "string | null", "means": "ISO date, set while a copy waits", "column": "book_holds.pickup_by" } ] }
+        ],
+        "serves": ["R3", "R4"]
+      },
+      {
+        "id": "E3", "method": "DELETE", "path": "/holds/:holdId", "mark": "new",
+        "answers": "Cancels a hold. A shelved copy passes to the next member in line.",
+        "who": { "text": "The member who placed it, or a desk librarian", "mark": "new" },
+        "outcomes": [
+          { "status": 204, "when": "The hold was open.", "title": "Cancelled", "serves": ["R5"] },
+          { "status": 403, "when": "The caller neither placed the hold nor works at the desk.", "title": "Not yours", "shape": "Error", "serves": ["R5"] },
+          { "status": 404, "when": "No open hold has that id.", "title": "Not found", "shape": "Error" }
+        ],
+        "serves": ["R5"]
+      }
+    ],
+    "acceptance": [
+      { "id": "A1", "requirement": "R1", "given": "Every copy of a book is lent", "when": "a member places a hold", "then": "they join the line and see their place", "screens": ["book-out", "holds"] },
+      { "id": "A2", "requirement": "R1", "says": "A member who already holds a book cannot hold it again.", "guards": "rule:OneHoldPerMember" },
+      { "id": "A3", "requirement": "R2", "given": "Two members wait for a book", "when": "the desk scans a returned copy", "then": "the copy is shelved for the first of them", "guards": "rule:OpenShelfOnlyWhenNobodyWaits" },
+      { "id": "A4", "requirement": "R2", "says": "Every copy shelved for a hold carries a printed slip with the member's name.", "addedFor": "rule:NoTurnSkipped" },
+      { "id": "A5", "requirement": "R3", "given": "A copy has waited three opening days", "when": "the night run starts", "then": "the copy passes to the next member, or to the open shelf", "screens": ["ready"] },
+      { "id": "A6", "requirement": "R3", "says": "The member gets an email the day their copy is shelved." },
+      { "id": "A7", "requirement": "R4", "says": "My holds lists every open hold with its place in line or its pickup day.", "screens": ["holds", "no-holds"] },
+      { "id": "A8", "requirement": "R5", "when": "the member a shelved copy waits for cancels", "then": "the copy passes on and is never held for nobody", "addedFor": "rule:HeldForSomeone" },
+      { "id": "A9", "requirement": null, "says": "Holds on the paper lists stay on paper until the desk moves them by hand." }
+    ],
+    "tests": [
+      { "id": "T1", "type": "unit", "name": "queue-order", "proves": ["A3"], "unit": "U1", "file": "src/holds/queue.test.ts", "says": "The queue returns the member with the oldest waiting hold first.", "run": "bun test src/holds/queue.test.ts" },
+      { "id": "T2", "type": "unit", "name": "one-open-hold", "proves": ["A2"], "unit": "U1", "file": "src/holds/schema.test.ts", "says": "The partial unique index refuses a second open hold by the same member.", "run": "bun test src/holds/schema.test.ts" },
+      { "id": "T3", "type": "unit", "name": "opening-days", "proves": ["A5"], "unit": "U1", "file": "src/holds/opening-days.test.ts", "says": "Three opening days skip the days the branch is closed.", "run": "bun test src/holds/opening-days.test.ts" },
+      { "id": "T4", "type": "behavior", "name": "place-hold", "proves": ["A1", "A2"], "unit": "U2", "file": "test/holds/place.test.ts", "says": "POST /holds answers 201 with the place in line, 409 for a second hold, and 422 when a copy is on the shelf.", "run": "bun test test/holds/place.test.ts" },
+      { "id": "T5", "type": "behavior", "name": "shelve-on-return", "proves": ["A3", "A4"], "unit": "U2", "file": "test/desk/return.test.ts", "says": "A desk return shelves the copy for the first member and prints a slip with their name.", "run": "bun test test/desk/return.test.ts" },
+      { "id": "T6", "type": "behavior", "name": "night-run", "proves": ["A5"], "unit": "U2", "file": "test/holds/night-run.test.ts", "says": "The night run passes a copy on after three opening days.", "run": "bun test test/holds/night-run.test.ts" },
+      { "id": "T7", "type": "behavior", "name": "cancel-on-shelf", "proves": ["A8"], "unit": "U2", "file": "test/holds/cancel.test.ts", "says": "Cancelling a hold whose copy is shelved passes the copy to the next member.", "run": "bun test test/holds/cancel.test.ts" },
+      { "id": "T8", "type": "e2e", "name": "my-holds", "proves": ["A1", "A7"], "unit": "U3", "file": "e2e/my-holds.spec.ts", "says": "A member places a hold from the book page and sees it on My holds.", "run": "npx playwright test e2e/my-holds.spec.ts" },
+      { "id": "T9", "type": "e2e", "name": "cancel-hold", "proves": ["A8"], "unit": "U3", "file": "e2e/cancel-hold.spec.ts", "says": "A member cancels a ready hold from its pickup details.", "run": "npx playwright test e2e/cancel-hold.spec.ts" },
+      { "id": "T10", "type": "live", "name": "ready-email", "proves": ["A6"], "unit": "U2", "says": "On the staging library, a returned test copy sends the ready email to the test member." }
+    ],
+    "prs": [
+      {
+        "id": "P1", "title": "Holds table and queue", "repo": "shelf-api", "branch": "feat/LIB-7-holds-table", "from": "develop", "into": "develop",
+        "promotes": ["main"], "steps": ["U1"], "review": "A maintainer reviews every migration.", "reviewer": "Tomás R.",
+        "merge": { "by": "human", "why": "It changes the database schema." },
+        "evidence": ["migration up and down on a fresh database", "T1", "T2", "queue query timed on a copy of the live database"]
+      },
+      {
+        "id": "P2", "title": "Holds endpoints and the desk return", "repo": "shelf-api", "branch": "feat/LIB-7-holds-api", "from": "develop", "into": "develop",
+        "promotes": ["main"], "after": ["P1"], "steps": ["U2"], "review": "The review bot reviews on open.",
+        "merge": { "by": "human", "why": "It adds who may cancel a hold." },
+        "evidence": ["T4", "T5", "T6", "T7", "a desk return on staging prints a slip"]
+      },
+      {
+        "id": "P3", "title": "My holds page", "repo": "shelf-web", "branch": "feat/LIB-7-my-holds", "from": "main", "into": "main", "planInto": "develop",
+        "after": ["P2"], "steps": ["U3"], "review": "The review bot reviews on open, then a designer checks the screenshots.",
+        "merge": { "by": "bot", "why": "A page behind the holds switch, with no schema or permission change." },
+        "evidence": ["T8", "screenshots at 360 px and 1280 px"],
+        "note": "shelf-web has no develop branch, so the page goes straight into main behind the switch.",
+        "waits": "Waits for P2 to reach develop, so the page calls the real endpoints."
+      }
+    ],
+    "risks": [
+      { "id": "K1", "title": "A librarian lends a held copy to the wrong member", "bound": "The printed slip is the only guard until the desk app reads holds. The night report lists copies lent while held.", "serves": ["R2"] },
+      { "id": "K2", "title": "Ready emails land in spam", "bound": "My holds shows ready holds too, so a member who checks it still sees the day.", "serves": ["R3"] },
+      { "id": "K3", "title": "The night run misses a day", "bound": "The next run passes on every copy past its day, so a copy waits one extra day at most.", "serves": ["R3"] }
+    ],
+    "defaults": [
+      { "id": "F1", "says": "Three opening days count from the morning after a copy is shelved.", "note": "The desk asked for opening days. Calendar days would be simpler.", "serves": ["R3"] },
+      { "id": "F2", "says": "The pickup branch is the member's home branch unless they pick another.", "serves": ["R1"] }
+    ]
+  },
+  "items": [
+    { "id": "scope", "type": "part", "section": "Scope", "title": "Product plan", "why": "It sets what members and the desk get.", "touches": ["scope"],
+      "source": "plan.md#Scope", "body": [ { "view": "spec" } ] },
+    { "id": "Q1", "type": "question", "section": "Scope", "title": "Do you want members to hold a book while a copy is on the open shelf?",
+      "why": "The desk does this for members who cannot come in this week.", "serves": ["R1"],
+      "options": [
+        { "id": "Q1a", "label": "No, only when every copy is out", "detail": "The member takes the copy from the shelf, as today." },
+        { "id": "Q1b", "label": "Yes, and the desk sets the copy aside", "detail": "The desk walks to the shelf for each hold.", "facts": [ ["Desk walks a day", "about 40"], ["Members who asked", "a few"] ] }
+      ],
+      "recommended": "Q1a", "default": null, "blocks": ["U2"] },
+    { "id": "Q2", "type": "question", "section": "Scope", "title": "How many books do you want a member to hold at once?",
+      "why": "The desk has no limit today. A limit stops one member from holding a whole series.", "serves": ["R1"],
+      "default": "Five books at a time.", "placeholder": "A number, or no limit", "blocks": [] },
+    { "id": "screens", "type": "part", "section": "Screens", "title": "Screens", "why": "Two pages change for members.", "touches": ["user-visible"],
+      "source": "plan.md#Screens", "body": [ { "view": "screens" } ] },
+    { "id": "evidence", "type": "part", "section": "Evidence", "title": "Evidence", "touches": [],
+      "body": [ { "view": "figures", "facts": [
+        { "value": "312", "label": "books on the paper hold lists at the central branch.", "source": "goal.md", "serves": ["R1"] },
+        { "value": "6 days", "label": "typical wait from asking at the desk to picking up.", "source": "desk survey", "serves": ["R3"] },
+        { "value": "1 in 5", "label": "held copies a member never collects, so the three-day limit matters.", "source": "desk survey", "inferred": true, "serves": ["R3"] },
+        { "value": "40 ms", "label": "to find the first member in line, on a copy of the live database.", "serves": ["R2"] }
+      ] } ] },
+    { "id": "decisions", "type": "part", "section": "Decisions", "title": "Decisions", "touches": [], "source": "plan.md#Decisions", "body": [ { "view": "decisions" } ] },
+    { "id": "D1", "type": "decision", "section": "Decisions", "title": "Do you agree with how a returned copy reaches the next member?",
+      "why": "A member should hear the same day the copy is back.", "serves": ["R2", "R3"], "touches": [],
+      "options": [
+        { "id": "D1a", "label": "The desk scan shelves it", "detail": "When the desk scans a returned copy, the server finds the first member in line and prints a hold slip.",
+          "facts": [ ["New staff steps", "none"], ["Member hears", "the same day"] ] },
+        { "id": "D1b", "label": "A nightly job shelves returned copies", "detail": "Returned copies wait on a cart until the morning sort.",
+          "facts": [ ["New staff steps", "a morning sort"], ["Member hears", "the next day"] ] }
+      ],
+      "chosen": "D1a" },
+    { "id": "D2", "type": "decision", "section": "Decisions", "title": "Do you agree with how a member is told a copy is ready?", "serves": ["R3"], "touches": [],
+      "options": [
+        { "id": "D2a", "label": "Email, through the existing notices", "detail": "Every member has an email on file." },
+        { "id": "D2b", "label": "Text message, through a new provider", "detail": "A new contract and a new service to run." }
+      ],
+      "chosen": "D2a" },
+    { "id": "behavior", "type": "part", "section": "Behavior", "title": "Behavior", "why": "One rule still breaks in this plan.", "touches": ["open-rule"],
+      "source": "plan.md#Behavior",
+      "body": [ {
+        "view": "statechart",
+        "says": {
+          "TypeOK": "Every value stays in its allowed set",
+          "HeldForSomeone": "A copy on the hold shelf is always held for a member",
+          "NoTurnSkipped": "The desk never lends a held copy to someone else",
+          "OneHoldPerMember": "A member is in line for a book at most once",
+          "OpenShelfOnlyWhenNobodyWaits": "A copy goes on the open shelf only when nobody waits for it",
+          "PickupWindowKept": "A copy waits on the hold shelf for three days at most",
+          "NoDeadlock": "The copy can always move on"
+        },
+        "terms": [
+          { "word": "Hold shelf", "means": "the shelf behind the desk where a copy waits for the member it is held for." },
+          { "word": "Open shelf", "means": "the shelves any member can borrow from." },
+          { "word": "Hold slip", "means": "the paper the desk prints with the member's name and puts in the copy." }
+        ],
+        "runs": [
+          { "id": "plan", "label": "This plan", "note": "The plan as it stands. A cancel on the shelf passes the copy on. The desk app still does not read holds.",
+            "dir": "statechart/out-plan" },
+          { "id": "draft", "label": "Before review", "note": "The plan before review. A cancel on the shelf left the copy held for nobody.",
+            "dir": "statechart/out-draft" }
+        ],
+        "serves": {
+          "TypeOK": [], "HeldForSomeone": ["R3", "R5"], "NoTurnSkipped": ["R2"], "OneHoldPerMember": ["R1"],
+          "OpenShelfOnlyWhenNobodyWaits": ["R2"], "PickupWindowKept": [], "NoDeadlock": ["R2"]
+        },
+        "hide": ["TypeOK"],
+        "parked": { "PickupWindowKept": "The model counts whole days. R3 counts opening days, which the model leaves out." },
+        "steps": {
+          "a member places a hold": "hold", "a waiting member cancels": "cancel", "the copy comes back": "return",
+          "the member picks it up": "pick up", "three days pass": "3 days", "the member it waits for cancels": "cancel on shelf",
+          "someone borrows it": "borrow", "the desk lends it to someone else": "desk lends"
+        },
+        "notes": {
+          "plan:NoTurnSkipped": { "verdict": "open",
+            "text": "The desk app does not read holds, so a librarian can lend a copy from the hold shelf to the wrong member.",
+            "decision": {
+              "chosen": ["Print a hold slip with the member's name, and leave the desk app as it is", "The desk puts the slip in the copy when it shelves it, and reads it before lending. The model cannot show that a person reads it."],
+              "other": ["Block the loan in the desk app", "Another team owns the desk app and ships it monthly, so this plan would wait for its next release."]
+            } },
+          "draft:HeldForSomeone": { "verdict": "fixed",
+            "text": "Before review, a member who cancelled a hold on the shelf left the copy held for nobody. Now the cancel passes the copy to the next member, or to the open shelf." }
+        },
+        "triggers": {
+          "a member places a hold": { "endpoint": "E1" }, "a waiting member cancels": { "endpoint": "E3" },
+          "the member it waits for cancels": { "endpoint": "E3" }, "the copy comes back": { "ops": "the desk app's return scan" },
+          "the member picks it up": { "ops": "the desk app's loan scan" }, "someone borrows it": { "ops": "the desk app's loan scan" },
+          "the desk lends it to someone else": { "ops": "the desk app's loan scan" }, "three days pass": { "job": "the night run" }
+        },
+        "stored": {
+          "Out on loan, members waiting": "book_holds.status", "On the hold shelf": "book_holds.copy_id",
+          "On the hold shelf, others waiting": "book_holds.copy_id"
+        }
+      } ] },
+    { "id": "data", "type": "part", "section": "Data", "title": "Data", "why": "One new table stores every hold.", "touches": ["schema"],
+      "source": "plan.md#Data",
+      "body": [ {
+        "view": "erd", "src": "design/schema.dbml", "sql": "design/db.sql", "base": "design/base.sql",
+        "says": "book_holds stores the line for each book: one row per hold, read in placed_at order. Two partial unique indexes keep one open hold per member and book, and one hold per shelved copy.",
+        "tables": [
+          { "name": "book_holds", "mark": "new", "role": "One row per hold. A book's line is its waiting rows.", "serves": ["R1", "R2", "R3", "R5"] },
+          { "name": "copies", "mark": "reused", "role": "One row per physical copy.", "serves": ["R2"] },
+          { "name": "books", "mark": "reused" },
+          { "name": "members", "mark": "reused" }
+        ],
+        "writers": [
+          { "column": "book_holds.status", "states": ["a member places a hold", "the copy comes back", "the member picks it up", "three days pass", "a waiting member cancels", "the member it waits for cancels"] },
+          { "column": "book_holds.copy_id", "states": ["the copy comes back", "three days pass"] },
+          { "column": "book_holds.pickup_by", "states": ["the copy comes back"] }
+        ],
+        "columns": [
+          { "column": "book_holds.status", "serves": ["R2", "R3", "R5"] },
+          { "column": "book_holds.placed_at", "serves": ["R2"] },
+          { "column": "book_holds.pickup_by", "serves": ["R3", "R4"] },
+          { "column": "book_holds.copy_id", "serves": ["R2"] }
+        ],
+        "indexes": [
+          { "name": "book_holds_one_open_per_member", "unique": true, "where": "status IN ('waiting', 'on_shelf')", "serves": ["R1"] },
+          { "name": "book_holds_one_per_shelved_copy", "unique": true, "where": "status = 'on_shelf'", "serves": ["R2"] },
+          { "name": "book_holds_queue", "where": "status = 'waiting'", "serves": ["R2"] }
+        ],
+        "unused": [ { "value": "hold_status.paused", "why": "Reserved for pausing a hold, a non-goal." } ],
+        "loose": [ { "from": "book_holds.pickup_branch_id", "to": "branches.id" } ]
+      } ] },
+    { "id": "api", "type": "part", "section": "API", "title": "API", "why": "Three new endpoints, and cancel takes a new permission.", "touches": ["api", "permission"],
+      "source": "plan.md#API",
+      "body": [ {
+        "view": "endpoints", "ids": ["E1", "E2", "E3"], "src": "design/api.json",
+        "access": { "who": "Members for their own holds. Desk librarians for any hold.", "permission": "holds:cancel-any", "switch": "holds", "serves": ["R5"], "ask": "Q3" },
+        "envelope": "T, or { message: string } on an error",
+        "shapes": {
+          "Hold": "{\n  id: string\n  bookId: string\n  title: string\n  status: 'waiting' | 'on_shelf'\n  place: number | null      // while waiting\n  pickupBy: string | null   // ISO, while on the shelf\n  placedAt: string\n}",
+          "HoldList": "{\n  holds: Hold[]\n  counts: { waiting: number, ready: number }\n  page: { number: number, size: number, total: number }\n}",
+          "Error": "{\n  message: string\n}"
+        }
+      } ] },
+    { "id": "Q3", "type": "question", "section": "API", "title": "Do you want desk librarians to cancel any member's hold?", "serves": ["R5"],
+      "options": [
+        { "id": "Q3a", "label": "Yes, any desk librarian", "detail": "Members often ask at the desk. This needs the new permission." },
+        { "id": "Q3b", "label": "No, only the member", "detail": "No new permission, and the desk sends members to the website." }
+      ],
+      "recommended": "Q3a", "default": "Q3a", "blocks": ["U2"] },
+    { "id": "components", "type": "part", "section": "Components", "title": "Components", "touches": [], "source": "plan.md#Components",
+      "body": [ { "view": "components", "note": "The page runs on mock answers from design/api.json until P2 reaches staging." } ] },
+    { "id": "units", "type": "part", "section": "Units", "title": "Units", "touches": [], "source": "plan.md#Units",
+      "body": [ { "view": "units", "note": "U1, U2 and U3 run in order. U3 starts on mock answers once U2 lands its contract." } ] },
+    { "id": "U1", "type": "step", "section": "Units", "title": "Holds table and queue", "touches": [], "source": "plan.md#U1 Holds table and queue",
+      "repo": "shelf-api", "files": ["migrations/0042_book_holds.sql", "src/holds/queue.ts", "src/holds/opening-days.ts"],
+      "delivers": ["db:book_holds"], "serves": ["R1", "R2", "R3"], "tasks": 3,
+      "qa": "Run the migration on a copy of the live database and time the queue query.", "done": "The migration runs up and down. T1 to T3 pass." },
+    { "id": "U2", "type": "step", "section": "Units", "title": "Holds endpoints and the desk return", "touches": [], "source": "plan.md#U2 Holds endpoints",
+      "repo": "shelf-api", "files": ["src/holds/routes.ts", "src/desk/return.ts", "src/holds/night-run.ts"],
+      "delivers": ["E1", "E2", "E3"], "serves": ["R1", "R2", "R3", "R5"], "dependsOn": ["U1"], "tasks": 5,
+      "done": "All behavior tests pass. A desk return on staging prints a slip." },
+    { "id": "U3", "type": "step", "section": "Units", "title": "My holds page", "touches": [], "source": "plan.md#U3 My holds page",
+      "repo": "shelf-web", "files": ["src/routes/my-holds.tsx", "src/routes/book.tsx", "src/layouts/side-menu.tsx", "src/holds/use-holds.ts", "src/api/holds.ts"],
+      "delivers": ["C2", "C3", "C4", "C5", "C7", "C9", "C10", "C11", "C12", "C13", "C14"], "serves": ["R1", "R3", "R4", "R5"], "dependsOn": ["U2"], "tasks": 6,
+      "qa": "Check the page at 360 px and with a screen reader.", "done": "T8 passes, and the screenshots match the screen states." },
+    { "id": "risks", "type": "part", "section": "Risks", "title": "Risks and defaults", "touches": [], "source": "plan.md#Risks and defaults", "body": [ { "view": "risks" } ] },
+    { "id": "acceptance", "type": "part", "section": "Acceptance", "title": "Acceptance and tests", "why": "These rows define done.", "touches": ["acceptance"],
+      "body": [ { "view": "trace" }, { "view": "prose", "src": "test-plan.md" } ] },
+    { "id": "prs", "type": "part", "section": "Pull requests", "title": "Pull requests", "touches": [], "source": "plan.md#Pull requests",
+      "body": [ { "view": "prs", "bot": "shelf-review[bot]", "label": "review:ready", "notes": ["Both repos name branches feat/<ticket>-<topic>."] } ] },
+    { "id": "grant", "type": "grant", "section": "Grant", "title": "Grant", "source": "plan.md#Grant",
+      "allow": [
+        { "says": "Commits on the unit branches.", "key": "commit" },
+        { "says": "Pushes those branches, never with force.", "key": "push" },
+        { "says": "Opens the three pull requests.", "key": "pr" },
+        { "says": "Runs the checks each pull request must pass, and attaches the evidence.", "key": "gates" }
+      ],
+      "ask": [
+        { "says": "Merging P1 or P2.", "key": "merge" },
+        { "says": "Turning the holds switch on for any branch.", "key": "deploy" }
+      ],
+      "clearance": "The review bot may merge P3 once its checks pass. It changes no schema and no permission, and the page stays behind the holds switch." }
+  ]
+}

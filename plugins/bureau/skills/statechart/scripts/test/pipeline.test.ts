@@ -178,7 +178,7 @@ test("the pipeline turns a hand-built graph into the out folder's files with no 
   assert.equal(broken.exit, 1);
   assert.deepEqual(
     [...broken.files.keys()],
-    ["chart.mmd", "report.md", "tlc.out", "tlc-Settles.out"],
+    ["chart.mmd", "report.md", "report.json", "tlc.out", "tlc-Settles.out"],
   );
   assert.equal(body(broken.files, "report.md"), broken.report);
   assert.equal(body(broken.files, "tlc.out"), "Finished in 00s at (T)\n");
@@ -199,6 +199,27 @@ test("the pipeline turns a hand-built graph into the out folder's files with no 
       "TLC found a counterexample. It is in tlc-Settles.out.",
     ].join("\n"),
   );
+  assert.deepEqual(JSON.parse(body(broken.files, "report.json")), {
+    v: 1,
+    module: "Two",
+    chart: {
+      states: [
+        { path: ["0"], start: true },
+        { path: ["1"], start: false, mark: "breaks" },
+      ],
+      arrows: [{ from: ["0"], to: ["1"], step: "Grow" }],
+      colors: {},
+    },
+    rules: [
+      {
+        kind: "invariant",
+        name: "Small",
+        outcome: "broken",
+        path: [{ state: "0" }, { state: "1", step: "Grow", action: "Grow" }],
+      },
+      { kind: "property", name: "Settles", outcome: "broken", counterexample: "tlc-Settles.out" },
+    ],
+  });
   assert.match(
     body(broken.files, "chart.mmd"),
     /^ {2}(s\d+) --> (s\d+): Grow\n[\s\S]*^ {2}class \2 breaks$/m,
@@ -206,9 +227,25 @@ test("the pipeline turns a hand-built graph into the out folder's files with no 
 
   const holds = compile(twoStates([]), noView);
   assert.equal(holds.exit, 0);
-  assert.deepEqual([...holds.files.keys()], ["chart.mmd", "report.md", "tlc.out"]);
+  assert.deepEqual([...holds.files.keys()], ["chart.mmd", "report.md", "report.json", "tlc.out"]);
   assert.match(holds.report, /^## Rules that hold\nSmall, Settles$/m);
   assert.doesNotMatch(body(holds.files, "chart.mmd"), /breaks/);
+  assert.deepEqual(JSON.parse(body(holds.files, "report.json")), {
+    v: 1,
+    module: "Two",
+    chart: {
+      states: [
+        { path: ["0"], start: true },
+        { path: ["1"], start: false },
+      ],
+      arrows: [{ from: ["0"], to: ["1"], step: "Grow" }],
+      colors: {},
+    },
+    rules: [
+      { kind: "invariant", name: "Small", outcome: "holds" },
+      { kind: "property", name: "Settles", outcome: "holds" },
+    ],
+  });
 });
 
 test("an invariant and a property with one name stay two rules", () => {
@@ -225,15 +262,27 @@ test("an invariant and a property with one name stay two rules", () => {
         initialOnly: false,
       },
     ];
-    return compile(result, noView).report;
+    return compile(result, noView);
   };
   const both = reportWithSmallProperty([small]);
-  assert.match(both, /^## Small breaks\nThe shortest path has 1 step:$/m);
+  assert.match(both.report, /^## Small breaks\nThe shortest path has 1 step:$/m);
   assert.match(
-    both,
+    both.report,
     /^## Small breaks\nTLC's counterexample is in tlc-Small\.out\. It has 1 step:$/m,
   );
-  assert.match(reportWithSmallProperty([]), /^## Rules that hold\nSmall$/m);
+  const steps = [{ state: "0" }, { state: "1", step: "Grow", action: "Grow" }];
+  assert.deepEqual(JSON.parse(body(both.files, "report.json")).rules, [
+    { kind: "invariant", name: "Small", outcome: "broken", path: steps },
+    {
+      kind: "property",
+      name: "Small",
+      outcome: "broken",
+      path: steps,
+      loop: { start: 1, stutters: true },
+      counterexample: "tlc-Small.out",
+    },
+  ]);
+  assert.match(reportWithSmallProperty([]).report, /^## Rules that hold\nSmall$/m);
 });
 
 test("a PROPERTY that breaks with no path writes TLC's counterexample", () => {

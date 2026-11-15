@@ -1,0 +1,366 @@
+{
+  "format": 1,
+  "id": "PKG-112",
+  "kind": "change",
+  "title": "Parcel lockers in the lobby",
+  "ask": "Approve the plan for the lobby parcel lockers, and say whether a resident may name a neighbour to collect for them.",
+  "revision": "r5",
+  "ticket": "https://issues.example.com/PKG-112",
+  "sources": [
+    { "label": "Locker vendor guide", "url": "https://vendor.example.com/lockers/bridge-guide" }
+  ],
+  "note": "Five units across three repos. Every rule in the model holds in this plan, and the run before review shows the two it broke.",
+  "repos": { "porter-app": "repos/porter-app", "locker-bridge": "repos/locker-bridge" },
+  "product": {
+    "problem": "Couriers leave parcels at the front desk, which closes at eight. Residents who work late wait a day for their parcel, and the desk runs out of room on busy weeks. The new lobby lockers sit unused because nothing tells a resident which door holds their parcel.",
+    "users": [
+      { "who": "Resident", "need": "Hears the moment a parcel lands, and opens its locker with a code at any hour." },
+      { "who": "Front desk", "need": "Takes over parcels nobody collects, and hands each one only to the resident it is for." },
+      { "who": "Courier", "need": "Picks a free door on the locker screen and closes it on the parcel." }
+    ],
+    "goals": [
+      "A resident knows within a minute that a parcel is waiting, and which door holds it.",
+      "No parcel stays in a locker past its deadline."
+    ],
+    "nonGoals": [
+      { "what": "Returning a parcel to the courier", "why": "Couriers already collect returns from the desk." },
+      { "what": "Lockers in other buildings" }
+    ],
+    "requirements": [
+      { "id": "N1", "title": "Know when a parcel lands", "text": "When a courier closes a locker on a parcel, the resident gets a message with a pickup code within a minute and sees the parcel in the app. The code opens that door only.", "who": "Resident" },
+      { "id": "N2", "title": "Nothing sits in a locker for good", "text": "A resident has two days to collect and can ask once for one more day. After that the front desk takes the parcel out and keeps it for the resident.", "who": "Front desk" }
+    ],
+    "rollout": [
+      { "stage": "One locker bank", "says": "Residents of the east wing get codes for the bank by the east lifts." },
+      { "stage": "The whole lobby", "says": "Every resident gets codes, and couriers stop leaving parcels at the desk." }
+    ],
+    "metric": { "name": "Parcels collected from a locker", "target": "9 in 10 parcels leave a locker within two days", "readFrom": "The monthly lobby report" }
+  },
+  "facts": {
+    "screens": [
+      {
+        "id": "lobby-waiting", "screen": "Parcels", "label": "A parcel is waiting", "when": "A courier has left a parcel in a locker for the resident.",
+        "on": "Opens Parcels after the arrival message", "subtitle": "1 waiting", "chart": "sc:ParcelLocker/Parcel in the locker",
+        "regions": [
+          { "mark": "reused", "name": "Resident frame", "component": "k-shell", "sketch": "nav",
+            "sample": { "items": [ { "t": "Home" }, { "t": "Visitors" }, { "t": "Parcels", "entry": true } ] } },
+          { "mark": "new", "name": "Waiting count", "serves": ["N1"], "component": "k-count", "sketch": "figures",
+            "sample": { "figures": [ ["1", "in a locker"], ["0", "at the front desk"] ], "note": "Counts refresh when a message arrives." } },
+          { "mark": "new", "name": "Parcel list", "serves": ["N1", "N2"], "component": "k-list", "sketch": "table",
+            "sample": { "columns": ["From", "Door", "Collect by"],
+              "rows": [ ["Northwind Books", "East bank, door 4", "Thursday, 18:00"] ] } }
+        ],
+        "serves": ["N1", "N2"],
+        "states": [ { "id": "listing", "says": "Parcels load newest first, every parcel on one page." } ]
+      },
+      {
+        "id": "lobby-code", "screen": "Parcels", "label": "Pickup code", "when": "The resident taps a parcel that is in a locker.",
+        "from": "lobby-waiting", "on": "Taps a parcel",
+        "regions": [
+          { "mark": "new", "name": "Code sheet", "serves": ["N1", "N2"], "component": "k-code", "sketch": "sheet",
+            "sample": { "title": "Northwind Books", "sub": "East bank, door 4", "badge": "In a locker",
+              "figures": [ ["482 913", "pickup code"], ["Thursday", "collect by"] ], "bars": [2, 1, 0], "button": "One more day" } }
+        ],
+        "serves": ["N1", "N2"]
+      },
+      {
+        "id": "lobby-desk", "screen": "Parcels", "label": "Moved to the front desk", "when": "Nobody opened the locker before the deadline.",
+        "from": "lobby-code", "on": "Two days pass", "chart": "sc:ParcelLocker/Parcel at the front desk",
+        "regions": [
+          { "mark": "new", "name": "Desk notice", "serves": ["N2"], "component": "k-desk", "sketch": "message",
+            "sample": { "tone": "lock", "title": "At the front desk", "text": "The desk took this parcel out of its locker. Collect it between eight and eight.", "action": "Show my flat number" } }
+        ],
+        "serves": ["N2"],
+        "states": [ { "id": "desk", "says": "The code sheet closes, and the parcel row shows the desk in place of a door." } ]
+      }
+    ],
+    "components": [
+      { "id": "k-shell", "name": "ResidentShell", "role": "layout", "does": "The resident app frame with its bottom tabs.", "mark": "reused", "repo": "porter-app", "file": "src/shell/resident-shell.tsx", "serves": ["N1"] },
+      { "id": "k-tabs", "name": "BottomTabs", "role": "component", "does": "Gains the Parcels tab.", "mark": "changed", "parent": "k-shell", "repo": "porter-app", "file": "src/shell/bottom-tabs.tsx", "serves": ["N1"] },
+      { "id": "k-page", "name": "ParcelsScreen", "role": "route", "does": "The screen at /parcels.", "mark": "new", "parent": "k-shell", "repo": "porter-app", "file": "src/parcels/parcels-screen.tsx", "serves": ["N1", "N2"] },
+      { "id": "k-count", "name": "ParcelCount", "role": "component", "does": "How many parcels wait in a locker, and how many at the desk.", "mark": "new", "parent": "k-page", "reads": ["ep-mine"], "serves": ["N1"] },
+      { "id": "k-list", "name": "ParcelList", "role": "component", "does": "One row per parcel, with its door and its deadline.", "mark": "new", "parent": "k-page", "reads": ["ep-mine"], "serves": ["N1", "N2"] },
+      { "id": "k-code", "name": "PickupCodeSheet", "role": "component", "does": "The pickup code, the deadline, and One more day.", "mark": "new", "parent": "k-page", "reads": ["ep-mine", "ep-extend"], "serves": ["N1", "N2"] },
+      { "id": "k-desk", "name": "DeskNotice", "role": "component", "does": "Says the parcel moved to the front desk.", "mark": "new", "parent": "k-page", "serves": ["N2"] },
+      { "id": "k-hook", "name": "useParcels", "role": "data", "does": "Loads the parcels, and loads them again after an arrival message or an extension.", "mark": "new", "reads": ["ep-mine", "ep-extend"], "repo": "porter-app", "file": "src/parcels/use-parcels.ts", "serves": ["N1", "N2"], "shows": "k-list" },
+      { "id": "k-door", "name": "DoorDriver", "role": "wiring", "does": "Opens a door on the locker bank.", "mark": "reused", "repo": "locker-bridge", "file": "src/door-driver.ts", "serves": ["N1"] },
+      { "id": "k-drop", "name": "dropReporter", "role": "wiring", "does": "Reports each closed door and each typed code to porter-api.", "mark": "new", "reads": ["ep-drop", "ep-release"], "repo": "locker-bridge", "file": "src/drop-reporter.ts", "serves": ["N1"] }
+    ],
+    "endpoints": [
+      {
+        "id": "ep-drop", "method": "POST", "path": "/lockers/:doorId/drops", "mark": "new",
+        "answers": "Stores the parcel behind the door and sends the resident the pickup code.",
+        "who": { "text": "The locker bridge, with its device key", "mark": "reused" },
+        "outcomes": [
+          { "status": 201, "when": "The door was empty.", "title": "Stored", "shape": "Parcel", "serves": ["N1"],
+            "body": [ { "name": "place", "type": "'locker'", "column": "parcels.place" }, { "name": "collectBy", "type": "string", "means": "ISO date, two days after the drop", "column": "parcels.collect_by" } ] },
+          { "status": 409, "when": "The door already holds a parcel.", "title": "Door in use", "shape": "Problem", "serves": ["N1"] }
+        ],
+        "serves": ["N1"]
+      },
+      {
+        "id": "ep-release", "method": "POST", "path": "/lockers/:doorId/release", "mark": "new",
+        "answers": "Checks a typed code and opens the door it belongs to.",
+        "who": { "text": "The locker bridge, for the resident at the screen", "mark": "reused" },
+        "outcomes": [
+          { "status": 204, "when": "The code is for this door.", "title": "Door opens", "serves": ["N1"] },
+          { "status": 403, "when": "The code is for another door, or for none.", "title": "Wrong code", "shape": "Problem", "serves": ["N1"] }
+        ],
+        "serves": ["N1"]
+      },
+      {
+        "id": "ep-mine", "method": "GET", "path": "/me/parcels", "mark": "new",
+        "answers": "The resident's parcels in a locker or at the desk, newest first.",
+        "who": { "text": "Signed-in residents, for their own parcels", "mark": "reused" },
+        "narrows": [
+          { "name": "where", "type": "locker | desk | all", "default": "all", "means": "Where the parcel is now", "serves": ["N2"] }
+        ],
+        "outcomes": [
+          { "status": 200, "when": "Always, for a signed-in resident.", "title": "Parcels", "shape": "ParcelList", "serves": ["N1", "N2"],
+            "body": [ { "name": "waiting", "type": "integer", "means": "Parcels in a locker" } ] }
+        ],
+        "serves": ["N1", "N2"]
+      },
+      {
+        "id": "ep-extend", "method": "POST", "path": "/me/parcels/:parcelId/extension", "mark": "new",
+        "answers": "Gives a parcel in a locker one more day, once.",
+        "who": { "text": "The resident the parcel is for", "mark": "reused" },
+        "outcomes": [
+          { "status": 201, "when": "The parcel is in a locker and had no extra day.", "title": "One more day", "shape": "Parcel", "serves": ["N2"],
+            "body": [ { "name": "extended", "type": "true", "column": "parcels.extended_at" } ] },
+          { "status": 409, "when": "The parcel already had its extra day.", "title": "Already extended", "shape": "Problem", "serves": ["N2"] },
+          { "status": 410, "when": "The parcel is at the front desk.", "title": "Too late", "shape": "Problem", "serves": ["N2"] }
+        ],
+        "serves": ["N2"]
+      },
+      {
+        "id": "ep-handover", "method": "POST", "path": "/desk/parcels/:parcelId/handover", "mark": "new",
+        "answers": "Records that the front desk handed a parcel to its resident.",
+        "who": { "text": "Front desk staff", "mark": "new" },
+        "outcomes": [
+          { "status": 204, "when": "The parcel was at the desk.", "title": "Handed over", "serves": ["N2"] },
+          { "status": 403, "when": "The caller is not front desk staff.", "title": "Desk only", "shape": "Problem", "serves": ["N2"] },
+          { "status": 404, "when": "No parcel at the desk has that id.", "title": "Not at the desk", "shape": "Problem" }
+        ],
+        "serves": ["N2"]
+      }
+    ],
+    "acceptance": [
+      { "id": "chk-drop", "requirement": "N1", "given": "A locker door is empty", "when": "a courier closes it on a parcel", "then": "the resident gets the pickup code within a minute and sees the parcel in the app", "screens": ["lobby-waiting"] },
+      { "id": "chk-busy", "requirement": "N1", "says": "A courier cannot put a second parcel behind a door that holds one.", "addedFor": "rule:OneParcelPerDoor" },
+      { "id": "chk-code", "requirement": "N1", "says": "A pickup code opens only the door that holds the resident's parcel.", "screens": ["lobby-code"] },
+      { "id": "chk-extend", "requirement": "N2", "when": "the resident asks for one more day a second time", "then": "the app says the parcel already has its extra day", "guards": "rule:ExtraDayOnlyOnce", "screens": ["lobby-code"] },
+      { "id": "chk-sweep", "requirement": "N2", "given": "A parcel has sat in its locker for two days", "when": "the sweep runs", "then": "the parcel moves to the front desk list, and the app says so", "guards": "rule:NothingPastItsWindow", "screens": ["lobby-desk"] },
+      { "id": "chk-handover", "requirement": "N2", "says": "The front desk hands a parcel only to the resident it is for." }
+    ],
+    "tests": [
+      { "id": "tst-unique", "type": "unit", "name": "one-parcel-per-door", "proves": ["chk-busy"], "unit": "w-store", "file": "test/parcels/schema.test.ts", "says": "The partial unique index refuses a second parcel on a door that holds one.", "run": "bun test test/parcels/schema.test.ts" },
+      { "id": "tst-sweep", "type": "unit", "name": "hourly-sweep", "proves": ["chk-sweep"], "unit": "w-store", "file": "test/parcels/sweep.test.ts", "says": "The sweep moves every parcel past its deadline, and none before it.", "run": "bun test test/parcels/sweep.test.ts" },
+      { "id": "tst-drop", "type": "behavior", "name": "record-drop", "proves": ["chk-drop", "chk-busy"], "unit": "w-endpoints", "file": "test/lockers/drop.test.ts", "says": "POST /lockers/:doorId/drops answers 201 with the deadline, and 409 for a busy door.", "run": "bun test test/lockers/drop.test.ts" },
+      { "id": "tst-extend", "type": "behavior", "name": "extend-once", "proves": ["chk-extend"], "unit": "w-endpoints", "file": "test/parcels/extend.test.ts", "says": "A first extension answers 201, a second 409, and one at the desk 410.", "run": "bun test test/parcels/extend.test.ts" },
+      { "id": "tst-handover", "type": "behavior", "name": "desk-handover", "proves": ["chk-handover"], "unit": "w-endpoints", "file": "test/desk/handover.test.ts", "says": "Only front desk staff can record a handover.", "run": "bun test test/desk/handover.test.ts" },
+      { "id": "tst-message", "type": "behavior", "name": "arrival-message", "proves": ["chk-drop"], "unit": "w-notify", "file": "test/notify/arrival.test.ts", "says": "A drop sends one push message, or one text message for a resident who chose texts.", "run": "bun test test/notify/arrival.test.ts" },
+      { "id": "tst-code", "type": "unit", "name": "code-for-door", "proves": ["chk-code"], "unit": "w-bridge", "file": "src/drop-reporter.test.ts", "says": "The bridge opens a door only when porter-api answers 204 for its code.", "run": "bun test src/drop-reporter.test.ts" },
+      { "id": "tst-tab", "type": "e2e", "name": "parcels-tab", "proves": ["chk-drop", "chk-extend"], "unit": "w-tab", "file": "e2e/parcels.spec.ts", "says": "A resident sees a new parcel, opens its code, and asks for one more day once.", "run": "npx playwright test e2e/parcels.spec.ts" },
+      { "id": "tst-lobby", "type": "live", "name": "test-bank", "proves": ["chk-code", "chk-sweep"], "unit": "w-bridge", "says": "On the basement test bank, a test parcel opens with its code, and a second one waits two days and moves to the desk." }
+    ],
+    "prs": [
+      {
+        "id": "pr-store", "title": "Parcels table and hourly sweep", "repo": "porter-api", "branch": "feat/PKG-112-parcels-table", "from": "trunk", "into": "trunk",
+        "steps": ["w-store"], "review": "The data owner reviews every migration.", "reviewer": "Ines K.",
+        "merge": { "by": "human", "why": "It changes the database schema." },
+        "evidence": ["migration up and down on a fresh database", "tst-unique", "tst-sweep"]
+      },
+      {
+        "id": "pr-endpoints", "title": "Locker and desk endpoints, and arrival messages", "repo": "porter-api", "branch": "feat/PKG-112-endpoints", "from": "trunk", "into": "trunk",
+        "after": ["pr-store"], "steps": ["w-endpoints", "w-notify"], "review": "The review bot reviews on open, then a backend lead.",
+        "merge": { "by": "human", "why": "It adds the front desk permission and sends messages to residents." },
+        "evidence": ["tst-drop", "tst-extend", "tst-handover", "tst-message"]
+      },
+      {
+        "id": "pr-bridge", "title": "Bridge drop reporter", "repo": "locker-bridge", "branch": "feat/PKG-112-drop-reporter", "from": "main", "into": "main",
+        "promotes": ["firmware-stable"], "after": ["pr-endpoints"], "steps": ["w-bridge"], "review": "The hardware owner reviews and flashes the test bank.",
+        "merge": { "by": "human", "why": "It runs on the locker hardware." },
+        "evidence": ["tst-code", "a drop and a code entry on the test bank"],
+        "waits": "Waits for pr-endpoints on staging, so the bridge reports to the real endpoints."
+      },
+      {
+        "id": "pr-app", "title": "Parcels tab", "repo": "porter-app", "branch": "feat/PKG-112-parcels-tab", "from": "main", "into": "release", "planInto": "main",
+        "after": ["pr-endpoints"], "steps": ["w-tab"], "review": "The review bot reviews on open, then a designer checks the screenshots.",
+        "merge": { "by": "bot", "why": "A tab behind the lockers switch, with no schema or permission change." },
+        "evidence": ["tst-tab", "screenshots on a small phone and a tablet"],
+        "note": "porter-app ships from its release branch, so the tab goes there in place of main."
+      }
+    ],
+    "risks": [
+      { "id": "hz-power", "title": "A power cut keeps every door shut", "bound": "The doors stay locked and the parcels stay safe. The sweep does not run while the bank is down, so no parcel moves to the desk by mistake.", "serves": ["N2"] },
+      { "id": "hz-texts", "title": "Text messages cost money per send", "bound": "Push is the default. Only residents who chose texts get one, one per parcel.", "serves": ["N1"] }
+    ],
+    "defaults": [
+      { "id": "df-window", "says": "The two days count from the moment the courier closes the door.", "note": "Counting from the next morning would give late drops more time.", "serves": ["N2"] }
+    ]
+  },
+  "items": [
+    { "id": "overview", "type": "part", "section": "Scope", "title": "Product plan", "why": "It sets what residents and the front desk get.", "touches": ["scope"],
+      "source": "plan.md#What changes", "body": [ { "view": "spec" } ] },
+    { "id": "ask-bigger", "type": "question", "section": "Scope", "title": "Where does a parcel go when no free door fits it?",
+      "why": "Two of the twelve doors take large boxes.", "serves": ["N1"],
+      "default": "The courier leaves it at the front desk, as today.", "placeholder": "Where it goes", "blocks": [] },
+    { "id": "pages", "type": "part", "section": "Screens", "title": "Parcels screen", "why": "The resident app gains one tab.", "touches": ["user-visible"],
+      "source": "plan.md#Parcels screen", "body": [ { "view": "screens" } ] },
+    { "id": "numbers", "type": "part", "section": "Evidence", "title": "Numbers", "touches": [],
+      "body": [ { "view": "figures", "facts": [
+        { "value": "140", "label": "parcels at the front desk on a busy week.", "source": "goal.md", "serves": ["N2"] },
+        { "value": "4 in 10", "label": "parcels collected the day after they arrive, because the desk had closed.", "source": "desk log", "inferred": true, "serves": ["N1"] }
+      ] } ] },
+    { "id": "choices", "type": "part", "section": "Decisions", "title": "Choices", "touches": [], "source": "plan.md#Choices", "body": [ { "view": "decisions" } ] },
+    { "id": "pick-sweep", "type": "decision", "section": "Decisions", "title": "How does a late parcel reach the front desk?",
+      "why": "A parcel past its deadline must not hold a door.", "serves": ["N2"], "touches": [],
+      "options": [
+        { "id": "sw-hourly", "label": "An hourly sweep puts it on the desk list", "detail": "The desk empties the listed doors on its rounds.",
+          "facts": [ ["Late by", "an hour at most"], ["Door hardware change", "none"] ] },
+        { "id": "sw-unlock", "label": "The door unlocks itself at the deadline", "detail": "The parcel sits behind an open door until the desk comes.",
+          "facts": [ ["Late by", "none"], ["Door hardware change", "new firmware"] ] }
+      ],
+      "chosen": "sw-hourly" },
+    { "id": "model", "type": "part", "section": "Behavior", "title": "How a door moves", "why": "Every rule holds in this plan.", "touches": [],
+      "source": "plan.md#How a door moves",
+      "body": [ {
+        "view": "statechart",
+        "says": {
+          "WellTyped": "Every value stays in its allowed set",
+          "OneParcelPerDoor": "A door never holds two parcels",
+          "ExtraDayOnlyOnce": "A parcel gets one more day at most once",
+          "NothingPastItsWindow": "No parcel stays in a locker past its deadline",
+          "NoDeadlock": "The door can always move on"
+        },
+        "terms": [
+          { "word": "Pickup code", "means": "the six digits that open one door, sent to the resident when the parcel lands." },
+          { "word": "Deadline", "means": "two days after the drop, or three with the extra day." }
+        ],
+        "runs": [
+          { "id": "now", "label": "This plan", "note": "The bridge refuses a busy door, and a parcel gets one extra day at most.", "dir": "statechart/out-plan" },
+          { "id": "before", "label": "Before review", "note": "The bridge took a parcel for any door, and the app let a resident ask for days without limit.", "dir": "statechart/out-draft" }
+        ],
+        "serves": {
+          "WellTyped": [], "OneParcelPerDoor": ["N1"], "ExtraDayOnlyOnce": ["N2"], "NothingPastItsWindow": ["N2"], "NoDeadlock": ["N2"]
+        },
+        "hide": ["WellTyped"],
+        "steps": {
+          "a courier drops it off": "drop", "the resident opens the door": "open", "the resident asks for one more day": "+1 day",
+          "two days pass": "deadline", "the extra day passes": "late", "the desk hands it over": "hand over"
+        },
+        "notes": {
+          "before:OneParcelPerDoor": { "verdict": "fixed",
+            "text": "Before review, a courier could close a busy door on a second parcel, and the first resident's code opened both. Now the bridge answers Door in use and the courier picks another door." },
+          "before:ExtraDayOnlyOnce": { "verdict": "fixed",
+            "text": "Before review, a resident could ask for one more day again and again, and the door stayed busy.",
+            "decision": {
+              "chosen": ["One extra day, then the front desk", "The resident who needs longer collects from the desk, which keeps parcels for two weeks."],
+              "other": ["Up to three extra days", "Fewer trips to the desk, and a busy door for most of a week."]
+            } }
+        },
+        "triggers": {
+          "a courier drops it off": { "endpoint": "ep-drop" }, "the resident opens the door": { "endpoint": "ep-release" },
+          "the resident asks for one more day": { "endpoint": "ep-extend" }, "two days pass": { "job": "the hourly sweep" },
+          "the extra day passes": { "time": "one day after the extension" }, "the desk hands it over": { "endpoint": "ep-handover" }
+        },
+        "stored": {
+          "Parcel in the locker": "parcels.place", "Parcel in the locker, one more day": "parcels.extended_at",
+          "Parcel at the front desk": "parcels.place"
+        }
+      } ] },
+    { "id": "storage", "type": "part", "section": "Data", "title": "Storage", "why": "One new table, and one new column on residents.", "touches": ["schema"],
+      "source": "plan.md#Storage",
+      "body": [ {
+        "view": "erd", "src": "design/schema.dbml", "sql": "design/db.sql", "base": "design/base.sql",
+        "says": "parcels holds one row per parcel, from the drop to the handover. A partial unique index keeps one parcel behind each door, and the sweep reads parcels in a locker by their deadline.",
+        "tables": [
+          { "name": "parcels", "mark": "new", "role": "One row per parcel a courier leaves.", "serves": ["N1", "N2"] },
+          { "name": "residents", "mark": "changed", "role": "Gains how each resident wants to hear about a parcel.", "serves": ["N1"] },
+          { "name": "lockers", "mark": "reused", "role": "One row per door on a locker bank." }
+        ],
+        "writers": [
+          { "column": "parcels.place", "states": ["a courier drops it off", "the resident opens the door", "two days pass", "the extra day passes", "the desk hands it over"] },
+          { "column": "parcels.collect_by", "states": ["a courier drops it off", "the resident asks for one more day"] },
+          { "column": "parcels.extended_at", "states": ["the resident asks for one more day"] }
+        ],
+        "columns": [
+          { "column": "parcels.place", "serves": ["N1", "N2"] },
+          { "column": "parcels.collect_by", "serves": ["N2"] },
+          { "column": "parcels.extended_at", "serves": ["N2"] },
+          { "column": "residents.notify_by", "serves": ["N1"] }
+        ],
+        "indexes": [
+          { "name": "parcels_one_per_door", "unique": true, "where": "place = 'locker'", "serves": ["N1"] },
+          { "name": "parcels_due", "where": "place = 'locker'", "serves": ["N2"] }
+        ],
+        "unused": [ { "value": "parcel_place.returned", "why": "Reserved for returns to the courier, a non-goal." } ]
+      } ] },
+    { "id": "ask-keep", "type": "question", "section": "Data", "title": "How long does the front desk keep a parcel before it goes back?",
+      "why": "The desk keeps parcels for two weeks today, and nothing in parcels records a return yet.", "serves": ["N2"],
+      "options": [
+        { "id": "keep-two", "label": "Two weeks, as today", "facts": [ ["Desk storage space", "enough on a normal week"] ] },
+        { "id": "keep-one", "label": "One week", "detail": "Frees desk space, and more parcels go back to the courier." }
+      ],
+      "recommended": "keep-two", "default": "keep-two", "blocks": [] },
+    { "id": "routes", "type": "part", "section": "API", "title": "Endpoints", "why": "Five new endpoints, and the handover takes a new permission.", "touches": ["api", "permission"],
+      "source": "plan.md#Endpoints",
+      "body": [ {
+        "view": "endpoints", "src": "design/openapi.json",
+        "access": { "who": "Residents for their own parcels. Front desk staff for any parcel at the desk.", "permission": "parcels:handover", "switch": "lockers", "serves": ["N2"], "ask": "ask-neighbour" },
+        "envelope": "T, or { title: string, detail?: string } on an error",
+        "shapes": {
+          "Parcel": "{\n  id: string\n  place: 'locker' | 'desk'\n  door: string | null       // while in a locker\n  collectBy: string         // ISO\n  extended: boolean\n}",
+          "ParcelList": "{\n  parcels: Parcel[]\n  waiting: number\n}",
+          "Problem": "{\n  title: string\n  detail?: string\n}"
+        }
+      } ] },
+    { "id": "ask-neighbour", "type": "question", "section": "API", "title": "May a resident name a neighbour to collect from the front desk?",
+      "why": "Residents away for a week ask the desk to give parcels to a neighbour today.", "serves": ["N2"],
+      "options": [
+        { "id": "nb-yes", "label": "Yes, one named neighbour per resident", "detail": "The handover checks the neighbour too, and the app gains a field." },
+        { "id": "nb-no", "label": "No, only the resident", "detail": "The desk turns neighbours away, as the lockers do." }
+      ],
+      "recommended": "nb-yes", "default": null, "blocks": ["w-endpoints", "w-tab"] },
+    { "id": "parts", "type": "part", "section": "Components", "title": "App parts", "touches": [], "source": "plan.md#App parts",
+      "body": [ { "view": "components", "note": "The tab runs on mock answers from design/openapi.json until pr-endpoints reaches staging." } ] },
+    { "id": "work", "type": "part", "section": "Units", "title": "Work", "touches": [], "source": "plan.md#Work",
+      "body": [ { "view": "units", "note": "w-store first. w-endpoints and w-notify need it. w-bridge and w-tab need w-endpoints." } ] },
+    { "id": "w-store", "type": "step", "section": "Units", "title": "Parcels table and sweep", "touches": [], "source": "plan.md#W1 Parcels table and sweep",
+      "repo": "porter-api", "files": ["migrations/0107_parcels.sql", "src/parcels/sweep.ts"],
+      "delivers": ["db:parcels", "db:residents"], "serves": ["N1", "N2"], "tasks": 2,
+      "qa": "Run the migration on a copy of the live database.", "done": "The migration runs up and down. tst-unique and tst-sweep pass." },
+    { "id": "w-endpoints", "type": "step", "section": "Units", "title": "Locker and desk endpoints", "touches": [], "source": "plan.md#W2 Locker and desk endpoints",
+      "repo": "porter-api", "files": ["src/lockers/routes.ts", "src/parcels/routes.ts", "src/desk/handover.ts"],
+      "delivers": ["ep-drop", "ep-release", "ep-mine", "ep-extend", "ep-handover"], "serves": ["N1", "N2"], "dependsOn": ["w-store"], "tasks": 4,
+      "done": "All behavior tests pass on a test database." },
+    { "id": "w-notify", "type": "step", "section": "Units", "title": "Arrival messages", "touches": ["external-message"], "source": "plan.md#W3 Arrival messages",
+      "repo": "porter-api", "files": ["src/notify/arrival.ts"], "serves": ["N1"], "dependsOn": ["w-store"], "tasks": 1,
+      "qa": "Send one push and one text to the test resident.", "done": "tst-message passes." },
+    { "id": "w-bridge", "type": "step", "section": "Units", "title": "Bridge drop reporter", "touches": [], "source": "plan.md#W4 Bridge drop reporter",
+      "repo": "locker-bridge", "files": ["src/drop-reporter.ts"],
+      "delivers": ["k-drop"], "serves": ["N1"], "dependsOn": ["w-endpoints"], "tasks": 2,
+      "qa": "Drop a test parcel on the basement bank and open it with its code.", "done": "tst-code passes, and the test bank opens the right door." },
+    { "id": "w-tab", "type": "step", "section": "Units", "title": "Parcels tab", "touches": [], "source": "plan.md#W5 Parcels tab",
+      "repo": "porter-app", "files": ["src/parcels/parcels-screen.tsx", "src/shell/bottom-tabs.tsx", "src/parcels/use-parcels.ts"],
+      "delivers": ["k-tabs", "k-page", "k-count", "k-list", "k-code", "k-desk", "k-hook"], "serves": ["N1", "N2"], "dependsOn": ["w-endpoints"], "tasks": 4,
+      "qa": "Check the tab on a small phone and with large text.", "done": "tst-tab passes, and the screenshots match the screen states." },
+    { "id": "hazards", "type": "part", "section": "Risks", "title": "Hazards and defaults", "touches": [], "source": "plan.md#Hazards", "body": [ { "view": "risks" } ] },
+    { "id": "checks", "type": "part", "section": "Acceptance", "title": "Checks and tests", "why": "These rows define done.", "touches": ["acceptance"],
+      "body": [ { "view": "trace" }, { "view": "prose", "src": "checks.md" } ] },
+    { "id": "merges", "type": "part", "section": "Pull requests", "title": "Merging", "touches": [], "source": "plan.md#Merging",
+      "body": [ { "view": "prs", "bot": "porter-review[bot]", "label": "ready-for-review", "notes": ["All three repos name branches feat/<ticket>-<topic>.", "locker-bridge promotes main to firmware-stable by hand."] } ] },
+    { "id": "permit", "type": "grant", "section": "Grant", "title": "What the agent may do", "source": "plan.md#What the agent may do",
+      "allow": [
+        { "says": "Commits on the unit branches, and pushes them without force.", "key": "push" },
+        { "says": "Opens the four pull requests and runs their checks.", "key": "pr" }
+      ],
+      "ask": [
+        { "says": "Merging anything into porter-api or locker-bridge.", "key": "merge" },
+        { "says": "Sending a real message to a resident.", "key": "external-message" },
+        { "says": "Turning the lockers switch on.", "key": "deploy" }
+      ],
+      "clearance": "The review bot may merge pr-app once its checks pass. It changes no schema and no permission, and the tab stays behind the lockers switch." }
+  ]
+}

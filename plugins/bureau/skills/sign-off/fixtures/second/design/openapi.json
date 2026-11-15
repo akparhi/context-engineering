@@ -1,0 +1,103 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Lobby parcels", "version": "1.0.0" },
+  "paths": {
+    "/lockers/{doorId}/drops": {
+      "post": {
+        "operationId": "recordDrop",
+        "summary": "A courier closed a door on a parcel",
+        "parameters": [{ "name": "doorId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Drop" } } }
+        },
+        "responses": {
+          "201": { "description": "The parcel is stored and the resident is told", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Parcel" } } } },
+          "409": { "description": "The door already holds a parcel", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Problem" } } } }
+        }
+      }
+    },
+    "/lockers/{doorId}/release": {
+      "post": {
+        "operationId": "releaseDoor",
+        "summary": "A resident typed a pickup code at the locker",
+        "parameters": [{ "name": "doorId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["code"], "properties": { "code": { "type": "string" } } } } }
+        },
+        "responses": {
+          "204": { "description": "The door opens" },
+          "403": { "description": "The code is not for this door", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Problem" } } } }
+        }
+      }
+    },
+    "/me/parcels": {
+      "get": {
+        "operationId": "listMyParcels",
+        "summary": "The signed-in resident's parcels",
+        "parameters": [{ "name": "where", "in": "query", "schema": { "type": "string", "enum": ["locker", "desk", "all"], "default": "all" } }],
+        "responses": {
+          "200": { "description": "The parcels, newest first", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ParcelList" } } } }
+        }
+      }
+    },
+    "/me/parcels/{parcelId}/extension": {
+      "post": {
+        "operationId": "extendParcel",
+        "summary": "Ask for one more day",
+        "parameters": [{ "name": "parcelId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "201": { "description": "The parcel has one more day", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Parcel" } } } },
+          "409": { "description": "The parcel already had its extra day", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Problem" } } } },
+          "410": { "description": "The parcel is already at the front desk", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Problem" } } } }
+        }
+      }
+    },
+    "/desk/parcels/{parcelId}/handover": {
+      "post": {
+        "operationId": "handOver",
+        "summary": "The front desk hands a parcel to its resident",
+        "parameters": [{ "name": "parcelId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "204": { "description": "Handed over" },
+          "403": { "description": "The caller is not front desk staff", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Problem" } } } },
+          "404": { "description": "No parcel at the desk has that id", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Problem" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Drop": {
+        "type": "object",
+        "required": ["flat", "courier"],
+        "properties": { "flat": { "type": "string" }, "courier": { "type": "string" } }
+      },
+      "Parcel": {
+        "type": "object",
+        "required": ["id", "place", "collectBy"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "place": { "type": "string", "enum": ["locker", "desk"] },
+          "door": { "type": ["string", "null"], "description": "Bank and door number while in a locker" },
+          "collectBy": { "type": "string", "format": "date-time" },
+          "extended": { "type": "boolean" }
+        }
+      },
+      "ParcelList": {
+        "type": "object",
+        "required": ["parcels", "waiting"],
+        "properties": {
+          "parcels": { "type": "array", "items": { "$ref": "#/components/schemas/Parcel" } },
+          "waiting": { "type": "integer" }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "required": ["title"],
+        "properties": { "title": { "type": "string" }, "detail": { "type": "string" } }
+      }
+    }
+  }
+}

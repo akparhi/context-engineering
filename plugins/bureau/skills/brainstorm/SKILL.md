@@ -73,6 +73,8 @@ Write the answers back so the human can spot what you got wrong.
 
 For a spec, use the same headings, then add sections for components, data flow, error handling, and verification, each scaled to its complexity. Stop at the level of behavior and interfaces. Types and signatures belong to the **architect** skill. Write the spec to the path the human names, or under the agent store at `~/.claude/orchestrate/<slug>/docs/<YYYY-MM-DD>-<topic>-spec.md`. Write it per the **technical-writing** skill, then **unslop**.
 
+Give each requirement in the brief a stable id, R1 to Rn, so a plan built from it can cite them in [sign-off](../sign-off/SKILL.md). Ask for approval of the brief itself in chat, per Phase 5, not through `sign-off`.
+
 Before showing it, reread it once for placeholders, contradictions, and any requirement that reads two ways. Fix them in place.
 
 ## Phase 5: Approve

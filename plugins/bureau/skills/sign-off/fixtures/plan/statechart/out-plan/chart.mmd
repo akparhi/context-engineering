@@ -1,0 +1,45 @@
+---
+title: "One copy of a book, and the members waiting for it"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: With a reader
+    lg1: In the library
+    lg2: Breaks NoTurnSkipped
+    lg3: Path to the NoTurnSkipped bug
+  }
+  class lg0 blue
+  class lg1 teal
+  class lg2 breaks
+  class lg3 bugPath
+  s0: Out on loan
+  s1: Out on loan, members waiting
+  s2: On the open shelf
+  s3: On the hold shelf
+  s4: On the hold shelf, others waiting
+  s5: Lent past a member's turn
+  [*] --> s0
+  s0 --> s1: a member places a hold
+  s0 --> s2: the copy comes back
+  s1 --> s0: a waiting member cancels
+  s1 --> s3: the copy comes back
+  s2 --> s0: someone borrows it
+  s3 --> s0: the member picks it up
+  s3 --> s2: the member it waits for cancels or three days pass
+  s3 --> s4: a member places a hold
+  s3 --> s5: the desk lends it to someone else
+  s1 --> s4: the copy comes back
+  s4 --> s1: the member picks it up
+  s4 --> s3: a waiting member cancels or the member it waits for cancels or three days pass
+  s4 --> s5: the desk lends it to someone else
+  classDef breaks fill:#ffecee,stroke:#e72e3b,stroke-width:2.5px,color:#cd2834
+  class s0 blue
+  class s0 bugPath
+  class s1 blue
+  class s1 bugPath
+  class s2 teal
+  class s3 teal
+  class s3 bugPath
+  class s4 teal
+  class s5 breaks
+  class s5 bugPath

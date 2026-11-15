@@ -60,6 +60,7 @@ Aim for about 20 arrows or fewer, because a busier chart is hard to read. First 
 
 ## Read the report
 
+- `report.json` gives the same rules as data, with the type `ReportJson` from `scripts/backends/report.ts`. Each rule has a `kind`, a `name` and an `outcome`, which is `holds`, `broken` or `not checked`. A broken rule has its bug path in `path`, as a list of steps with the `state`, the arrow label `step` and the TLC `action`. For a property, `loop.start` is the step where the run starts to repeat. When the report names a `tlc-RULE.out` file, `counterexample` names it too. `chart` holds the states and arrows that `chart.mmd` draws, each state with its `mark`. `v` is the format's version, now `1`. The [sign-off](../sign-off/SKILL.md) skill reads this file.
 - In the chart, a state that breaks a rule has the class `breaks`. When only some model states behind it break the rule, it has the class `mayBreak`. The Legend names the rules of each mark. When two rules break, it names both on one mark, so say in the hand-off which state breaks which rule. In a regions chart, a state gets a mark when each combination of region states that includes it can break a rule. When a combination can break a rule and none of its states has a mark, each state in that combination gets a mark.
 - TLC goes past a state that breaks a rule, so the chart shows the states after a bug.
 - Because TLC goes past bugs, a model with no limit on its states can run without end. Keep the constants small, or add a CONSTRAINT.

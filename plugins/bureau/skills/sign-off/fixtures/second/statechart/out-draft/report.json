@@ -1,0 +1,246 @@
+{
+  "v": 1,
+  "module": "ParcelLocker",
+  "chart": {
+    "states": [
+      {
+        "path": [
+          "Door empty"
+        ],
+        "start": true,
+        "group": "Out of the locker"
+      },
+      {
+        "path": [
+          "Parcel in the locker"
+        ],
+        "start": false,
+        "group": "Behind the door"
+      },
+      {
+        "path": [
+          "Parcel in the locker, one more day"
+        ],
+        "start": false,
+        "group": "Behind the door"
+      },
+      {
+        "path": [
+          "Two parcels behind one door"
+        ],
+        "start": false,
+        "group": "Behind the door",
+        "mark": "breaks"
+      },
+      {
+        "path": [
+          "Parcel in the locker, two more days"
+        ],
+        "start": false,
+        "group": "Behind the door",
+        "mark": "breaks"
+      },
+      {
+        "path": [
+          "Parcel at the front desk"
+        ],
+        "start": false,
+        "group": "Out of the locker"
+      }
+    ],
+    "arrows": [
+      {
+        "from": [
+          "Door empty"
+        ],
+        "to": [
+          "Parcel in the locker"
+        ],
+        "step": "a courier drops it off"
+      },
+      {
+        "from": [
+          "Parcel in the locker"
+        ],
+        "to": [
+          "Door empty"
+        ],
+        "step": "the resident opens the door"
+      },
+      {
+        "from": [
+          "Parcel in the locker"
+        ],
+        "to": [
+          "Parcel in the locker, one more day"
+        ],
+        "step": "the resident asks for one more day"
+      },
+      {
+        "from": [
+          "Parcel in the locker"
+        ],
+        "to": [
+          "Two parcels behind one door"
+        ],
+        "step": "a courier drops it off"
+      },
+      {
+        "from": [
+          "Parcel in the locker, one more day"
+        ],
+        "to": [
+          "Door empty"
+        ],
+        "step": "the resident opens the door"
+      },
+      {
+        "from": [
+          "Parcel in the locker, one more day"
+        ],
+        "to": [
+          "Parcel in the locker, two more days"
+        ],
+        "step": "the resident asks for one more day"
+      },
+      {
+        "from": [
+          "Parcel in the locker, one more day"
+        ],
+        "to": [
+          "Two parcels behind one door"
+        ],
+        "step": "a courier drops it off"
+      },
+      {
+        "from": [
+          "Two parcels behind one door"
+        ],
+        "to": [
+          "Door empty"
+        ],
+        "step": "the resident opens the door"
+      },
+      {
+        "from": [
+          "Parcel in the locker, two more days"
+        ],
+        "to": [
+          "Door empty"
+        ],
+        "step": "the resident opens the door"
+      },
+      {
+        "from": [
+          "Parcel in the locker, two more days"
+        ],
+        "to": [
+          "Two parcels behind one door"
+        ],
+        "step": "a courier drops it off"
+      },
+      {
+        "from": [
+          "Parcel in the locker"
+        ],
+        "to": [
+          "Parcel at the front desk"
+        ],
+        "step": "two days pass"
+      },
+      {
+        "from": [
+          "Parcel at the front desk"
+        ],
+        "to": [
+          "Door empty"
+        ],
+        "step": "the desk hands it over"
+      },
+      {
+        "from": [
+          "Parcel in the locker, one more day"
+        ],
+        "to": [
+          "Parcel at the front desk"
+        ],
+        "step": "the extra day passes"
+      },
+      {
+        "from": [
+          "Parcel in the locker, two more days"
+        ],
+        "to": [
+          "Parcel at the front desk"
+        ],
+        "step": "the extra day passes"
+      }
+    ],
+    "colors": {
+      "Behind the door": "teal",
+      "Out of the locker": "blue"
+    }
+  },
+  "rules": [
+    {
+      "kind": "invariant",
+      "name": "WellTyped",
+      "outcome": "holds"
+    },
+    {
+      "kind": "invariant",
+      "name": "OneParcelPerDoor",
+      "outcome": "broken",
+      "path": [
+        {
+          "state": "Door empty"
+        },
+        {
+          "state": "Parcel in the locker",
+          "step": "a courier drops it off",
+          "action": "Drop"
+        },
+        {
+          "state": "Two parcels behind one door",
+          "step": "a courier drops it off",
+          "action": "Drop"
+        }
+      ]
+    },
+    {
+      "kind": "invariant",
+      "name": "ExtraDayOnlyOnce",
+      "outcome": "broken",
+      "path": [
+        {
+          "state": "Door empty"
+        },
+        {
+          "state": "Parcel in the locker",
+          "step": "a courier drops it off",
+          "action": "Drop"
+        },
+        {
+          "state": "Parcel in the locker, one more day",
+          "step": "the resident asks for one more day",
+          "action": "Extend"
+        },
+        {
+          "state": "Parcel in the locker, two more days",
+          "step": "the resident asks for one more day",
+          "action": "Extend"
+        }
+      ]
+    },
+    {
+      "kind": "invariant",
+      "name": "NothingPastItsWindow",
+      "outcome": "holds"
+    },
+    {
+      "kind": "deadlock",
+      "name": "NoDeadlock",
+      "outcome": "holds"
+    }
+  ]
+}

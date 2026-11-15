@@ -1,0 +1,20 @@
+{
+  "format": 1,
+  "id": "BUS-58",
+  "kind": "questions",
+  "title": "Before we plan the night bus timetable",
+  "ask": "Answer the question on the last bus before the timetable can be planned.",
+  "product": { "none": "No plan yet. These answers decide what the timetable plan covers." },
+  "facts": {},
+  "items": [
+    { "id": "last-bus", "type": "question", "section": "Scope", "title": "Does the last night bus wait for the late train?",
+      "why": "The late train runs ten minutes behind on most Fridays.",
+      "options": [
+        { "id": "wait-yes", "label": "Yes, up to ten minutes", "detail": "Riders off the train make the bus, and the route ends later." },
+        { "id": "wait-no", "label": "No, it leaves on time", "detail": "The route keeps its times, and some riders wait for a taxi." }
+      ],
+      "recommended": "wait-yes", "default": null, "blocks": [] },
+    { "id": "weekends", "type": "question", "section": "Scope", "title": "Which nights does the night bus run?",
+      "default": "Friday and Saturday nights.", "placeholder": "The nights it runs", "blocks": [] }
+  ]
+}

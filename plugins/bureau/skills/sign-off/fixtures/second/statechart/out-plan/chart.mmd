@@ -1,0 +1,26 @@
+---
+title: "One locker door in the lobby"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: Behind the door
+    lg1: Out of the locker
+  }
+  class lg0 teal
+  class lg1 blue
+  s0: Door empty
+  s1: Parcel in the locker
+  s2: Parcel in the locker, one more day
+  s3: Parcel at the front desk
+  [*] --> s0
+  s0 --> s1: a courier drops it off
+  s1 --> s0: the resident opens the door
+  s1 --> s2: the resident asks for one more day
+  s2 --> s0: the resident opens the door
+  s1 --> s3: two days pass
+  s3 --> s0: the desk hands it over
+  s2 --> s3: the extra day passes
+  class s0 blue
+  class s1 teal
+  class s2 teal
+  class s3 blue
