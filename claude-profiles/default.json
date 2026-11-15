@@ -181,8 +181,8 @@
     "telemetry@builtin": false,
     "context7@claude-plugins-official": false,
     "skill-creator@claude-plugins-official": true,
-    "bureau@akparhi": true,
-    "switchboard@akparhi": true
+    "switchboard@akparhi": true,
+    "bureau@akparhi": true
   },
   "extraKnownMarketplaces": {
     "akparhi": {
@@ -274,10 +274,10 @@
     ]
   },
   "alwaysThinkingEnabled": false,
-  "effortLevel": "high",
+  "effortLevel": "medium",
   "modelSettings": {
     "claude-opus-5-5": {
-      "effortLevel": "high"
+      "effortLevel": "medium"
     }
   },
   "promptSuggestionEnabled": false,
