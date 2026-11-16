@@ -1,4 +1,4 @@
-import { runBuild, USAGE as BUILD_USAGE } from "./build.ts";
+import { RENDER_USAGE, runBuild, runRender, USAGE as BUILD_USAGE } from "./build.ts";
 import { runCheck, USAGE as CHECK_USAGE } from "./check.ts";
 import { runIngest, runRecord, runRevise, runStatus, USAGE as REVIEW_USAGE } from "./review.ts";
 import { runSelftest } from "./selftest.ts";
@@ -14,8 +14,9 @@ const COMMANDS: Record<string, (args: string[]) => Promise<number>> = {
   open: runOpen,
   stop: runStop,
   build: runBuild,
+  render: runRender,
 };
-const USAGE = [CHECK_USAGE, REVIEW_USAGE.ingest, REVIEW_USAGE.status, REVIEW_USAGE.record, REVIEW_USAGE.revise, OPEN_USAGE, STOP_USAGE, BUILD_USAGE].join("\n");
+const USAGE = [CHECK_USAGE, REVIEW_USAGE.ingest, REVIEW_USAGE.status, REVIEW_USAGE.record, REVIEW_USAGE.revise, OPEN_USAGE, STOP_USAGE, BUILD_USAGE, RENDER_USAGE].join("\n");
 
 export async function main([command, ...args]: string[]): Promise<number> {
   const run = command === undefined ? undefined : COMMANDS[command];

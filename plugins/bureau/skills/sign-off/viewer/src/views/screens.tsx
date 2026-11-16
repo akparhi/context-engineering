@@ -3,14 +3,14 @@ import { ArrowRightIcon, CircleAlertIcon, LockIcon, SearchIcon } from "lucide-re
 import type { Screen, ScreensInput } from "../../../scripts/views.ts"
 import { Badge } from "@/components/ui/badge"
 import { COPY } from "../copy.ts"
-import { Fold, IdChip, LooseEnd } from "../parts.tsx"
-import type { RowLine, ViewProps } from "../views.tsx"
+import { IdChip, LooseEnd } from "../parts.tsx"
+import type { ViewProps } from "../views.tsx"
 
 type Region = Screen["regions"][number]
 type Sketch = Region["sketch"]
 type SampleOf<S extends Sketch> = NonNullable<Extract<Region, { sketch: S }>["sample"]>
 /** Which regions to outline, by the part each one draws, and what picking a region's part does. Both only in the components view.
- *  `foldReused` folds each reused or copied region to its head, only in the screens view, whose verdict they do not gate. */
+ *  `foldReused` boxes each reused or copied region's head and sample together, only in the screens view. */
 type Lighting = { lit?: ReadonlySet<string>; onPick?: (component: string) => void; foldReused?: boolean }
 
 export function ScreensView({ input, focus }: ViewProps<ScreensInput>) {
@@ -29,14 +29,6 @@ export function ScreensView({ input, focus }: ViewProps<ScreensInput>) {
       <div className="mt-3 rounded-3xl bg-muted/60 p-2 sm:p-3 dark:bg-muted/40"><ScreenPicture screen={screen} foldReused /></div>
     </>
   )
-}
-
-/** The folded Screens card: how many states and gating regions, and each gating region that serves no requirement. */
-export function screensRow({ screens }: ScreensInput): RowLine {
-  const regions = screens.flatMap((s) => s.regions).filter((r) => gates(r.mark))
-  const distinct = new Set(regions.map((r) => r.component ?? r.name))
-  const orphans = [...new Set(regions.filter((r) => !r.serves?.length).map((r) => r.name))]
-  return { says: COPY.screens.row(screens.length, distinct.size), loose: orphans.map(COPY.screens.servesNoneRow) }
 }
 
 const MARK_BADGE = { new: "delta", changed: "deltaline", reused: "dashed", copy: "dashed" } as const
@@ -156,7 +148,7 @@ export function RegionBox({ region, lit = false, onPick, foldReused = false }: {
     <div data-mark={region.mark} data-lit={lit || undefined}
       className={`min-w-0 rounded-xl border border-foreground/25 p-3 ${gates(region.mark) ? "" : "border-dashed"} ${lit ? "outline-2 outline-offset-2 outline-focus" : ""}`}>
       {foldReused && !gates(region.mark)
-        ? <Fold part="reused" row={part ?? region.name} summary={head}>{head}{sample}</Fold>
+        ? <div>{head}{sample}</div>
         : <>{head}{sample}</>}
     </div>
   )

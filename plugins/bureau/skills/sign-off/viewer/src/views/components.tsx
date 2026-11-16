@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react"
 import type { Build, Component, ComponentsInput, Screen } from "../../../scripts/views.ts"
 import { COPY, plural } from "../copy.ts"
-import { Fold, IdChip, LooseEnd, Subhead } from "../parts.tsx"
+import { IdChip, LooseEnd, Subhead } from "../parts.tsx"
 import type { Ref } from "../plan.ts"
-import type { RowLine, ViewProps } from "../views.tsx"
+import type { ViewProps } from "../views.tsx"
 import { FlowStrip, MarkBadge, ScreenPicture } from "./screens.tsx"
 
 type Group = keyof typeof COPY.components.groups
 const GROUP_OF: Record<Component["role"], Group> = { route: "page", layout: "page", component: "page", data: "data", wiring: "wiring" }
-/** Wiring folds in slim, because the reader rarely needs it. It stays open while it holds a loose end. */
+/** Wiring draws in a plain box, not a section of its own. */
 const FOLDED: ReadonlySet<Group> = new Set(["wiring"])
 type Row = { c: Component; depth: number }
 
@@ -105,9 +105,9 @@ export function ComponentsView({ input, focus, go }: ViewProps<ComponentsInput>)
             const section = <><h4 className="px-3 text-sm">{title}</h4>{list}</>
             if (!FOLDED.has(g)) return <section key={g} className="mt-6">{section}</section>
             return (
-              <Fold key={g} part={g} className="mt-6" keep={rows.some((r) => !r.c.serves?.length)} summary={<span className="px-3 text-sm">{title}</span>}>
+              <div key={g} className="mt-6">
                 {section}
-              </Fold>
+              </div>
             )
           })}
           {(builtIn.length > 0 || note) && (
@@ -119,15 +119,6 @@ export function ComponentsView({ input, focus, go }: ViewProps<ComponentsInput>)
       </div>
     </>
   )
-}
-
-/** The folded Components card: the parts by mark, and each part that serves no requirement. */
-export function componentsRow({ components }: ComponentsInput): RowLine {
-  const marks = (Object.keys(COPY.screens.marks) as (keyof typeof COPY.screens.marks)[]).flatMap((m): [string, number][] => {
-    const n = components.filter((x) => x.mark === m).length
-    return n ? [[COPY.screens.marks[m], n]] : []
-  })
-  return { says: COPY.components.row(components.length, marks), loose: components.filter((x) => !x.serves?.length).map((x) => COPY.components.servesNoneRow(x.name)) }
 }
 
 const LINK = "rounded-md text-link underline decoration-link/30 underline-offset-4 outline-offset-2 hover:decoration-link focus-visible:outline-2 focus-visible:outline-focus"

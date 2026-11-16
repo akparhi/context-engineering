@@ -2,7 +2,7 @@ import type { Figure, FiguresInput } from "../../../scripts/views.ts"
 import { Badge } from "@/components/ui/badge"
 import { COPY } from "../copy.ts"
 import { IdChip } from "../parts.tsx"
-import type { RowLine, ViewProps } from "../views.tsx"
+import type { ViewProps } from "../views.tsx"
 
 /** The numbers the design rests on, one tile each. An inferred number gets a dashed edge, so it never reads as measured. */
 export function FiguresView({ input }: ViewProps<FiguresInput>) {
@@ -26,6 +26,3 @@ function FigureTile({ figure: f }: { figure: Figure }) {
     </li>
   )
 }
-
-/** The folded Evidence card: how many numbers, and how many are inferred. An inferred number is a caveat, not a loose end. */
-export const figuresRow = ({ facts }: FiguresInput): RowLine => ({ says: COPY.figures.row(facts.length, facts.filter((f) => f.inferred).length), loose: [] })

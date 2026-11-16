@@ -1,24 +1,26 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type MouseEvent, type ReactNode } from "react"
-import { CheckIcon, CircleCheckIcon, CircleDashedIcon, DownloadIcon, ExternalLinkIcon, FoldVerticalIcon, MoonIcon, SendIcon, SunIcon, UnfoldVerticalIcon } from "lucide-react"
-import type { Item, Manifest, SubmitView } from "../../scripts/manifest.ts"
+import { ArrowLeftIcon, ArrowRightIcon, CheckCheckIcon, CheckIcon, CircleCheckIcon, CircleDashedIcon, DownloadIcon, ExternalLinkIcon, MessageSquareIcon, MoonIcon, SunIcon, Undo2Icon } from "lucide-react"
+import type { Item, Manifest } from "../../scripts/manifest.ts"
 import type { Act } from "../../scripts/model.ts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ACT_COPY, actEyebrow, COPY } from "./copy.ts"
-import { LinkedPanel } from "./linked.tsx"
-import { Card, PageContext, QuestionCard, usePage, type Page } from "./parts.tsx"
-import { ACTS, actOf, hostOf, isQuestion, ownsCard, refIndex, type PageData, type Ref } from "./plan.ts"
-import { draftKey, emptyReview, itemState, parseDraft, questionState, reduceReview, serializeDraft, tally, type ItemState, type ReviewAction } from "./review.ts"
-import { changedFor, foldingAtBoot, survey, unopened, VIEW_KEY, viewAtBoot, type FoldEntry, type View } from "./slim.ts"
-import { readName, readShown, saveAs, SubmitDialog } from "./submit.tsx"
-
-const THEME_KEY = "sign-off:theme"
-/** Called before the first render, so a dark page never paints light first. */
-export function applySavedTheme() {
-  let saved: string | null = null
-  try { saved = localStorage.getItem(THEME_KEY) } catch { /* no storage: follow the system */ }
-  document.documentElement.classList.toggle("dark", saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches)
-}
+import {
+  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuBadge,
+  SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarProvider, SidebarTrigger, useSidebar,
+} from "@/components/ui/sidebar"
+import { changedFor, readName, readShown } from "./changed.ts"
+import { ACT_COPY, actEyebrow, COPY, holdLine, TOUCH_WHY } from "./copy.ts"
+import { LinkedDrawer } from "./linked.tsx"
+import { Card, IdChip, PageContext, QuestionCard, StatusPill, Subhead, usePage, type Page } from "./parts.tsx"
+import { PLACED } from "./placed.tsx"
+import { ACTS, actOf, holds, isQuestion, refIndex, type PageData, type Question, type Ref } from "./plan.ts"
+import {
+  answerWords, decisionsOf, draftKey, emptyReview, itemState, parseDraft, questionState, reduceReview, serializeDraft, tally, type Decision, type ItemState, type ReviewAction,
+} from "./review.ts"
+import { hashOf, heldBy, homesOf, itemsOf, stepItems, stepsOf, stopOf, walkOf, type Step, type StepId, type Stop } from "./steps.ts"
+import { saveAs, SubmitDialog } from "./submit.tsx"
+import { THEME_KEY } from "./theme.ts"
+import { PlacedViews } from "./views.tsx"
 
 type DraftSays = keyof typeof COPY.draft
 function loadDraft(key: string) {
@@ -27,83 +29,57 @@ function loadDraft(key: string) {
 }
 const NARROW = "(max-width: 767px)"
 const FLASH_MS = 1900
-
-/** Every fold on the page, read from the attributes `Fold`, `Card` and `QuestionCard` publish. There is no second registry. */
-function readFolds(): FoldEntry[] {
-  return [...document.querySelectorAll<HTMLElement>("[data-fold]")].map((el) => ({
-    key: el.dataset.fold!, open: el.dataset.open === "true", part: el.dataset.foldPart, dependent: el.dataset.foldDependent !== undefined,
-    parent: el.parentElement?.closest<HTMLElement>("[data-fold]")?.dataset.fold ?? null,
-  }))
-}
-/** The closed folds at `target` and around it, which a followed link opens. */
-function closedAround(target: Element): string[] {
-  const keys: string[] = []
-  for (let el = target.closest<HTMLElement>("[data-fold]"); el; el = el.parentElement?.closest<HTMLElement>("[data-fold]") ?? null) {
-    if (el.dataset.open === "false") keys.push(el.dataset.fold!)
-  }
-  return keys
-}
-/** The first drawn card, fold or ref whose top is under the nav, and that top. A toggle restores it, so the page keeps its place. */
-function anchorUnderNav(): { el: Element; top: number } | null {
-  const below = document.querySelector("[data-nav]")?.getBoundingClientRect().bottom ?? 0
-  for (const el of document.querySelectorAll("main [data-item], main [data-fold], main [data-ref]")) {
-    if (el.closest("[hidden]")) continue
-    const top = el.getBoundingClientRect().top
-    if (top >= below) return { el, top }
-  }
-  return null
-}
-/** The anchor, or the fold that now hides it. */
-const visibleFrom = (el: Element): Element => { const hidden = el.closest("[hidden]"); return hidden?.parentElement ? visibleFrom(hidden.parentElement) : el }
-
-function bootSlim(data: PageData, review: Page["review"]) {
-  let stored: string | null = null
-  try { stored = localStorage.getItem(VIEW_KEY) } catch { /* no storage: slim */ }
-  const pinned = document.querySelector<HTMLMetaElement>('meta[name="sign-off-view"]')?.content ?? null
-  const reader = readName()
-  return {
-    ...viewAtBoot(stored, pinned),
-    reader,
-    changed: changedFor(data.manifest, data.revs, data.events, reader, review, readShown(data.manifest.id)),
-    folding: foldingAtBoot(data.manifest, review),
-  }
-}
+/** The surface every block on a step shares with `Card`. */
+const SURFACE = "mt-6 rounded-4xl bg-card text-sm text-card-foreground shadow-md ring-1 ring-foreground/5 dark:ring-foreground/10"
+const actOfStep = (id: StepId): Act | undefined => (id === "gates" || id === "decide" ? undefined : id)
 
 /** `builtPage` is the file as it was built, read before React drew anything. Share downloads it, not the live page. */
 export function App({ data, builtPage }: { data: PageData; builtPage: string }) {
   const m = data.manifest
   const refs = useMemo(() => refIndex(m), [m])
+  const walk = useMemo(() => walkOf(stepsOf(m)), [m])
+  const homes = useMemo(() => homesOf(walk), [walk])
   const key = draftKey(data)
-  const [boot] = useState(() => { const draft = loadDraft(key); return { ...draft, slim: bootSlim(data, draft.review) } })
+  const [boot] = useState(() => {
+    const draft = loadDraft(key), reader = readName()
+    return { ...draft, reader, changed: changedFor(m, data.revs, data.events, reader, draft.review, readShown(m.id)) }
+  })
   const [review, dispatch] = useReducer(reduceReview, boot.review)
   const [draftSays, setDraftSays] = useState<DraftSays>(boot.says)
-  const [view, setView] = useState<View>(boot.slim.view)
-  const [opened, setOpened] = useState<ReadonlySet<string>>(new Set())
-  const [folded, setFolded] = useState(0)
+  const [at, setAt] = useState(() => stopOf(walk, location.hash) ?? 0)
   const [focused, setFocused] = useState<Page["focused"]>(null)
   const [linked, setLinked] = useState<{ ref: Ref; opener: HTMLElement | null } | null>(null)
-  const [submit, setSubmit] = useState<{ from: HTMLElement; record: SubmitView } | null>(null)
+  const [submit, setSubmit] = useState<HTMLElement | null>(null)
   const focusNext = useRef<string[]>([])
-  const goNext = useRef<{ ref: Ref; home: string | undefined; narrow: boolean; opening: boolean } | null>(null)
-  const anchor = useRef<{ el: Element; top: number } | null>(null)
+  const goNext = useRef<{ ref: Ref; home: string | undefined; focus: boolean } | null>(null)
+  const shownAt = useRef(at)
 
   useEffect(() => {
     try { localStorage.setItem(key, serializeDraft(review)) } catch { setDraftSays("none") }
   }, [key, review])
 
-  // After every render: the count on the switch, and each fold drawn open joins the draft's `seen`. The record copy shares the
-  // draft's key and always draws full, so it adds nothing.
+  // The hash is the location, so reload, the browser's Back, deep links and scripts all land on a step. A hash naming no step keeps
+  // the reader where they are, and the hash is rewritten to the stop shown.
   useEffect(() => {
-    const now = survey(readFolds())
-    setFolded(now.folded)
-    const fresh = boot.slim.pinned ? [] : now.drawn.filter((k) => !review.seen.includes(k))
-    if (fresh.length) dispatch({ type: "seen", keys: fresh })
+    const follow = () => setAt((n) => stopOf(walk, location.hash) ?? n)
+    follow() // a hash set between the first render and this listener
+    addEventListener("popstate", follow)
+    addEventListener("hashchange", follow)
+    return () => { removeEventListener("popstate", follow); removeEventListener("hashchange", follow) }
+  }, [walk])
+  useEffect(() => {
+    const shown = walk[at]
+    // A hash that names another stop is a move `follow` has not taken yet, so it stays.
+    if (shown && location.hash !== hashOf(shown) && (stopOf(walk, location.hash) ?? at) === at) history.replaceState(null, "", hashOf(shown))
+  }, [walk, at])
+
+  useLayoutEffect(() => {
+    if (shownAt.current === at) return
+    shownAt.current = at
+    if (!goNext.current) scrollTo(0, 0)
   })
 
   useLayoutEffect(() => {
-    const a = anchor.current
-    anchor.current = null
-    if (a?.el.isConnected) { const el = visibleFrom(a.el); window.scrollBy(0, el.getBoundingClientRect().top - a.top) }
     const keys = focusNext.current
     focusNext.current = []
     for (const k of keys) {
@@ -112,20 +88,24 @@ export function App({ data, builtPage }: { data: PageData; builtPage: string }) 
     }
     const g = goNext.current
     if (!g) return
-    const card = g.home ? document.getElementById(`item-${g.home}`) : null
-    const target = (g.ref === g.home ? null : (card ?? document).querySelector<HTMLElement>(`[data-ref="${CSS.escape(g.ref)}"]`)) ?? card
-    // A closed fold hides the target, so open it and every fold around it, and scroll after that redraw.
-    const closed = target && !g.opening ? closedAround(target) : []
-    if (closed.length) { g.opening = true; setOpened((o) => new Set([...o, ...closed])); return }
     goNext.current = null
+    const card = g.home ? document.getElementById(`item-${g.home}`) : null
+    const shown = (attr: string) => [...(card ?? document).querySelectorAll<HTMLElement>(`[${attr}="${CSS.escape(g.ref)}"]`)].find((el) => el.checkVisibility())
+    const target = (g.ref === g.home ? null : shown("data-ref") ?? shown("data-pr")) ?? card
     if (!target) return
     target.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })
     target.setAttribute("data-flash", "")
     setTimeout(() => target.removeAttribute("data-flash"), FLASH_MS)
-    if (g.narrow) (target.tabIndex >= 0 || target === card ? target : card)?.focus({ preventScroll: true })
+    if (g.focus) (target.tabIndex >= 0 || target === card ? target : card)?.focus({ preventScroll: true })
   })
 
   const act = useCallback((action: ReviewAction, ...focus: string[]) => { focusNext.current = focus; dispatch(action) }, [])
+  const moveTo = useCallback((n: number) => {
+    const stop = walk[n]
+    if (!stop) return
+    if (location.hash !== hashOf(stop)) history.pushState(null, "", hashOf(stop))
+    setAt(n)
+  }, [walk])
   const linkedNow = useRef(linked)
   linkedNow.current = linked
   const closeLinked = useCallback((returnFocus: boolean) => {
@@ -136,53 +116,45 @@ export function App({ data, builtPage }: { data: PageData; builtPage: string }) 
   const openLinked = useCallback((ref: Ref, opener: HTMLElement) => {
     setLinked((l) => ({ ref, opener: l && opener.closest("[data-linked]") ? l.opener : opener }))
   }, [])
-  /** Every in-page link to an item or a ref comes here. A question outside any card has no home and is found by its own ref. */
+  /** Every in-page link to an item or a ref comes here: it moves to the sub-step that draws the ref, then scrolls to it and flashes it.
+   *  The drawer covers the page, so a link followed from inside it closes it and hands focus to what it shows. */
   const go = useCallback((ref: Ref) => {
     const info = refs.get(ref)
-    if (!info) return
-    const narrow = matchMedia(NARROW).matches
-    if (narrow) closeLinked(false)
+    const n = homes.get(ref) ?? (info?.home === undefined ? undefined : homes.get(info.home))
+    if (!info || n === undefined) return
+    const fromDrawer = linkedNow.current !== null
+    if (fromDrawer) closeLinked(false)
     setFocused({ item: info.home ?? ref, ref })
-    goNext.current = { ref, home: info.home, narrow, opening: false }
-  }, [refs, closeLinked])
-  const setFold = useCallback((key: string, open: boolean, ...focus: string[]) => {
-    if (focus.length) focusNext.current = focus
-    setOpened((o) => { const next = new Set(o); if (open) next.add(key); else next.delete(key); return next })
-  }, [])
-  /** `keep`: save the choice for every later plan, as the switch does. */
-  const toggleView = (keep: boolean) => {
-    const next = view === "slim" ? "full" : "slim"
-    anchor.current = anchorUnderNav()
-    focusNext.current = ["view"]
-    if (keep && !boot.slim.pinned) try { localStorage.setItem(VIEW_KEY, next) } catch { /* the choice lasts this visit */ }
-    setView(next)
-  }
-
-  const page: Page = { data, refs, review, focused, act, go, openLinked, slim: { view, opened, setFold, changed: boot.slim.changed, folding: boot.slim.folding, reader: boot.slim.reader } }
+    goNext.current = { ref, home: info.home, focus: fromDrawer || matchMedia(NARROW).matches }
+    moveTo(n)
+  }, [refs, homes, closeLinked, moveTo])
+  const page: Page = { data, refs, review, focused, act, go, openLinked, changed: boot.changed, reader: boot.reader }
   const acts = ACTS.filter((a) => m.items.some((it) => actOf(it) === a) || (a === "product" && "none" in m.product))
-  /** What the review records about the view. A fold drawn in this render counts, even before the effect adds it to `seen`. */
-  const record = (): SubmitView => {
-    const folds = readFolds()
-    const left = unopened(folds, new Set([...review.seen, ...survey(folds).drawn]))
-    return { mode: view, unopened: left.keys, count: left.count }
-  }
-  const openSubmit = (e: MouseEvent<HTMLElement>) => setSubmit({ from: e.currentTarget, record: record() })
-  const closeSubmit = () => { submit?.from.focus(); setSubmit(null) }
-  const showAllFromSubmit = () => { setSubmit(null); if (view === "slim") toggleView(false) }
+  const openSubmit = (e: MouseEvent<HTMLElement>) => setSubmit(e.currentTarget)
+  const closeSubmit = () => { submit?.focus(); setSubmit(null) }
+  const stop = walk[at] ?? walk[0]!
+  const steps = [...new Set(walk.map((s) => s.step))]
 
   return (
     <PageContext.Provider value={page}>
-      <div className="min-h-dvh bg-background px-4 pb-24 font-sans text-foreground antialiased">
-        <Nav acts={acts} folded={folded} onView={() => toggleView(true)} onSubmit={openSubmit}
-          onShare={() => saveAs(`${m.id}-${m.revision ?? "plan"}.html`, builtPage, "text/html")} onTheme={(k) => { focusNext.current = [k] }} />
-        <Header manifest={m} draftSays={draftSays} />
-        <main>
-          {acts.map((a) => <ActSection key={a} act={a} onSubmit={openSubmit} />)}
-        </main>
-        <footer className="mx-auto max-w-6xl px-1 pt-8 text-xs leading-5 text-muted-ink">{COPY.footer}</footer>
-      </div>
-      {linked && <LinkedPanel at={linked.ref} onClose={() => closeLinked(true)} onRecenter={(ref) => setLinked((l) => l && { ...l, ref })} />}
-      {submit && <SubmitDialog acts={acts} record={submit.record} onShowAll={showAllFromSubmit} onClose={closeSubmit} />}
+      <PlacedViews.Provider value={PLACED}>
+        <SidebarProvider className="font-sans text-foreground antialiased">
+          <StepSidebar walk={walk} steps={steps} at={stop.n} onMove={moveTo}
+            onShare={() => saveAs(`${m.id}-${m.revision ?? "plan"}.html`, builtPage, "text/html")} onTheme={(k) => { focusNext.current = [k] }} />
+          <SidebarInset>
+            <MobileBar stop={stop} />
+            <div className="flex-1 px-4 pt-6 pb-10">
+              {stop.n === 0 && <Header manifest={m} />}
+              <StepFrame key={hashOf(stop)} stop={stop} number={steps.indexOf(stop.step) + 1}>
+                <SubStepBody stop={stop} acts={acts} draftSays={draftSays} />
+              </StepFrame>
+            </div>
+            <StepFooter walk={walk} at={stop.n} onMove={moveTo} onSubmit={openSubmit} />
+          </SidebarInset>
+        </SidebarProvider>
+        <LinkedDrawer at={linked?.ref ?? null} onClose={() => closeLinked(true)} onRecenter={(ref) => setLinked((l) => l && { ...l, ref })} />
+        {submit && <SubmitDialog acts={acts} onClose={closeSubmit} />}
+      </PlacedViews.Provider>
     </PageContext.Provider>
   )
 }
@@ -197,41 +169,110 @@ function useTheme(onToggle: (focusKey: string) => void) {
   return { dark, toggle }
 }
 
-/** `folded` is the count of closed folds with no closed fold around them, read from the page after each render. */
-function Nav({ acts, folded, onView, onSubmit, onShare, onTheme }: {
-  acts: Act[]; folded: number; onView: () => void; onSubmit: (e: MouseEvent<HTMLElement>) => void; onShare: () => void; onTheme: (focusKey: string) => void
+/** A step's number badge, in its act's paper. Gates and Decide have no act, so theirs is neutral. */
+const StepBadge = ({ id, n, className }: { id: StepId; n: number; className: string }) => (
+  <span className={`grid shrink-0 place-items-center rounded-full font-medium text-foreground ${actOfStep(id) ? "bg-act-paper-strong" : "bg-muted ring-1 ring-foreground/10"} ${className}`}>{n}</span>
+)
+
+function StepSidebar({ walk, steps, at, onMove, onShare, onTheme }: {
+  walk: Stop[]; steps: Step[]; at: number; onMove: (n: number) => void; onShare: () => void; onTheme: (focusKey: string) => void
 }) {
-  const { data, review, slim } = usePage()
+  const { data, review } = usePage()
   const m = data.manifest
   const { dark, toggle } = useTheme(onTheme)
-  const isSlim = slim.view === "slim"
+  const { setOpenMobile } = useSidebar()
+  const t = tally(review, m.items)
+  const here = walk[at]!
+  const move = (n: number) => { setOpenMobile(false); onMove(n) }
+  const link = (n: number) => ({ href: hashOf(walk[n]!), onClick: (e: MouseEvent) => { e.preventDefault(); move(n) } })
+  const open = (items: Item[]) => tally(review, items).waiting
+  const count = (n: number) => (n ? <span className="text-ask-ink tabular-nums">{n}</span> : <CheckIcon className="size-3.5 text-pass-ink" aria-label={COPY.nav.nothingWaits} />)
   return (
-    <div data-nav className="sticky top-0 z-30 -mx-4 border-b border-border/70 bg-background/85 px-4 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-1.5">
-        <span className="mr-1 hidden font-heading text-sm font-medium lg:inline">{m.id}</span>
-        <nav aria-label={COPY.nav.acts} className="scrollbar-none flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
-          {acts.map((a) => {
-            const t = tally(review, m.items.filter((it) => actOf(it) === a))
-            return (
-              <a key={a} href={`#act-${a}`} data-act={a} className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full pr-2.5 pl-1 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
-                <span className="grid size-6 place-items-center rounded-full bg-act-paper-strong text-xs font-medium text-foreground">{ACT_COPY[a].n}</span>
-                <span className="hidden sm:inline">{ACT_COPY[a].short}</span>
-                {t.waiting ? <span className="text-xs font-medium text-ask-ink tabular-nums">{t.waiting}</span>
-                  : t.gates.length ? <CheckIcon className="size-3.5 text-pass-ink" aria-label={COPY.nav.nothingWaits} /> : null}
-              </a>
-            )
-          })}
-        </nav>
-        <Button variant="ghost" size="sm" data-focus="view" data-view={slim.view} onClick={onView}
-          title={isSlim ? COPY.nav.showAllTitle(folded) : COPY.nav.slimTitle} aria-label={isSlim ? `${COPY.nav.showAll}, ${COPY.nav.folded(folded)}` : COPY.nav.slim}>
-          {isSlim ? <UnfoldVerticalIcon /> : <FoldVerticalIcon />}<span className="hidden lg:inline">{isSlim ? COPY.nav.showAll : COPY.nav.slim}</span>
-          {isSlim && <span className="tabular-nums" data-folded-count>{folded}</span>}
-        </Button>
-        <Button variant="ghost" size="icon-sm" data-focus="theme" onClick={toggle} aria-label={COPY.nav.theme(dark)} title={COPY.nav.theme(dark)}>
-          {dark ? <SunIcon /> : <MoonIcon />}
-        </Button>
-        <Button variant="ghost" size="sm" title={COPY.nav.shareTitle} onClick={onShare}><DownloadIcon /><span className="hidden md:inline">{COPY.nav.share}</span></Button>
-        <Button size="sm" data-focus="submit:nav" aria-haspopup="dialog" onClick={onSubmit}><SendIcon />{COPY.nav.submit}</Button>
+    <Sidebar>
+      <SidebarHeader className="gap-1 px-4 pt-5 pb-3">
+        <div className="font-mono text-xs text-muted-ink">{m.id}{m.revision && ` · ${COPY.head.plan(m.revision)}`}</div>
+        <div className="font-heading text-base leading-snug font-medium text-balance">{m.title}</div>
+        <div className="mt-1 text-xs leading-5 text-muted-ink tabular-nums" role="status">
+          <div className="font-medium text-foreground">{COPY.head.waiting(t.waiting)}</div>
+          <div>{COPY.head.counts(t.approved.length, t.gates.length, t.back.length, t.blocking.length - t.openQuestions.length, t.blocking.length)}</div>
+        </div>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>{COPY.nav.steps}</SidebarGroupLabel>
+          <SidebarMenu>
+            {steps.map((step, i) => {
+              const stops = walk.filter((s) => s.step === step)
+              const current = here.step === step
+              return (
+                <SidebarMenuItem key={step.id} data-act={actOfStep(step.id)}>
+                  <SidebarMenuButton isActive={current} render={<a {...link(stops[0]!.n)} aria-current={current ? "step" : undefined} />}>
+                    <StepBadge id={step.id} n={i + 1} className="size-6 text-xs" />
+                    <span>{COPY.steps.name[step.id]}</span>
+                  </SidebarMenuButton>
+                  <SidebarMenuBadge>{count(open(stepItems(step, m)))}</SidebarMenuBadge>
+                  {current && stops.length > 1 && (
+                    <SidebarMenuSub>
+                      {stops.map((s) => (
+                        <SidebarMenuSubItem key={s.sub.id}>
+                          <SidebarMenuSubButton isActive={s.n === at} {...link(s.n)} aria-current={s.n === at ? "page" : undefined}>
+                            <span className="min-w-0 flex-1 truncate">{s.sub.label}</span>
+                            <span className="text-xs">{s.sub.kind === "decide" ? null : count(open(itemsOf(s.sub, m)))}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  )}
+                </SidebarMenuItem>
+              )
+            })}
+          </SidebarMenu>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter className="gap-2 p-3">
+        <Button variant="outline" size="sm" className="w-full" onClick={() => move(walk.length - 1)}><CheckCheckIcon />{COPY.nav.decide}</Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon-sm" data-focus="theme" onClick={toggle} aria-label={COPY.nav.theme(dark)} title={COPY.nav.theme(dark)}>
+            {dark ? <SunIcon /> : <MoonIcon />}
+          </Button>
+          <Button variant="ghost" size="sm" title={COPY.nav.shareTitle} onClick={onShare}><DownloadIcon />{COPY.nav.share}</Button>
+        </div>
+      </SidebarFooter>
+    </Sidebar>
+  )
+}
+
+/** On a narrow screen the sidebar is a sheet, and this bar opens it. */
+function MobileBar({ stop }: { stop: Stop }) {
+  const { data } = usePage()
+  return (
+    <div data-nav className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-border/70 bg-background/85 px-3 backdrop-blur-md md:hidden">
+      <SidebarTrigger />
+      <span className="font-heading text-sm font-medium">{data.manifest.id}</span>
+      <span className="min-w-0 truncate text-sm text-muted-foreground">{COPY.steps.name[stop.step.id]} · {stop.sub.label}</span>
+    </div>
+  )
+}
+
+/** Back and Next, always at the bottom of the viewport. One filled button: Approve while the card waits on a verdict, Submit on the
+ *  last stop, Next otherwise. */
+function StepFooter({ walk, at, onMove, onSubmit }: { walk: Stop[]; at: number; onMove: (n: number) => void; onSubmit: (e: MouseEvent<HTMLElement>) => void }) {
+  const { review, act } = usePage()
+  const here = walk[at]!, prev = walk[at - 1], next = walk[at + 1]
+  const awaits = here.sub.kind === "card" && itemState(review, here.sub.item) === "open" ? here.sub.item : null
+  return (
+    <div data-nav className="sticky bottom-0 z-20 border-t border-border/70 bg-background/85 px-4 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-2">
+        <Button variant="ghost" size="sm" disabled={!prev} onClick={() => prev && onMove(prev.n)}><ArrowLeftIcon />{COPY.steps.back}</Button>
+        <div className="min-w-0 flex-1 truncate text-center text-xs text-muted-ink tabular-nums">
+          {[...new Set([COPY.steps.name[here.step.id], here.sub.label])].join(" · ")} · {COPY.steps.at(at + 1, walk.length)}
+        </div>
+        {awaits && <Button size="sm" onClick={() => act({ type: "approve", ids: [awaits.id] }, "foot:next")}><CheckIcon />{COPY.steps.approve}</Button>}
+        {next ? (
+          <Button variant={awaits ? "outline" : "default"} size="sm" data-focus="foot:next" title={next.sub.label} onClick={() => onMove(next.n)}>
+            {COPY.steps.next}<ArrowRightIcon />
+          </Button>
+        ) : <Button size="sm" data-focus="submit:foot" aria-haspopup="dialog" onClick={onSubmit}><CheckCheckIcon />{COPY.nav.submit}</Button>}
       </div>
     </div>
   )
@@ -246,9 +287,9 @@ function SourceLink({ href, className = "", children }: { href: string; classNam
   )
 }
 
-function Header({ manifest, draftSays }: { manifest: Manifest; draftSays: DraftSays }) {
+function Header({ manifest }: { manifest: Manifest }) {
   return (
-    <header className="mx-auto max-w-6xl pt-8 pb-2">
+    <header className="mx-auto max-w-6xl px-1 pt-2 pb-8">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-ink">
         {manifest.ticket ? <SourceLink href={manifest.ticket} className="font-mono">{manifest.id}</SourceLink> : <span className="font-mono">{manifest.id}</span>}
         {manifest.revision && <><span aria-hidden>·</span><span>{COPY.head.plan(manifest.revision)}</span></>}
@@ -262,7 +303,6 @@ function Header({ manifest, draftSays }: { manifest: Manifest; draftSays: DraftS
           <blockquote className="mt-0.5">{manifest.note}</blockquote>
         </figure>
       )}
-      <VerdictBar draftSays={draftSays} />
     </header>
   )
 }
@@ -302,92 +342,157 @@ function VerdictBar({ draftSays }: { draftSays: DraftSays }) {
   )
 }
 
-/** A same-page link to an item that goes through `go`, so it opens the folds that hide its target. */
+/** A same-page link to an item that goes through `go`, so it moves to its sub-step, then scrolls to and flashes it. */
 function ItemLink({ id, className, children }: { id: string; className: string; children: ReactNode }) {
   const { go } = usePage()
   return <a href={`#item-${id}`} className={className} onClick={(e) => { e.preventDefault(); go(id) }}>{children}</a>
 }
 
-function ActSection({ act, onSubmit }: { act: Act; onSubmit: (e: MouseEvent<HTMLElement>) => void }) {
-  const { data } = usePage()
-  const m = data.manifest
-  const copy = ACT_COPY[act]
-  const items = m.items.filter((it) => actOf(it) === act)
-  const loose = items.filter(isQuestion).filter((q) => !hostOf(m, q))
-  if ("none" in m.product && act === "product") {
-    return (
-      <section id={`act-${act}`} data-act={act} className="mx-auto mt-10 max-w-6xl scroll-mt-16 rounded-4xl bg-act-paper px-4 py-4 text-sm leading-6 sm:px-7">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="grid size-8 place-items-center rounded-full bg-act-paper-strong font-heading text-sm font-medium">{copy.n}</span>
-          <span className="font-medium">{actEyebrow(act)}.</span><span className="min-w-0 text-muted-foreground">{m.product.none}</span>
-        </div>
-        {loose.map((q) => <div key={q.id} className="mt-3"><QuestionCard q={q} /></div>)}
-      </section>
-    )
-  }
+/** The act's paper and heading around one sub-step, kept short so the card starts near the top. */
+function StepFrame({ stop, number, children }: { stop: Stop; number: number; children: ReactNode }) {
+  const id = stop.step.id, act = actOfStep(id)
+  const eyebrow = act ? actEyebrow(act) : COPY.steps.eyebrow[id === "gates" ? "gates" : "decide"]
+  const title = act ? ACT_COPY[act].title : COPY.steps.title[id === "gates" ? "gates" : "decide"]
   return (
-    <section id={`act-${act}`} data-act={act} aria-labelledby={`act-${act}-title`} className="mx-auto mt-10 max-w-6xl scroll-mt-16 rounded-4xl bg-act-paper px-3 pt-7 pb-4 sm:px-6 sm:pb-6">
+    <section data-act={act} data-step={`${id}/${stop.sub.id}`} aria-labelledby="step-title"
+      className={`mx-auto max-w-6xl rounded-4xl px-3 pt-5 pb-4 sm:px-6 sm:pb-6 ${act ? "bg-act-paper" : "bg-muted/50 dark:bg-muted/25"}`}>
       <div className="flex items-center gap-3 px-1">
-        <span className="grid size-8 place-items-center rounded-full bg-act-paper-strong font-heading text-sm font-medium">{copy.n}</span>
-        <div className="text-xs font-medium tracking-wide text-muted-ink uppercase">{actEyebrow(act)}</div>
+        <StepBadge id={id} n={number} className="size-8 font-heading text-sm" />
+        <div className="min-w-0">
+          <div className="text-xs font-medium tracking-wide text-muted-ink uppercase">{eyebrow}</div>
+          <h2 id="step-title" className="font-heading text-xl font-medium tracking-tight">{title}</h2>
+        </div>
       </div>
-      <h2 id={`act-${act}-title`} className="mt-3 px-1 font-heading text-2xl font-medium tracking-tight">{copy.title}</h2>
-      <p className="mt-1 max-w-[64ch] px-1 text-sm leading-6 text-muted-foreground">{copy.sub}</p>
-      <ActChips items={items.filter(ownsCard)} />
-      {items.map((it) => {
-        if (ownsCard(it)) return <Card key={it.id} item={it} />
-        if (isQuestion(it) && !hostOf(m, it)) return <div key={it.id} className="mt-3"><QuestionCard q={it} /></div>
-        return null
-      })}
-      <ActFooter act={act} items={items} onSubmit={onSubmit} />
+      {children}
     </section>
   )
 }
 
-function ActChips({ items }: { items: Item[] }) {
-  const { review } = usePage()
+function SubStepBody({ stop, acts, draftSays }: { stop: Stop; acts: Act[]; draftSays: DraftSays }) {
+  const { sub } = stop
+  switch (sub.kind) {
+    case "questions": return <Questions questions={sub.questions} />
+    case "none": return <><p className="mt-4 px-1 text-sm leading-6 text-muted-foreground">{sub.says}</p>{sub.questions.length > 0 && <Questions questions={sub.questions} />}</>
+    case "card": return <Card item={sub.item} />
+    case "gates": return <GateList gates={sub.gates} />
+    case "decide": return <Decide acts={acts} draftSays={draftSays} />
+  }
+}
+
+function Questions({ questions }: { questions: Question[] }) {
+  const hold = questions.filter(holds).length
   return (
-    <div className="mt-3 flex flex-wrap gap-1.5 px-1">
-      {items.map((it) => {
-        const s = itemState(review, it)
-        return (
-          <ItemLink key={it.id} id={it.id} className="inline-flex h-7 items-center gap-1.5 rounded-full bg-act-paper-strong px-3 text-xs font-medium hover:ring-1 hover:ring-foreground/20">
-            {it.title}
-            {s === "open" ? <span className="size-1.5 rounded-full bg-ask-solid" title={COPY.item.open} /> : s === "approved" ? <CheckIcon className="size-3 text-pass-ink" /> : null}
-          </ItemLink>
-        )
-      })}
+    <div className={`${SURFACE} px-5 py-5 sm:px-6`}>
+      <Subhead extra={holdLine(hold, questions.length - hold)}>{COPY.spec.questions}</Subhead>
+      <div className="grid gap-3 lg:grid-cols-2">{questions.map((q) => <QuestionCard key={q.id} q={q} />)}</div>
     </div>
   )
 }
 
-function ActFooter({ act, items, onSubmit }: { act: Act; items: Item[]; onSubmit: (e: MouseEvent<HTMLElement>) => void }) {
+/** Every gate on one line: what it is, whether it is settled, and which build steps wait on it. Each title opens the gate's card. */
+function GateList({ gates }: { gates: Item[] }) {
+  const { data } = usePage()
+  const held = useMemo(() => heldBy(data.manifest), [data.manifest])
+  return (
+    <ul className={`${SURFACE} divide-y divide-border/70 overflow-hidden`}>
+      {gates.map((g) => {
+        const why = g.type === "grant" ? COPY.steps.grantWhy : "touches" in g ? g.touches.map((t) => TOUCH_WHY[t]).join(". ") : ""
+        const steps = held.get(g.id) ?? []
+        return (
+          <li key={g.id} data-gate={g.id} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-4 sm:px-6">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                <ItemLink id={g.id} className="font-heading text-lg font-medium underline decoration-foreground/20 underline-offset-4 hover:decoration-current">{g.title}</ItemLink>
+                <StatusPill item={g} />
+              </div>
+              <p className="mt-0.5 text-sm leading-6 text-muted-foreground">{why}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-ink">
+              {steps.length ? <>{COPY.steps.holds} {steps.map((id) => <IdChip key={id} id={id} />)}</> : COPY.steps.holdsNothing}
+            </div>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+/** The decision strip, then each act: what still waits with its bulk approve, and what the reader decided. Submit is the footer's. */
+function Decide({ acts, draftSays }: { acts: Act[]; draftSays: DraftSays }) {
+  const { data, review } = usePage()
+  const decided = decisionsOf(review, data.manifest.items).length > 0
+  return (
+    <>
+      <VerdictBar draftSays={draftSays} />
+      <h3 className="mt-8 px-1 text-xs font-medium tracking-wide text-muted-ink uppercase">{COPY.steps.byAct(decided)}</h3>
+      {acts.map((a) => <ActFooter key={a} act={a} items={data.manifest.items.filter((it) => actOf(it) === a)} />)}
+      <p className="px-1 pt-6 text-xs leading-5 text-muted-ink">{COPY.footer}</p>
+    </>
+  )
+}
+
+function ActFooter({ act, items }: { act: Act; items: Item[] }) {
   const { review, act: apply } = usePage()
   const t = tally(review, items)
   const bulk = t.openGates.filter((it) => it.type !== "grant")
   const open = [...t.openGates.map((it) => ({ id: it.id, label: it.title })), ...t.openQuestions.map((q) => ({ id: q.id, label: q.id }))]
   const done = t.waiting === 0
+  const decisions = decisionsOf(review, items)
   return (
-    <div id={`foot-${act}`} data-focus={`foot:${act}`} tabIndex={-1} className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-3xl bg-card/70 px-5 py-3.5 ring-1 ring-foreground/5 outline-none focus-visible:ring-2 focus-visible:ring-focus dark:ring-foreground/10">
-      <div className="flex min-w-0 items-start gap-2.5 text-sm leading-6">
-        {done ? <CircleCheckIcon className={`mt-1 size-4 shrink-0 ${t.back.length ? "text-muted-ink" : "text-pass-ink"}`} /> : <CircleDashedIcon className="mt-1 size-4 shrink-0 text-muted-ink" />}
-        <p className="min-w-0">
-          {done ? (t.back.length ? COPY.act.nothingElse(t.back.length) : COPY.act.nothing) : (
-            <>{COPY.act.waiting(t.waiting)} {open.map((o, i) => (
-              <span key={o.id}>{i > 0 && ", "}<ItemLink id={o.id} className="text-link underline decoration-link/30 underline-offset-4 hover:decoration-link">{o.label}</ItemLink></span>
-            ))}.</>
-          )}
-          {act === "product" && <span className="text-muted-ink"> {COPY.act.productEnd}</span>}
-        </p>
+    <div id={`foot-${act}`} data-act={act} data-focus={`foot:${act}`} tabIndex={-1} className="mt-3 overflow-hidden rounded-3xl bg-card/70 ring-1 ring-foreground/5 outline-none focus-visible:ring-2 focus-visible:ring-focus dark:ring-foreground/10">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+        <div className="flex min-w-0 items-start gap-2.5 text-sm leading-6">
+          <span className="grid size-6 shrink-0 place-items-center rounded-full bg-act-paper-strong text-xs font-medium">{ACT_COPY[act].n}</span>
+          {done ? <CircleCheckIcon className={`mt-1 size-4 shrink-0 ${t.back.length ? "text-muted-ink" : "text-pass-ink"}`} /> : <CircleDashedIcon className="mt-1 size-4 shrink-0 text-muted-ink" />}
+          <p className="min-w-0">
+            <span className="font-medium">{ACT_COPY[act].name}.</span>{" "}
+            {done ? (t.back.length ? COPY.act.nothingElse(t.back.length) : COPY.act.nothing) : (
+              <>{COPY.act.waiting(t.waiting)} {open.map((o, i) => (
+                <span key={o.id}>{i > 0 && ", "}<ItemLink id={o.id} className="text-link underline decoration-link/30 underline-offset-4 hover:decoration-link">{o.label}</ItemLink></span>
+              ))}.</>
+            )}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {bulk.length > 0 ? (
+            <Button variant="outline" size="sm" onClick={() => apply({ type: "approve", ids: bulk.map((it) => it.id) }, `foot:${act}`)}>
+              <CheckIcon />{COPY.act.approveAll(bulk.length)}
+            </Button>
+          ) : t.openGates.length > 0 ? <Badge variant="dashed">{COPY.act.grantAlone}</Badge> : null}
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {bulk.length > 0 ? (
-          <Button variant="outline" size="sm" onClick={() => apply({ type: "approve", ids: bulk.map((it) => it.id) }, `foot:${act}`)}>
-            <CheckIcon />{COPY.act.approveAll(bulk.length)}
-          </Button>
-        ) : t.openGates.length > 0 ? <Badge variant="dashed">{COPY.act.grantAlone}</Badge> : null}
-        {act === "product" && <Button size="sm" data-focus="submit:product" aria-haspopup="dialog" onClick={onSubmit}><SendIcon />{COPY.nav.submit}</Button>}
-      </div>
+      {decisions.length > 0 && (
+        <ul className="divide-y divide-border/70 border-t border-border/70" data-decisions={act}>
+          {decisions.map((d) => <DecisionRow key={d.item.id} decision={d} />)}
+        </ul>
+      )}
     </div>
+  )
+}
+
+/** A note the reader wrote, in full and with its line breaks, on the tint of the card's own "Your note" strip. */
+const ReaderNote = ({ icon, label, text }: { icon: ReactNode; label: string; text: string }) => (
+  <div className="mt-2 flex max-w-[80ch] items-start gap-2 rounded-2xl bg-revise-soft/60 px-3 py-2">
+    {icon}
+    <span className="min-w-0 flex-1"><span className="text-xs font-medium text-revise-ink">{label}</span><span className="block whitespace-pre-line">{text}</span></span>
+  </div>
+)
+
+/** One item the reader acted on, indented under the act row's text: its title, linked to it, and what they decided, with every note. */
+function DecisionRow({ decision: { item, verdict, answer, comments } }: { decision: Decision }) {
+  const q = isQuestion(item) ? item : null
+  return (
+    <li data-decision={item.id} className="py-3 pr-5 pl-5 text-sm leading-6 sm:pl-20">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+        {q && <IdChip id={q.id} />}
+        <ItemLink id={item.id} className="font-medium underline decoration-foreground/20 underline-offset-4 hover:decoration-current">{item.title}</ItemLink>
+        {q ? answer && <Badge variant="pass"><CheckIcon />{COPY.question.answered}</Badge> : verdict && <StatusPill item={item} />}
+      </div>
+      {q && answer && <p className="mt-1"><CheckIcon className="mr-1.5 inline size-4 text-pass-ink" />{answerWords(q, answer)}</p>}
+      {verdict?.verdict === "changes" && <ReaderNote icon={<Undo2Icon className="mt-1 size-3.5 shrink-0 text-revise-ink" />} label={COPY.item.yourNote} text={verdict.note} />}
+      {comments.map((c, i) => (
+        <ReaderNote key={i} icon={<MessageSquareIcon className="mt-1 size-3.5 shrink-0 text-revise-ink" />} label={`${COPY.comment.yours}${c.anchor ? ` · ${c.anchor}` : ""}`} text={c.text} />
+      ))}
+    </li>
   )
 }

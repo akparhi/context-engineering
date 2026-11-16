@@ -3,7 +3,7 @@ import type { UnitsInput } from "../../../scripts/views.ts"
 import { COPY, plural } from "../copy.ts"
 import { IdChip, LooseEnd } from "../parts.tsx"
 import type { Ref } from "../plan.ts"
-import type { RowLine, ViewProps } from "../views.tsx"
+import type { ViewProps } from "../views.tsx"
 
 type Step = UnitsInput["steps"][number]
 
@@ -42,10 +42,3 @@ export function UnitCard({ step: s, ships, go }: { step: Step; ships: UnitsInput
 }
 
 const UnitsNote = ({ note }: { note: string }) => <p className="mt-4 max-w-[78ch] text-sm leading-6 text-pretty text-muted-foreground">{note}</p>
-
-/** The folded Units card: each unit by id and title, the plan's sentence on how they run, and a loose end for every unit that ships
- *  as no pull request. */
-export const unitsRow = ({ steps, ships, note }: UnitsInput): RowLine => ({
-  says: COPY.units.row(steps.map((s) => `${s.id} ${s.title}`), note),
-  loose: steps.filter((s) => !(ships[s.id] ?? []).length).map((s) => COPY.units.noPrFor(s.id)),
-})

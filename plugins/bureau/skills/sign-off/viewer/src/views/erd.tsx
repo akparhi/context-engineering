@@ -6,9 +6,9 @@ import type { ErdInput } from "../../../scripts/views.ts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { COPY } from "../copy.ts"
-import { Fold, IdChip, LooseEnd, Subhead } from "../parts.tsx"
+import { IdChip, LooseEnd, Subhead } from "../parts.tsx"
 import type { Ref } from "../plan.ts"
-import type { RowLine, ViewProps } from "../views.tsx"
+import type { ViewProps } from "../views.tsx"
 
 const e = COPY.erd
 const ROW = 26, HEAD = 40
@@ -85,34 +85,6 @@ function ColumnRow({ t, c, fk, picked, onPick }: { t: ErdTable; c: ErdColumn; fk
     <button type="button" data-ref={`db:${t.name}.${c.name}`} aria-pressed={picked} onClick={() => onPick(t.name, c.name)} className={`${ROW_BTN} ${tint}`} style={{ height: ROW }}>
       <ColumnLabel t={t} c={c} fk={fk} />
     </button>
-  )
-}
-
-/** The folded diagram: each New or Changed table with every column, since the new stored shape is what the item gates, then one line
- *  that names the reused tables. A column opens the diagram on it. */
-function FreshTables({ layout, go }: { layout: ErdLayout; go: (ref: Ref) => void }) {
-  const fresh = layout.tables.filter((t) => t.mark !== "reused")
-  return (
-    <>
-      <div className="mb-2 grid basis-full items-start gap-3 @2xl/erd:grid-cols-2" data-part="fresh-tables">
-        {fresh.map((t) => {
-          const fk = fkOf(layout, t)
-          return (
-            <div key={t.name} className="overflow-hidden rounded-xl bg-card shadow-xs ring-1 ring-delta-line">
-              <div className={`flex items-center justify-between gap-3 border-b border-delta-line px-3 ${t.mark === "new" ? "bg-delta-soft" : "bg-delta-soft/50"}`} style={{ height: HEAD }}>
-                <span className="truncate font-mono text-[13px] font-semibold">{t.name}</span>{MARK_TAG[t.mark]}
-              </div>
-              {t.columns.map((c) => (
-                <button key={c.name} type="button" onClick={() => go(`db:${t.name}.${c.name}`)} className={`${ROW_BTN} ${markedCol(t, c) ? MARKED_TINT : ""}`} style={{ height: ROW }}>
-                  <ColumnLabel t={t} c={c} fk={fk.has(c.name)} />
-                </button>
-              ))}
-            </div>
-          )
-        })}
-      </div>
-      <span className="text-sm">{e.joins(layout.tables.filter((t) => t.mark === "reused").map((t) => t.name))}</span>
-    </>
   )
 }
 
@@ -452,7 +424,7 @@ function Erd({ input, layout, sources, focus, go }: Omit<ViewProps<ErdInput>, "l
       <UnusedValues input={input} layout={layout} onPick={(table, c) => go(`db:${table}${c ? `.${c}` : ""}`)} />
       <Tabs tab={tab} onTab={setTab} />
       {tab === "source" ? <ErdSource input={input} sources={sources} /> : (
-      <Fold part="diagram" keep={layout.tables.every((x) => x.mark !== "reused")} summary={<FreshTables layout={layout} go={go} />} className="mt-3">
+      <div className="mt-3">
       <div className={`grid gap-5 ${t ? "@4xl/erd:grid-cols-[minmax(0,1fr)_19rem]" : ""}`}>
         <div ref={diagram} className="min-w-0">
           <Diagram layout={layout} drawing={drawing} pick={pick} open={open} onPick={onPick} onFold={onFold} />
@@ -465,16 +437,9 @@ function Erd({ input, layout, sources, focus, go }: Omit<ViewProps<ErdInput>, "l
           </aside>
         )}
       </div>
-      </Fold>
+      </div>
       )}
     </div>
   )
 }
 
-/** The folded Data card: the tables by mark, and each enum value that serves nothing as a loose end. The layout has every table the
- *  schema draws; without it the row counts the tables the plan declares, which may leave some out. */
-export function erdRow({ tables = [], unused = [] }: ErdInput, layout?: ErdLayout): RowLine {
-  const marks = (layout?.tables ?? tables).map((t) => t.mark)
-  const count = (mark: Mark) => marks.filter((m) => m === mark).length
-  return { says: e.row(count("new"), count("changed"), count("reused")), loose: unused.map((u) => e.unusedLine(u.value.split(".").at(-1)!)) }
-}

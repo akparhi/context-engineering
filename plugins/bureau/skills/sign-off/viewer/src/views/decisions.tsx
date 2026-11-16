@@ -1,33 +1,26 @@
 import type { DecisionsInput } from "../../../scripts/views.ts"
 import { COPY } from "../copy.ts"
-import { Fold, IdChip } from "../parts.tsx"
-import type { RowLine, ViewProps } from "../views.tsx"
+import { IdChip } from "../parts.tsx"
+import type { ViewProps } from "../views.tsx"
 
 type Decision = DecisionsInput["decisions"][number]
 type Option = Decision["options"][number]
 
-/** Choices the plan already made. Each decision is its line and the option taken. Slim folds the rest behind each line: the
- *  option's detail, the ones turned down and what settled it. */
+/** Choices the plan already made. Each decision is its line, then the option taken with its detail, the ones turned down and
+ *  what settled it. */
 export function DecisionsView({ input }: ViewProps<DecisionsInput>) {
   return (
     <ul className="divide-y divide-border/70">
       {input.decisions.map((d) => (
         <li key={d.id} data-ref={d.id} className="scroll-mt-28 py-5 first:pt-0 last:pb-0">
           <DecisionLine decision={d} />
-          <Fold part="detail" row={d.id} className="mt-2" summary={<Taken decision={d} />}>
+          <div className="mt-2">
             <DecisionSides decision={d} />
-          </Fold>
+          </div>
         </li>
       ))}
     </ul>
   )
-}
-
-/** The folded Decisions card: how many there are. A decision has no loose end of its own. */
-export const decisionsRow = ({ decisions }: DecisionsInput): RowLine => ({ says: COPY.decisions.row(decisions.length), loose: [] })
-
-function Taken({ decision: d }: { decision: Decision }) {
-  return <span className="text-sm leading-6"><span className="text-muted-ink">{COPY.decisions.chosen}.</span> {d.options.find((o) => o.id === d.chosen)?.label}</span>
 }
 
 function DecisionLine({ decision: d }: { decision: Decision }) {

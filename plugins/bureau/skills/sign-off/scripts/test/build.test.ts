@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { build, BuildError, DATA_BLOCK, embed, type PageData } from "../build.ts";
+import { build, BuildError, DATA_BLOCK, embed, networkLoads, type PageData, type PartData, RENDER_USAGE, viewportUnits } from "../build.ts";
 import type { ErdLayout } from "../layout/erd.ts";
 
 const FIXTURE = resolve(import.meta.dir, "../../fixtures/plan");
@@ -190,4 +190,59 @@ describe("joins", () => {
     expect(trace.rules.HeldForSomeone.outcome).toBe("holds");          // broken in the draft run, so this pins the plan's own run
     expect(blockAt("prs:0", "prs").input.prs.find((p) => p.id === "P1")!.serves).toEqual(["R1", "R2", "R3"]);
   }, SLOW);
+});
+
+describe("viewportUnits", () => {
+  test("finds each viewport height unit, and nothing that only looks like one", () => {
+    for (const css of ["height:100vh", "min-height:50svh", "max-height:12.5dvh", "top:1lvh", "height:calc(100vh - 2rem)"]) expect(viewportUnits(css)).not.toEqual([]);
+    expect(viewportUnits("a{width:100vw;height:100%} .svh{} --vh:1; vhs 1vhx")).toEqual([]);
+  });
+});
+
+describe("the render command", () => {
+  const CLI = resolve(import.meta.dir, "../sign-off");
+  const run = (...args: string[]) => {
+    const p = Bun.spawnSync([CLI, "render", ...args]);
+    return { code: p.exitCode, out: p.stdout.toString().trim(), err: p.stderr.toString().trim() };
+  };
+
+  test("writes one view alone to parts/<view>.html and prints the path", () => {
+    const { dir } = plan();
+    const { code, out } = run(dir, "--part", "statechart");
+    expect(code).toBe(0);
+    expect(out).toBe(join(dir, "parts/statechart.html"));
+    const page = readFileSync(out, "utf8");
+    expect(viewportUnits(page)).toEqual([]);
+    expect(networkLoads(page)).toEqual([]);
+    const data = dataOf(page) as PartData;
+    expect(data.part).toBe("statechart");
+    expect(new Set(Object.values(data.blocks).map((b) => b.view))).toEqual(new Set(["statechart"]));
+  }, SLOW);
+
+  test("writes to --out", () => {
+    const { root, dir } = plan();
+    const out = join(root, "elsewhere/erd.html");
+    expect(run(dir, "--part", "erd", "--out", out)).toMatchObject({ code: 0, out });
+    expect(existsSync(out)).toBe(true);
+  }, SLOW);
+
+  test("exits 1 for a view the plan has no block for, and lists its parts", () => {
+    const { dir } = plan();
+    const { code, err } = run(dir, "--part", "nope");
+    expect(code).toBe(1);
+    expect(err).toMatch(/^this plan has no nope block; its parts are: .*statechart/);
+    expect(existsSync(join(dir, "parts"))).toBe(false);
+  }, SLOW);
+
+  test("refuses a plan that check fails", () => {
+    const { dir } = plan({ files: { "design/db.sql": (t) => `${t}\ncreate table broken (;\n` } });
+    const { code, err } = run(dir, "--part", "statechart");
+    expect(code).toBe(1);
+    expect(err).toMatch(/check failed:/);
+    expect(existsSync(join(dir, "parts"))).toBe(false);
+  }, SLOW);
+
+  test("exits 2 with the usage line when --part is missing", () => {
+    expect(run(FIXTURE)).toMatchObject({ code: 2, err: RENDER_USAGE });
+  });
 });

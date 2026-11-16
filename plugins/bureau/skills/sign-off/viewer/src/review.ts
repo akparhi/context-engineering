@@ -9,14 +9,12 @@ export type Comment = { item: string; anchor?: Ref; text: string }
 /** An open text box. `back:<item>` is a send-back note, `comment:<item>` a comment, `answer:<question>` a free-text answer. */
 export type EditorKey = `back:${string}` | `comment:${string}` | `answer:${string}`
 
-/** Everything the reader decided on this revision, plus what they typed and have not sent. The draft in localStorage is this.
- *  `seen` holds the fold keys drawn open for this reader on this revision. Drawn is not read. */
+/** Everything the reader decided on this revision, plus what they typed and have not sent. The draft in localStorage is this. */
 export type Review = {
   verdicts: Record<string, Verdict>
   answers: Record<string, Answer>
   comments: Comment[]
   typing: Partial<Record<EditorKey, string>>
-  seen: string[]
 }
 
 export type ReviewAction =
@@ -30,9 +28,8 @@ export type ReviewAction =
   | { type: "clearAnswer"; id: string }
   | { type: "comment"; item: string; anchor?: Ref; text: string }
   | { type: "uncomment"; index: number }
-  | { type: "seen"; keys: string[] }
 
-export const emptyReview: Review = { verdicts: {}, answers: {}, comments: [], typing: {}, seen: [] }
+export const emptyReview: Review = { verdicts: {}, answers: {}, comments: [], typing: {} }
 
 const without = <V>(record: Record<string, V>, key: string) => { const { [key]: _, ...rest } = record; return rest }
 const closed = (r: Review, key: EditorKey) => without(r.typing, key)
@@ -49,10 +46,6 @@ export function reduceReview(r: Review, a: ReviewAction): Review {
     case "clearAnswer": return { ...r, answers: without(r.answers, a.id) }
     case "comment": return { ...r, comments: [...r.comments, { item: a.item, anchor: a.anchor, text: a.text }], typing: closed(r, `comment:${a.item}`) }
     case "uncomment": return { ...r, comments: r.comments.filter((_, i) => i !== a.index) }
-    case "seen": {
-      const fresh = a.keys.filter((k) => !r.seen.includes(k))
-      return fresh.length ? { ...r, seen: [...r.seen, ...fresh] } : r
-    }
   }
 }
 
@@ -86,26 +79,34 @@ export type Tally = ReturnType<typeof tally>
 
 export const resultOf = (t: Tally): ReviewLines["result"] => (t.back.length ? "changes" : t.waiting ? "partial" : "approved")
 
+/** What Submit sends for each of `items`, in their order: its verdict, its answer and its comments. An item the reader did not
+ *  act on is left out. */
+export function decisionsOf(r: Review, items: Item[]) {
+  return items.flatMap((item) => {
+    const verdict = r.verdicts[item.id], answer = r.answers[item.id]
+    const comments = r.comments.filter((c) => c.item === item.id)
+    return verdict || answer || comments.length ? [{ item, verdict, answer, comments }] : []
+  })
+}
+export type Decision = ReturnType<typeof decisionsOf>[number]
+
 /** One entry per item the reader acted on, each with the `itemRev` that `build` embedded for it. */
 export function toPayload(r: Review, data: PageData, by: string, at: string, view?: SubmitView): ReviewPayload {
   const m = data.manifest
-  const items = m.items.flatMap((it) => {
-    const v = r.verdicts[it.id], a = r.answers[it.id]
-    const comments = r.comments.filter((c) => c.item === it.id).map((c) => (c.anchor ? { anchor: c.anchor, text: c.text } : { text: c.text }))
-    if (!v && !a && !comments.length) return []
-    const itemRev = data.revs.items[it.id]
-    if (!itemRev) throw new Error(`The page has no rev for ${it.id}. Rebuild it with \`sign-off build\`.`)
-    return [{
-      id: it.id, itemRev,
+  const items = decisionsOf(r, m.items).map(({ item, verdict: v, answer: a, comments }) => {
+    const itemRev = data.revs.items[item.id]
+    if (!itemRev) throw new Error(`The page has no rev for ${item.id}. Rebuild it with \`sign-off build\`.`)
+    return {
+      id: item.id, itemRev,
       ...(v && { verdict: v.verdict }), ...(v?.verdict === "changes" && { note: v.note }),
       ...(a && { answer: "option" in a ? a.option : a.text }),
-      ...(comments.length && { comments }),
-    }]
+      ...(comments.length && { comments: comments.map((c) => (c.anchor ? { anchor: c.anchor, text: c.text } : { text: c.text })) }),
+    }
   })
   return { v: 1, plan: m.id, planRev: data.revs.planRev, by, at, items, ...(view && { view }) }
 }
 
-const answerWords = (q: Question, a: Answer) => ("option" in a ? q.options?.find((o) => o.id === a.option)?.label ?? a.option : a.text)
+export const answerWords = (q: Question, a: Answer) => ("option" in a ? q.options?.find((o) => o.id === a.option)?.label ?? a.option : a.text)
 
 export function reviewLines(r: Review, m: Manifest, by: string): ReviewLines {
   const t = tally(r, m.items)
@@ -134,18 +135,18 @@ const isVerdict = (x: unknown) => isRecord(x) && (x.verdict === "approve" || (x.
 const isAnswer = (x: unknown) => isRecord(x) && (isString(x.option) || isString(x.text))
 const isComment = (x: unknown) => isRecord(x) && isString(x.item) && isString(x.text) && (x.anchor === undefined || isString(x.anchor))
 
-/** localStorage is outside the page's control, so a stored draft is checked before it becomes state. */
+/** localStorage is outside the page's control, so a stored draft is checked before it becomes state. Fields outside `Review`,
+ *  such as an older draft's `seen`, are dropped. */
 export function parseDraft(text: string | null): Review | null {
   if (!text) return null
   let saved: unknown
   try { saved = JSON.parse(text) } catch { return null }
   if (!isRecord(saved) || saved.v !== 1 || !isRecord(saved.review)) return null
-  const { verdicts, answers, comments, typing, seen = [] } = saved.review
+  const { verdicts, answers, comments, typing } = saved.review
   if (!isRecord(verdicts) || !Object.values(verdicts).every(isVerdict)) return null
   if (!isRecord(answers) || !Object.values(answers).every(isAnswer)) return null
   if (!Array.isArray(comments) || !comments.every(isComment)) return null
   if (!isRecord(typing) || !Object.values(typing).every(isString)) return null
-  if (!Array.isArray(seen) || !seen.every(isString)) return null
-  return { ...(saved.review as Omit<Review, "seen">), seen }
+  return { verdicts, answers, comments, typing } as Review
 }
 export const serializeDraft = (r: Review) => JSON.stringify({ v: 1, review: r })

@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan part</title>
+<link rel="stylesheet" href="./src/index.css">
+<!-- A host that injects its theme style shows the part in a short frame. -->
+<style>html:has(style#t3-theme) #root { max-height: 800px; overflow: auto }</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="application/json" id="sign-off-data"></script>
+<script type="module" src="./src/part.tsx"></script>
+</body>
+</html>

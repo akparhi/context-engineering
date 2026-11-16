@@ -1,18 +1,19 @@
-import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react"
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon, CircleAlertIcon, MessageSquareIcon, Undo2Icon } from "lucide-react"
+import { createContext, useContext, useState, type KeyboardEvent, type ReactNode } from "react"
+import { CheckIcon, CircleAlertIcon, MessageSquareIcon, Undo2Icon } from "lucide-react"
 import type { Item } from "../../scripts/manifest.ts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { COPY, TOUCH_WHY } from "./copy.ts"
-import { defaultWords, holds, hostOf, isGate, isQuestion, ownsCard, type PageData, type Question, type Ref, type RefIndex } from "./plan.ts"
+import { defaultWords, holds, hostOf, isGate, ownsCard, type PageData, type Question, type Ref, type RefIndex } from "./plan.ts"
 import { itemState, questionState, sentBack, type EditorKey, type Review, type ReviewAction } from "./review.ts"
-import { canFold, foldKey, isOpen, revisedFor, waitsOn, type FoldFacts, type View } from "./slim.ts"
-import { drawBlock, rowOf, VIEWS } from "./views.tsx"
-import { GrantView, grantRow } from "./views/grant.tsx"
-import { UnitCard, unitsRow } from "./views/units.tsx"
+import { revisedFor } from "./changed.ts"
+import { drawBlock, VIEWS } from "./views.tsx"
+import { GrantView } from "./views/grant.tsx"
+import { UnitCard } from "./views/units.tsx"
 
 /** What every part of the page reads. `act` applies a review action, then focuses the first `[data-focus]` among `focus` after the
- *  redraw, so the control the reader used, or the one that replaced it, keeps focus. */
+ *  redraw, so the control the reader used, or the one that replaced it, keeps focus. `changed` (`changedFor`) and `reader`, the
+ *  name this browser saved at Submit, are fixed at boot. */
 export type Page = {
   data: PageData
   refs: RefIndex
@@ -21,17 +22,7 @@ export type Page = {
   act: (action: ReviewAction, ...focus: string[]) => void
   go: (ref: Ref) => void
   openLinked: (ref: Ref, opener: HTMLElement) => void
-  slim: Slim
-}
-/** The slim view's state, all owned by the shell. `opened` holds the folds opened by hand or by a followed link, until reload.
- *  `setFold` opens or folds one, then focuses the first `[data-focus]` among `focus`. `changed`, `folding` and `reader`, the
- *  name this browser saved at Submit, are fixed at boot. */
-export type Slim = {
-  view: View
-  opened: ReadonlySet<string>
-  setFold: (key: string, open: boolean, ...focus: string[]) => void
   changed: ReadonlySet<string>
-  folding: ReadonlySet<string>
   reader: string
 }
 export const PageContext = createContext<Page | null>(null)
@@ -62,86 +53,6 @@ export const Subhead = ({ children, extra }: { children: ReactNode; extra?: Reac
 export const LooseEnd = ({ children }: { children: ReactNode }) => (
   <Badge variant="dashed"><CircleAlertIcon />{children}</Badge>
 )
-
-/** The card a fold sits in. `forced`: the item changed since the reader last saw it (`changedFor`), so every fold in it opens. */
-const FoldScope = createContext<{ item: string; forced: boolean } | null>(null)
-
-/** Sets `hidden="until-found"` on a closed body, which React does not render, and opens the fold when find in page or a link to an
- *  id reveals it. `beforematch` also reaches a fold from a match in a fold inside it, and can fire twice, so `reveal` must be
- *  idempotent. A browser without `until-found` treats it as plain `hidden`, and find in page misses the folded text. */
-function useUntilFound(closed: boolean, reveal: () => void) {
-  const body = useRef<HTMLDivElement>(null)
-  const onReveal = useRef(reveal)
-  onReveal.current = reveal
-  useLayoutEffect(() => {
-    if (closed) body.current?.setAttribute("hidden", "until-found")
-    else body.current?.removeAttribute("hidden")
-  }, [closed])
-  useEffect(() => {
-    const el = body.current
-    const on = () => onReveal.current()
-    el?.addEventListener("beforematch", on)
-    return () => el?.removeEventListener("beforematch", on)
-  }, [])
-  return body
-}
-
-/** Shows or folds one fold, then focuses its button in the new state, or the card itself when a rule left it no button. */
-function FoldButton({ foldKey: key, open, controls, label }: { foldKey: string; open: boolean; controls: string; label?: string }) {
-  const { slim } = usePage()
-  return (
-    <Button variant="ghost" size="xs" data-focus={`fold:${key}`} aria-expanded={open} aria-controls={controls} aria-label={label}
-      onClick={() => slim.setFold(key, !open, `fold:${key}`, `item:${key}`)}>
-      {open ? <ChevronUpIcon /> : <ChevronDownIcon />}{open ? COPY.fold.hide : COPY.fold.show}
-    </Button>
-  )
-}
-
-/** A part slim folds. Closed, it draws `summary` and a Show button, and its children stay in the page, hidden until found, so the
- *  fold's keys stay countable and find in page still opens it. With no `summary` it draws nothing closed, has no control, and
- *  opens with the part of the same key or with `keep`; neither the switch nor the record counts it. `row` keys one row of a part that repeats. `keep` holds it open: the view says the content needs
- *  attention, such as a broken rule. A followed link opens every fold around its target, so a view declares nothing for links. */
-export function Fold({ part, row, summary, keep = false, className, children }: {
-  part: string; row?: string; summary?: ReactNode; keep?: boolean; className?: string; children: ReactNode
-}) {
-  const scope = useContext(FoldScope)
-  if (!scope) throw new Error("Fold outside a card")
-  const { slim } = usePage()
-  const key = foldKey(scope.item, part, row)
-  const facts: FoldFacts = { full: slim.view === "full", forced: scope.forced, keep, opened: slim.opened.has(key), folds: true }
-  const open = isOpen(facts)
-  const id = useId()
-  const body = useUntilFound(!open, () => slim.setFold(key, true))
-  const toggle = summary !== undefined && (!open || canFold(facts))
-  return (
-    <div data-fold={key} data-open={open} data-fold-part={row === undefined ? undefined : foldKey(scope.item, part)} data-fold-dependent={summary === undefined ? "" : undefined} className={className}>
-      {toggle && <div className="flex flex-wrap items-center gap-x-2 gap-y-1">{!open && summary}<FoldButton foldKey={key} open={open} controls={id} /></div>}
-      <div ref={body} id={id}>{children}</div>
-    </div>
-  )
-}
-
-/** Opens a fold of the card it is called in, for a view control that needs a folded part on screen, such as a stepper that lights
- *  the chart. */
-export function useOpenFold() {
-  const scope = useContext(FoldScope)
-  const { slim } = usePage()
-  return (part: string, row?: string) => { if (scope) slim.setFold(foldKey(scope.item, part, row), true) }
-}
-
-/** Whether the reader opened any row of `part` in the card it is called in. */
-export function useRowOpened(part: string) {
-  const scope = useContext(FoldScope)
-  const { slim } = usePage()
-  const prefix = scope ? `${foldKey(scope.item, part)}:` : null
-  return prefix !== null && [...slim.opened].some((k) => k.startsWith(prefix))
-}
-
-/** Drawn in the full view only: a cross-reference whose facts the Linked panel or another part already shows. It is not a fold
- *  and never counts. A warning or loose end must stay outside it, or slim hides the warning. */
-export function FullOnly({ children }: { children: ReactNode }) {
-  return usePage().slim.view === "full" ? children : null
-}
 
 export function StatusPill({ item }: { item: Item }) {
   const { review } = usePage()
@@ -215,8 +126,8 @@ function BackStrip({ item }: { item: Item }) {
 /** The "Before review" pair for each of `ids` that changed since the reader last saw it: what the agent changed, beside the
  *  reader's own note on the revision before. A changed item drawn inside another card is named. */
 function RevisedStrip({ ids }: { ids: string[] }) {
-  const { data, slim } = usePage()
-  const notes = ids.filter((id) => slim.changed.has(id)).map((id) => ({ id, ...revisedFor(id, data.revs, data.events, slim.reader) })).filter((n) => n.agent || n.yours)
+  const { data, changed, reader } = usePage()
+  const notes = ids.filter((id) => changed.has(id)).map((id) => ({ id, ...revisedFor(id, data.revs, data.events, reader) })).filter((n) => n.agent || n.yours)
   if (!notes.length) return null
   const note = (label: string, text?: string) => text && <div className="min-w-0"><div className="text-xs font-medium text-revise-ink">{label}</div><p className="mt-0.5 text-sm leading-6">{text}</p></div>
   return (
@@ -277,50 +188,34 @@ function CommentStrip({ item }: { item: Item }) {
 }
 
 const CARD = "mt-6 rounded-4xl bg-card text-card-foreground shadow-md"
-const ROW = "mt-3 rounded-3xl bg-card/70"
 
-/** The shell's card for a part, a gate or the grant: the verdict head, the reader's notes, then each block's view. Slim folds it to
- *  a row, the item's own fold. The body stays in the page, hidden until found, so the folds inside it stay countable. */
+/** The shell's card for a part, a gate or the grant: the verdict head, the reader's notes, then each block's view. */
 export function Card({ item }: { item: Item }) {
-  const { review, data, focused, go, slim } = usePage()
+  const { review, data, focused, go } = usePage()
   const m = data.manifest
   const blocks = item.body ?? []
   const drawn = item.type === "grant" || (item.type === "step" && blocks.length === 0) || blocks.some((b) => VIEWS[b.view])
-  const asks = blocks.some((b) => VIEWS[b.view]?.asks)
-  const questions = asks ? [] : m.items.filter(isQuestion).filter((q) => hostOf(m, q) === item)
   const shell = { links: data.links, sources: data.sources, focus: focused?.item === item.id ? focused.ref : null, go }
-  const facts: FoldFacts = {
-    full: slim.view === "full", forced: slim.changed.has(item.id), keep: waitsOn(m, review, item), opened: slim.opened.has(item.id), folds: slim.folding.has(item.id),
-  }
-  const open = isOpen(facts)
-  const id = useId()
-  const body = useUntilFound(!open, () => slim.setFold(item.id, true))
   return (
     <article id={`item-${item.id}`} data-item={item.id} data-ref={item.id} data-state={itemState(review, item)} data-focus={`item:${item.id}`} tabIndex={-1}
-      data-fold={item.id} data-open={open} data-folded={open ? undefined : ""}
-      className={`${open ? CARD : ROW} flex scroll-mt-20 flex-col overflow-hidden text-sm ring-1 ring-foreground/5 outline-none focus-visible:ring-2 focus-visible:ring-focus dark:ring-foreground/10`}>
-      {open ? <CardHead item={item} body={id} canFold={canFold(facts)} /> : <RowHead item={item} body={id} />}
+      className={`${CARD} flex scroll-mt-20 flex-col overflow-hidden text-sm ring-1 ring-foreground/5 outline-none focus-visible:ring-2 focus-visible:ring-focus dark:ring-foreground/10`}>
+      <CardHead item={item} />
       <RevisedStrip ids={[item.id, ...m.items.filter((it) => !ownsCard(it) && hostOf(m, it) === item).map((it) => it.id)]} />
       <BackStrip item={item} />
       <CommentStrip item={item} />
-      <div ref={body} id={id}>
-        <FoldScope.Provider value={{ item: item.id, forced: facts.forced }}>
-          {blocks.map((b, i) => VIEWS[b.view] && <div key={i} className="px-5 py-5 sm:px-6">{drawBlock(data.blocks[`${item.id}:${i}`], shell)}</div>)}
-          {item.type === "grant" && <div className="px-5 py-5 sm:px-6"><GrantView grant={item} prs={m.facts.prs ?? []} /></div>}
-          {item.type === "step" && blocks.length === 0 && (
-            <ol className="px-5 py-5 sm:px-6"><UnitCard step={item} ships={(m.facts.prs ?? []).filter((p) => p.steps.includes(item.id))} go={go} /></ol>
-          )}
-          {!drawn && <p className="px-5 py-4 text-sm text-muted-ink sm:px-6">{COPY.item.notPorted}</p>}
-          {questions.length > 0 && (
-            <div className="grid gap-3 px-5 pb-5 sm:px-6 lg:grid-cols-2">{questions.map((q) => <QuestionCard key={q.id} q={q} />)}</div>
-          )}
-        </FoldScope.Provider>
+      <div>
+        {blocks.map((b, i) => VIEWS[b.view] && <div key={i} className="px-5 py-5 sm:px-6">{drawBlock(data.blocks[`${item.id}:${i}`], shell)}</div>)}
+        {item.type === "grant" && <div className="px-5 py-5 sm:px-6"><GrantView grant={item} prs={m.facts.prs ?? []} /></div>}
+        {item.type === "step" && blocks.length === 0 && (
+          <ol className="px-5 py-5 sm:px-6"><UnitCard step={item} ships={(m.facts.prs ?? []).filter((p) => p.steps.includes(item.id))} go={go} /></ol>
+        )}
+        {!drawn && <p className="px-5 py-4 text-sm text-muted-ink sm:px-6">{COPY.item.notPorted}</p>}
       </div>
     </article>
   )
 }
 
-function CardHead({ item, body, canFold }: { item: Item; body: string; canFold: boolean }) {
+function CardHead({ item }: { item: Item }) {
   const { review } = usePage()
   const why = "touches" in item ? item.touches.map((t) => TOUCH_WHY[t]).join(". ") : ""
   return (
@@ -334,58 +229,24 @@ function CardHead({ item, body, canFold }: { item: Item; body: string; canFold: 
         {item.why && <p className="mt-1 max-w-[68ch] text-sm leading-6 text-muted-foreground">{item.why}</p>}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <CommentButton item={item} /><VerdictButtons item={item} />{canFold && <FoldButton foldKey={item.id} open controls={body} />}
+        <CommentButton item={item} /><VerdictButtons item={item} />
       </div>
     </header>
   )
 }
 
-/** The row slim folds a card to: its title and status, what its views say, every loose end in them, the default each question in
- *  it runs on, and its verdict buttons. */
-function RowHead({ item, body }: { item: Item; body: string }) {
-  const { data, review } = usePage()
-  const m = data.manifest, prs = m.facts.prs ?? []
-  const lines = (item.body ?? []).flatMap((_, i) => rowOf(data.blocks[`${item.id}:${i}`]) ?? [])
-  if (item.type === "grant") lines.push(grantRow(item, prs))
-  if (item.type === "step" && !item.body?.length) lines.push({ ...unitsRow({ steps: [item], ships: { [item.id]: prs.filter((p) => p.steps.includes(item.id)) } }), says: "" })
-  const says = lines.map((l) => l.says).filter(Boolean).join(". ")
-  const loose = lines.flatMap((l) => l.loose)
-  const defaults = m.items.filter(isQuestion).filter((q) => hostOf(m, q) === item && questionState(review, q) === "default")
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-2.5">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1"><span className="font-medium">{item.title}</span><StatusPill item={item} />{says && <span className="text-muted-ink">{says}</span>}</div>
-        {loose.length > 0 && <div className="mt-1.5 flex flex-wrap gap-1.5" data-part="row-loose">{loose.map((l, i) => <LooseEnd key={i}>{l}</LooseEnd>)}</div>}
-        {defaults.map((q) => (
-          <p key={q.id} className="mt-1.5 max-w-[80ch] text-sm leading-6" data-part="row-default"><span className="text-muted-ink">{COPY.question.runsOn(q.id)}</span> {defaultWords(q)}</p>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-2"><VerdictButtons item={item} /><FoldButton foldKey={item.id} open={false} controls={body} label={`${COPY.fold.show} ${item.title}`} /></div>
-    </div>
-  )
-}
-
-/** A question. Slim folds one the draft had answered to its answer and Change, and one that runs on a default to that default and
- *  Show. A blocking question with no answer stays open. */
+/** A question: its options or a text box until answered, then the answer and Change. */
 export function QuestionCard({ q }: { q: Question }) {
-  const { review, act, data, slim } = usePage()
-  const scope = useContext(FoldScope)
+  const { review, act } = usePage()
   const s = questionState(review, q)
   const answer = review.answers[q.id]
   const key: EditorKey = `answer:${q.id}`, typed = review.typing[key] ?? ""
   const defaultLabel = defaultWords(q)
   const label = (id: string) => q.options?.find((o) => o.id === id)?.label ?? id
   const answerText = () => { const text = typed.trim(); if (text) act({ type: "answer", id: q.id, answer: { text } }, key) }
-  const facts: FoldFacts = {
-    full: slim.view === "full", forced: slim.changed.has(q.id) || scope?.forced === true, keep: waitsOn(data.manifest, review, q),
-    opened: slim.opened.has(q.id), folds: slim.folding.has(q.id),
-  }
-  const open = isOpen(facts)
-  const id = useId()
-  const body = useUntilFound(!open, () => slim.setFold(q.id, true))
   const defaultLine = !holds(q) && defaultLabel && <p className="mt-3 text-sm leading-6"><span className="text-muted-ink">{COPY.question.defaultIs}</span> {defaultLabel}</p>
   return (
-    <div id={`item-${q.id}`} data-question={q.id} data-ref={q.id} data-state={s} data-fold={q.id} data-open={open} data-fold-dependent={answer ? "" : undefined}
+    <div id={`item-${q.id}`} data-question={q.id} data-ref={q.id} data-state={s}
       className={`scroll-mt-28 rounded-3xl p-4 ring-1 ${s === "open" ? "ring-ask-line" : "ring-foreground/10"}`}>
       <div className="flex flex-wrap items-center gap-2">
         <IdChip id={q.id} />
@@ -393,11 +254,9 @@ export function QuestionCard({ q }: { q: Question }) {
           : s === "open" ? <Badge variant="askline">{COPY.question.open}</Badge>
           : <Badge variant="dashed">{COPY.question.default}</Badge>}
         {q.serves?.map((r) => <IdChip key={r} id={r} />)}
-        {open && canFold(facts) && <span className="ml-auto"><FoldButton foldKey={q.id} open controls={id} /></span>}
       </div>
       <div className="mt-2 font-medium">{q.title}</div>
-      {!open && !answer && <div className="flex flex-wrap items-baseline gap-x-2">{defaultLine}<FoldButton foldKey={q.id} open={false} controls={id} /></div>}
-      <div ref={body} id={id}>
+      <div>
         {q.why && <p className="mt-0.5 text-sm text-muted-ink">{q.why}</p>}
         {answer ? null : q.options?.length ? (
           <>
@@ -425,7 +284,7 @@ export function QuestionCard({ q }: { q: Question }) {
       {answer && (
         <div className="mt-3 flex flex-wrap items-start justify-between gap-2">
           <p className="min-w-0 flex-1 text-sm leading-6"><CheckIcon className="mr-1.5 inline size-4 text-pass-ink" />{"option" in answer ? label(answer.option) : answer.text}</p>
-          <Button key="change" variant="ghost" size="xs" data-focus={key} onClick={() => { slim.setFold(q.id, true); act({ type: "clearAnswer", id: q.id }, key) }}>{COPY.question.change}</Button>
+          <Button key="change" variant="ghost" size="xs" data-focus={key} onClick={() => act({ type: "clearAnswer", id: q.id }, key)}>{COPY.question.change}</Button>
         </div>
       )}
     </div>

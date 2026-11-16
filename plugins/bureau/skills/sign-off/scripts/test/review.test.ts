@@ -3,7 +3,6 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, write
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checksum, encodeReview, MARK } from "../codec.ts";
-import { FULL_VIEW_META } from "../build.ts";
 import { decodeReviews, ingestText, planStatus, type Review, readEvents, ReviewTextError, runIngest, runRecord, runRevise, runStatus } from "../review.ts";
 import { computeRevs, type Revs } from "../revs.ts";
 
@@ -388,7 +387,7 @@ const cases: Case[] = [
     },
   },
   {
-    name: "each ingest that appends writes reviews/<planRev>.html: the page with the log so far, pinned to open full",
+    name: "each ingest that appends writes reviews/<planRev>.html: the page with the log so far",
     run: async (dir) => {
       const revs = await computeRevs(dir);
       const copy = join(dir, "reviews", `${revs.planRev}.html`);
@@ -397,8 +396,6 @@ const cases: Case[] = [
       writeFileSync(file, message(encodeReview(reviewOf(revs, [{ id: "api", verdict: "approve" }]))));
       expect(await runIngest([dir, file])).toBe(0);
       const first = readFileSync(copy, "utf8");
-      expect(first.split(FULL_VIEW_META)).toHaveLength(2);
-      expect(first.indexOf(FULL_VIEW_META)).toBeLessThan(first.indexOf("</head>"));
       expect(eventsIn(first)).toBe(2);
       const stdin = Bun.spawn([process.execPath, ENTRY, "ingest", dir], { stdin: new Blob([message(encodeReview({ ...reviewOf(revs, [{ id: "data", verdict: "approve" }]), by: "Lee Park" }))]), stdout: "ignore", stderr: "ignore" });
       expect(await stdin.exited).toBe(0);

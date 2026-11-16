@@ -1,6 +1,7 @@
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
-import { App, applySavedTheme } from "./App.tsx"
+import { App } from "./App.tsx"
+import { applySavedTheme } from "./theme.ts"
 import { readPageData } from "./plan.ts"
 
 /** Read before the theme class or React touch the document, so Share downloads the file as it was built. */

@@ -1,8 +1,10 @@
 /** `sign-off build <plan-dir>` writes `<plan>/sign-off.html`: the viewer page with one data block that holds the manifest, each
  *  block's resolved input and build-time layout, the source texts, the links, the revs and the review events. It refuses a plan
- *  that `check` fails, a theme that is anything but CSS variable declarations, and a page that would load from the network. */
+ *  that `check` fails, a theme that is anything but CSS variable declarations, and a page that would load from the network.
+ *  `sign-off render <plan-dir> --part <view>` writes one view of the same data alone, on the part page. */
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { parseArgs } from "node:util";
 import { z } from "zod";
 import { linksOf } from "../viewer/links.ts";
 import type { Links } from "../viewer/src/plan.ts";
@@ -16,8 +18,10 @@ import { planReader, readManifest, type Revs, revsOf } from "./revs.ts";
 import { type Inputs, type Read, resolve as resolveBlock, type View } from "./views.ts";
 
 export const USAGE = "usage: sign-off build <plan-dir>";
+export const RENDER_USAGE = "usage: sign-off render <plan-dir> --part <view> [--out <file>]";
 export const DATA_BLOCK = '<script type="application/json" id="sign-off-data"></script>';
 const TEMPLATE = join(import.meta.dir, "../viewer/viewer.gen.html");
+const PART_TEMPLATE = join(import.meta.dir, "../viewer/part.gen.html");
 const PAGE = "sign-off.html";
 const CONFIG = ".claude/sign-off.config.json";
 
@@ -30,6 +34,9 @@ export type PageData = {
   blocks: Record<string, BlockData>; sources: Record<string, string>;
 };
 
+/** What the part page reads: the page's data with only the blocks of `part`. */
+export type PartData = PageData & { part: View };
+
 export class BuildError extends Error {}
 
 /** JSON that no text value can use to close the script tag or break a JS string: `<`, `>`, `&`, U+2028 and U+2029 become `\u` escapes. */
@@ -40,6 +47,10 @@ export const inlineJson = (value: unknown) =>
 const NETWORK = /(?:\b(?:src|href|action|srcset|poster)\s*=\s*["']?|url\(\s*["']?|@import\s+["']?)(?:https?:)?\/\/[^"'\s)>]+/gi;
 /** Every URL the page would fetch from another origin. */
 export const networkLoads = (html: string) => [...new Set(html.match(NETWORK) ?? [])];
+
+const VIEWPORT_HEIGHT = /\d(?:\.\d+)?[sdl]?vh\b/g;
+/** Every viewport height length in the text, CSS or JS. A frame that grows to fit its page rejects any. */
+export const viewportUnits = (html: string) => [...new Set(html.match(VIEWPORT_HEIGHT) ?? [])];
 
 const DECLARATION = /^(--[a-zA-Z0-9-]+)\s*:\s*([a-zA-Z0-9 #%.,()+\-*/]+)$/;
 /** The theme as one `:root` rule. Each `;`-separated piece must be `--name: value`, and a value holds only the characters
@@ -100,12 +111,12 @@ export async function pageData(planDir: string): Promise<PageData> {
 }
 
 /** The page with `data` in its one empty data block and the theme, if any, after its own styles. */
-export function embed(page: string, data: PageData, theme: string | null): string {
-  if (page.split(DATA_BLOCK).length !== 2) throw new BuildError(`${TEMPLATE} must hold exactly one empty sign-off-data block`);
+export function embed(page: string, data: PageData | PartData, theme: string | null): string {
+  if (page.split(DATA_BLOCK).length !== 2) throw new BuildError("the page template must hold exactly one empty sign-off-data block");
   let shell = page;
   if (theme !== null) {
     const [head, body, ...extra] = page.split("</head>");
-    if (body === undefined || extra.length) throw new BuildError(`${TEMPLATE} must hold exactly one </head>`);
+    if (body === undefined || extra.length) throw new BuildError("the page template must hold exactly one </head>");
     shell = `${head}${theme}</head>${body}`;
   }
   // The data is inert JSON, so only the shell around it is checked; a plan may quote a URL.
@@ -114,12 +125,17 @@ export function embed(page: string, data: PageData, theme: string | null): strin
   return shell.replace(DATA_BLOCK, () => `<script type="application/json" id="sign-off-data">${inlineJson(data)}</script>`);
 }
 
-/** Writes `<plan>/sign-off.html` and returns its path. Throws `BuildError` on a check error, a bad theme or a network load. */
-export async function build(planDir: string): Promise<string> {
+/** The theme's `<style>`, or null. Throws `BuildError` when `check` fails or the theme is bad. */
+async function checkedTheme(planDir: string): Promise<string | null> {
   const report = await check(planDir);
   if (report.errors.length) throw new BuildError(`check failed:\n${report.errors.map((e) => `  ${e.rule}: ${e.message}`).join("\n")}`);
   const theme = themePath(planDir);
-  const css = theme === null ? null : themeCss(readFileSync(theme, "utf8"), theme);
+  return theme === null ? null : themeCss(readFileSync(theme, "utf8"), theme);
+}
+
+/** Writes `<plan>/sign-off.html` and returns its path. Throws `BuildError` on a check error, a bad theme or a network load. */
+export async function build(planDir: string): Promise<string> {
+  const css = await checkedTheme(planDir);
   const page = embed(readFileSync(TEMPLATE, "utf8"), await pageData(planDir), css);
   const out = join(planDir, PAGE);
   writeFileSync(out, page);
@@ -154,15 +170,12 @@ export async function isStale(planDir: string): Promise<boolean> {
   return (await inputsOf(planDir)).some((f) => statSync(f).mtimeMs > built);
 }
 
-/** The record copy always opens full: the page obeys this tag over the saved view and never saves over it. */
-export const FULL_VIEW_META = '<meta name="sign-off-view" content="full">';
-
-/** Rebuilds the page with the log as it stands and copies it to `out`, `reviews/<planRev>.html`, with the full-view tag added: the
- *  record of what the reader saw and decided at that rev. */
+/** Rebuilds the page with the log as it stands and copies it to `out`, `reviews/<planRev>.html`: the record of what the reader saw
+ *  and decided at that rev. */
 export async function snapshot(planDir: string, out: string): Promise<void> {
   const html = readFileSync(await build(planDir), "utf8");
   mkdirSync(dirname(out), { recursive: true });
-  writeFileSync(out, html.replace("</head>", () => `${FULL_VIEW_META}</head>`));
+  writeFileSync(out, html);
 }
 
 export function runBuild([planDir, ...rest]: string[]): Promise<number> {
@@ -173,6 +186,45 @@ export function runBuild([planDir, ...rest]: string[]): Promise<number> {
     }
     const out = await build(planDir);
     console.log(`wrote ${out} (${(Bun.file(out).size / 1024).toFixed(1)} KB)`);
+    return 0;
+  });
+}
+
+/** The views this plan has a block for, in manifest order. */
+const partsOf = (manifest: Manifest): View[] => [...new Set(manifest.items.flatMap((it) => (it.body ?? []).map((b) => b.view)))];
+
+/** Writes every `view` block of the plan alone on the part page, to `out` or `<plan>/parts/<view>.html`, and returns its path.
+ *  Throws `BuildError` for a view the plan has no block for, and as `build` does. */
+export async function renderPart(planDir: string, view: string, out?: string): Promise<string> {
+  const css = await checkedTheme(planDir);
+  const data = await pageData(planDir);
+  const parts = partsOf(data.manifest);
+  const part = parts.find((p) => p === view);
+  if (!part) throw new BuildError(`this plan has no ${view} block; its parts are: ${parts.join(", ")}`);
+  const blocks = Object.fromEntries(Object.entries(data.blocks).filter(([, b]) => b.view === part));
+  const partData: PartData = { ...data, blocks, part };
+  const page = embed(readFileSync(PART_TEMPLATE, "utf8"), partData, css);
+  const file = out ?? join(planDir, "parts", `${part}.html`);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, page);
+  return file;
+}
+
+export function runRender(args: string[]): Promise<number> {
+  return guarded(async () => {
+    let parsed;
+    try {
+      parsed = parseArgs({ args, allowPositionals: true, options: { part: { type: "string" }, out: { type: "string" } } });
+    } catch {
+      parsed = null;
+    }
+    const [planDir, ...rest] = parsed?.positionals ?? [];
+    const view = parsed?.values.part;
+    if (!planDir || rest.length || !view) {
+      console.error(RENDER_USAGE);
+      return 2;
+    }
+    console.log(await renderPart(planDir, view, parsed?.values.out));
     return 0;
   });
 }

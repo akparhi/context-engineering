@@ -144,7 +144,7 @@ describe("sign-off open", () => {
     const log = logOf(dir);
     expect(log.trim().split("\n")).toHaveLength(3);
     expect(readdirSync(join(dir, "reviews")).filter((f) => f.endsWith(".review.txt"))).toHaveLength(1);
-    expect(readFileSync(join(dir, "reviews", `${(await computeRevs(dir)).planRev}.html`), "utf8")).toContain('<meta name="sign-off-view" content="full">');
+    expect(readFileSync(join(dir, "reviews", `${(await computeRevs(dir)).planRev}.html`), "utf8")).toContain('id="sign-off-data"');
     const again = await post(url, text, fromPage(url, nonce));
     expect((await again.json()).reviews[0].appended).toBe(0);
     expect(logOf(dir)).toBe(log);

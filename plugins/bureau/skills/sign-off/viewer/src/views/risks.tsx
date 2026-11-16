@@ -1,10 +1,10 @@
 import type { Default, Risk, RisksInput } from "../../../scripts/views.ts"
 import { COPY } from "../copy.ts"
-import { Fold, IdChip, LooseEnd, Subhead } from "../parts.tsx"
-import type { RowLine, ViewProps } from "../views.tsx"
+import { IdChip, LooseEnd, Subhead } from "../parts.tsx"
+import type { ViewProps } from "../views.tsx"
 
-/** The risks the plan accepts, beside the defaults it chose without asking. Slim folds each risk's bound behind its title and the
- *  defaults to a count. A risk that touches no requirement keeps that loose end beside its title. */
+/** The risks the plan accepts, beside the defaults it chose without asking. A risk that touches no requirement keeps that loose
+ *  end beside its title. */
 export function RisksView({ input }: ViewProps<RisksInput>) {
   const r = COPY.risks
   return (
@@ -18,9 +18,9 @@ export function RisksView({ input }: ViewProps<RisksInput>) {
       {input.defaults.length > 0 && (
         <section>
           <Subhead>{r.defaults}</Subhead>
-          <Fold part="defaults" summary={<span className="text-sm leading-6">{r.defaultsFolded(input.defaults.length)}</span>}>
+          <div>
             <ul className="divide-y divide-border/70 border-y border-border/70">{input.defaults.map((d) => <DefaultRow key={d.id} value={d} />)}</ul>
-          </Fold>
+          </div>
         </section>
       )}
     </div>
@@ -35,9 +35,9 @@ function RiskRow({ risk: k }: { risk: Risk }) {
       <span className="mt-0.5"><IdChip id={k.id} /></span>
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2"><span className="font-medium">{k.title}</span>{!k.serves.length && <LooseEnd>{COPY.risks.servesNone}</LooseEnd>}</div>
-        <Fold part="bound" row={k.id} summary={<span className="text-sm leading-6 text-muted-ink">{COPY.risks.bound}</span>}>
+        <div>
           <RiskBound risk={k} />
-        </Fold>
+        </div>
       </div>
     </li>
   )
@@ -61,9 +61,3 @@ function DefaultRow({ value: d }: { value: Default }) {
     </li>
   )
 }
-
-/** The folded Risks card: how many risks and defaults, and a loose end for each risk that touches no requirement. */
-export const risksRow = ({ risks, defaults }: RisksInput): RowLine => ({
-  says: COPY.risks.row(risks.length, defaults.length),
-  loose: risks.filter((k) => !k.serves.length).map((k) => COPY.risks.servesNoneFor(k.id)),
-})

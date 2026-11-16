@@ -2,9 +2,9 @@ import { useState, type ReactNode } from "react"
 import { ArrowRightIcon, CheckIcon, FlaskConicalIcon, GlobeIcon, LayersIcon, MonitorIcon, type LucideIcon } from "lucide-react"
 import type { Acceptance, RuleWords, Test, TraceInput } from "../../../scripts/views.ts"
 import { COPY } from "../copy.ts"
-import { Fold, FullOnly, IdChip, LooseEnd, usePage, useRowOpened } from "../parts.tsx"
+import { IdChip, LooseEnd } from "../parts.tsx"
 import type { Ref } from "../plan.ts"
-import type { RowLine, ViewProps } from "../views.tsx"
+import type { ViewProps } from "../views.tsx"
 
 type Layer = Test["type"]
 type Row = TraceInput["rows"][number]
@@ -22,8 +22,6 @@ const LINK = "rounded-md text-link underline decoration-link/30 underline-offset
 const NAMED = "bg-secondary text-foreground ring-1 ring-foreground/10"
 const PROPOSED = "border border-dashed border-foreground/35 text-muted-ink"
 const HOLE = "rounded-lg border border-dashed border-foreground/20"
-/** One fold per acceptance row holds its tests and the passing-check note, so the two open together. */
-const TESTS = "tests"
 
 function LayerLabel({ layer, className = "" }: { layer: Layer; className?: string }) {
   const Icon = LAYER_ICON[layer]
@@ -69,7 +67,7 @@ function TestChip({ t, open, onToggle, detailId }: { t: Test; open: boolean; onT
 }
 
 /** What one test proves, opened from its chip. */
-function TestDetail({ t, id }: { t: Test; id: string }) {
+export function TestDetail({ t, id }: { t: Test; id: string }) {
   return (
     <div id={id} className="col-span-full rounded-2xl bg-muted/50 px-3 py-2.5 text-sm leading-6 lg:col-start-2 dark:bg-muted/30" data-part="test-detail">
       <div className="flex flex-wrap items-center gap-2"><IdChip id={t.id} /><span className="font-mono text-xs font-medium">{t.name}</span><LayerLabel layer={t.type} /><IdChip id={t.unit} /></div>
@@ -109,33 +107,14 @@ function RowNotes({ a, rules, go }: { a: Acceptance } & Omit<Joins, "prsOf">) {
   return (
     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs leading-5 text-muted-ink" data-part="row-notes">
       {a.addedFor && <span>{s.addedFor} {rule(a.addedFor)}.</span>}
-      {quiet(a, words) ? <Fold part={TESTS} row={a.id}>{guard}</Fold> : guard}
+      {quiet(a, words) ? <div>{guard}</div> : guard}
       {a.screens?.length ? <span className="inline-flex flex-wrap items-center gap-1">{s.seenOn} {a.screens.map((id) => <IdChip key={id} id={id} />)}</span> : null}
     </div>
   )
 }
 
-/** A guard whose rule the model check shows holding is a passing check: slim folds it with the row's tests. A broken rule, one not
- *  checked, and a parked rule on a row with no requirement stay in view. */
+/** A guard whose rule the model check shows holding is a passing check, drawn in a box of its own. */
 const quiet = (a: Acceptance, words?: RuleWords) => words?.outcome === "holds" && !(a.requirement === null && words.parked)
-
-/** Slim's one line for a row's tests: each layer with how many tests it has, and "none" for a hole. */
-function Coverage({ tests }: { tests: Test[] }) {
-  return (
-    <span className="text-sm leading-6">
-      {LAYERS.map((l, i) => {
-        const ts = tests.filter((t) => t.type === l), proposed = ts.filter((t) => t.proposed).length
-        return <span key={l}>{i > 0 && " "}<span className="text-muted-ink">{s.layers[l]}</span> {ts.length ? s.count(ts.length - proposed, proposed) : s.none}.</span>
-      })}
-    </span>
-  )
-}
-
-/** Slim has no lane header over the tests, since a closed row has no columns, so an open row names its own. */
-function LayerHeads() {
-  const { slim } = usePage()
-  return slim.view === "slim" ? <>{LAYERS.map((l) => <span key={l} className="hidden lg:block"><LayerLabel layer={l} /></span>)}<span className="hidden lg:block" /></> : null
-}
 
 function AccRow({ a, tests, prsOf, rules, go }: { a: Acceptance; tests: Test[] } & Joins) {
   const [open, setOpen] = useState<string | null>(null)
@@ -146,9 +125,8 @@ function AccRow({ a, tests, prsOf, rules, go }: { a: Acceptance; tests: Test[] }
     <li data-ref={a.id} className={`${TRACE_GRID} scroll-mt-28 border-t border-border/60 px-3 py-3`}>
       <span className="pt-0.5"><IdChip id={a.id} /></span>
       <div className="min-w-0"><Sentence a={a} /><RowNotes a={a} rules={rules} go={go} /></div>
-      <Fold part={TESTS} row={a.id} summary={<Coverage tests={tests} />} className="col-start-2 min-w-0 lg:col-span-5 lg:col-start-3">
+      <div className="col-start-2 min-w-0 lg:col-span-5 lg:col-start-3">
         <div className="grid gap-y-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_5.5rem] lg:gap-x-4">
-          <LayerHeads />
           {LAYERS.map((l) => {
             const ts = tests.filter((t) => t.type === l)
             return (
@@ -161,21 +139,19 @@ function AccRow({ a, tests, prsOf, rules, go }: { a: Acceptance; tests: Test[] }
               </div>
             )
           })}
-          <FullOnly>
-            <div className="flex min-w-0 items-start gap-3" data-part="built-in">
-              <span className="w-24 shrink-0 pt-0.5 text-xs text-muted-ink lg:hidden">{s.builtIn}</span>
-              <div className="flex flex-wrap gap-x-2 gap-y-1 lg:flex-col">
-                {units.map((u) => (
-                  <span key={u} className="inline-flex items-center gap-1">
-                    <IdChip id={u} />
-                    {(prsOf[u] ?? []).map((p) => <span key={p} className="inline-flex items-center gap-1"><ArrowRightIcon aria-hidden className="size-3 text-muted-ink" /><button type="button" className={`${LINK} font-mono text-xs`} onClick={() => go(p)}>{p}</button></span>)}
-                  </span>
-                ))}
-              </div>
+          <div className="flex min-w-0 items-start gap-3" data-part="built-in">
+            <span className="w-24 shrink-0 pt-0.5 text-xs text-muted-ink lg:hidden">{s.builtIn}</span>
+            <div className="flex flex-wrap gap-x-2 gap-y-1 lg:flex-col">
+              {units.map((u) => (
+                <span key={u} className="inline-flex items-center gap-1">
+                  <IdChip id={u} />
+                  {(prsOf[u] ?? []).map((p) => <span key={p} className="inline-flex items-center gap-1"><ArrowRightIcon aria-hidden className="size-3 text-muted-ink" /><button type="button" className={`${LINK} font-mono text-xs`} onClick={() => go(p)}>{p}</button></span>)}
+                </span>
+              ))}
             </div>
-          </FullOnly>
+          </div>
         </div>
-      </Fold>
+      </div>
       {shown && <TestDetail t={shown} id={detailId} />}
     </li>
   )
@@ -189,10 +165,8 @@ function Lane({ row, ...joins }: { row: Row } & Joins) {
         <div className="col-span-2 flex min-w-0 flex-wrap items-center gap-2 text-sm">
           {r ? <><IdChip id={r.id} /><span className="min-w-0 font-medium">{r.title}</span></> : <><LooseEnd>{s.noRequirement}</LooseEnd><span className="font-medium">{s.checksNothing}</span></>}
         </div>
-        <FullOnly>
-          {LAYERS.map((l) => <span key={l} className="hidden lg:block"><LayerLabel layer={l} /></span>)}
-          <span className="hidden text-xs text-muted-ink lg:block">{s.builtIn}</span>
-        </FullOnly>
+        {LAYERS.map((l) => <span key={l} className="hidden lg:block"><LayerLabel layer={l} /></span>)}
+        <span className="hidden text-xs text-muted-ink lg:block">{s.builtIn}</span>
       </div>
       <ul>{row.acceptance.map((a) => <AccRow key={a.id} a={a} tests={row.tests.filter(provesRow(a))} {...joins} />)}</ul>
     </section>
@@ -201,36 +175,14 @@ function Lane({ row, ...joins }: { row: Row } & Joins) {
 
 /** Every requirement lane at once: each acceptance row, the tests that prove it in four fixed layer columns, and the unit that builds it. */
 export function TraceView({ input, go }: ViewProps<TraceInput>) {
-  const testsOpened = useRowOpened(TESTS)
   const tests = [...new Map(input.rows.flatMap((r) => r.tests).map((t) => [t.id, t])).values()]
   const acceptance = input.rows.flatMap((r) => r.acceptance.map((a) => ({ a, tests: r.tests.filter(provesRow(a)) })))
   return (
     <>
       <LayerCounts tests={tests} acceptance={acceptance} />
       <Legend />
-      <Fold part="about" keep={testsOpened}><p className="mt-3 max-w-[78ch] text-[13px] leading-5 text-muted-foreground" data-part="about">{s.about}</p></Fold>
+      <div><p className="mt-3 max-w-[78ch] text-[13px] leading-5 text-muted-foreground" data-part="about">{s.about}</p></div>
       <div className="mt-5 flex flex-col gap-4">{input.rows.map((row) => <Lane key={row.requirement?.id ?? "none"} row={row} prsOf={input.prsOf} rules={input.rules} go={go} />)}</div>
     </>
   )
-}
-
-const rowsOf = ({ rows }: TraceInput) => rows.flatMap((r) => r.acceptance.map((a) => ({ a, requirement: r.requirement, tests: r.tests.filter(provesRow(a)) })))
-
-/** The folded Acceptance card: rows and tests, then the loose ends a closed row must keep: rows that check no requirement, rows
- *  with no test, and rows guarding a rule the model check breaks or has not run. */
-export function traceRow(input: TraceInput): RowLine {
-  const rows = rowsOf(input)
-  const tests = new Set(input.rows.flatMap((r) => r.tests).map((t) => t.id))
-  const proposed = new Set(input.rows.flatMap((r) => r.tests).filter((t) => t.proposed).map((t) => t.id))
-  const guarded = rows.filter((r) => r.a.guards).map((r) => input.rules[r.a.guards!.replace(/^rule:/, "")]?.outcome ?? null)
-  const count = (n: number, line: (n: number) => string) => (n ? [line(n)] : [])
-  return {
-    says: s.row(rows.length, tests.size, proposed.size),
-    loose: [
-      ...count(rows.filter((r) => r.requirement === null).length, s.laneNoRequirement),
-      ...count(rows.filter((r) => r.tests.length === 0).length, s.rowsNoTest),
-      ...count(guarded.filter((o) => o === "broken").length, s.rowsBroken),
-      ...count(guarded.filter((o) => o !== "broken" && o !== "holds").length, s.rowsUnchecked),
-    ],
-  }
 }

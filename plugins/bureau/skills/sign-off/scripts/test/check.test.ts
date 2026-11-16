@@ -171,6 +171,6 @@ describe("the check command", () => {
   test("exits 2 and lists every command on an unknown command", () => {
     const { code, err } = run("draw");
     expect(code).toBe(2);
-    expect(err.match(/^usage: sign-off \w+/gm)).toEqual(["usage: sign-off check", "usage: sign-off ingest", "usage: sign-off status", "usage: sign-off record", "usage: sign-off revise", "usage: sign-off open", "usage: sign-off stop", "usage: sign-off build"]);
+    expect(err.match(/^usage: sign-off \w+/gm)).toEqual(["usage: sign-off check", "usage: sign-off ingest", "usage: sign-off status", "usage: sign-off record", "usage: sign-off revise", "usage: sign-off open", "usage: sign-off stop", "usage: sign-off build", "usage: sign-off render"]);
   });
 });

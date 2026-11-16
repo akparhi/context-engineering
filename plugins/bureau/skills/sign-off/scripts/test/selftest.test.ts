@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { findChromium, NoBrowser } from "../chromium.ts";
-import { checkPage, withFullView } from "../selftest.ts";
+import { checkPage } from "../selftest.ts";
 
 const ENTRY = join(import.meta.dir, "../sign-off");
 const scratch = mkdtempSync(join(tmpdir(), "sign-off-selftest-test-"));
@@ -30,15 +30,16 @@ describe("check --selftest", () => {
     const { lines, err, code } = await selftest();
     expect({ err, code }).toEqual({ err: "", code: 0 });
     expect(lines.map((l) => l.match(/^(\w+)\s+(ok|skip|FAIL):/)?.slice(1, 3).join(" "))).toEqual(
-      ["build ok", "ingest ok", "status ok", `browser ${chromium ? "ok" : "skip"}`, undefined]);
+      ["build ok", "ingest ok", "status ok", `browser ${chromium ? "ok" : "skip"}`, `part ${chromium ? "ok" : "skip"}`, undefined]);
     expect(lines[2]).toMatch(/^status +ok: ([1-9]\d*) of \1 reviewed items approved or answered, settled$/);
-    expect(lines.at(-1)).toBe(chromium ? "selftest passed" : "selftest passed, browser skipped");
+    expect(lines.at(-1)).toBe(chromium ? "selftest passed" : "selftest passed, browser and part skipped");
   }, 60_000);
 
-  test("with no browser, skips the browser step and still exits 0", async () => {
+  test("with no browser, skips the browser and part steps and still exits 0", async () => {
     const { lines, code } = await selftest({ SIGN_OFF_CHROMIUM: join(scratch, "no-such-chrome") });
+    const missing = `SIGN_OFF_CHROMIUM=${join(scratch, "no-such-chrome")} does not exist`;
     expect(code).toBe(0);
-    expect(lines.slice(-2)).toEqual([`browser skip: SIGN_OFF_CHROMIUM=${join(scratch, "no-such-chrome")} does not exist`, "selftest passed, browser skipped"]);
+    expect(lines.slice(-3)).toEqual([`browser skip: ${missing}`, `part    skip: ${missing}`, "selftest passed, browser and part skipped"]);
   }, 60_000);
 });
 
@@ -66,12 +67,9 @@ describe.skipIf(chromium === null)("checkPage", () => {
     await expect(checkPage(binary, url)).rejects.toThrow("1 console errors: boom");
   }, 30_000);
 
-  test("sees a diagram the slim default folds away, because the page boots with the full view saved", async () => {
-    const file = join(scratch, "folded.html");
-    const draw = `document.body.insertAdjacentHTML("beforeend", \`${chart(12)}\`)`;
-    writeFileSync(file, `<!doctype html><html><head><title>plan</title></head><body><script>if (localStorage.getItem("sign-off:view") === "full") ${draw}</script></body></html>`);
-    await expect(checkPage(binary, pathToFileURL(file).href)).rejects.toThrow("no diagram text drew");
-    expect(await checkPage(binary, withFullView(file))).toStartWith("1 diagram texts, smallest 12.0 px");
+  test("fails when a diagram mounts inside a hidden box and measures empty", async () => {
+    const url = page("hidden", `${chart(12)}<div style="display:none">${chart(12)}</div>`);
+    await expect(checkPage(binary, url)).rejects.toThrow("1 diagrams drew empty: statechart ? on the first sub-step (0x0, 0 nodes)");
   }, 30_000);
 
   test("fails when no diagram draws", async () => {

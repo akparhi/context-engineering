@@ -1,12 +1,12 @@
-import { useState, type ReactNode } from "react"
+import type { ReactNode } from "react"
 import { ChevronDownIcon, LockIcon } from "lucide-react"
 import type { Mark } from "../../../scripts/model.ts"
 import type { Endpoint, EndpointsInput } from "../../../scripts/views.ts"
 import { Badge } from "@/components/ui/badge"
 import { COPY } from "../copy.ts"
-import { Fold, FullOnly, IdChip, Subhead } from "../parts.tsx"
+import { IdChip, Subhead } from "../parts.tsx"
 import type { Ref } from "../plan.ts"
-import type { RowLine, ViewProps } from "../views.tsx"
+import type { ViewProps } from "../views.tsx"
 import { BuiltIn } from "./components.tsx"
 
 type Access = NonNullable<EndpointsInput["access"]>
@@ -64,20 +64,15 @@ function AccessPanel({ access, envelope, go }: { access?: Access; envelope?: str
         </dl>
       )}
       {envelope && (
-        <Fold part="envelope" className={access ? "mt-1.5" : undefined}>
+        <div className={access ? "mt-1.5" : undefined}>
           <dl className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 text-sm leading-6">
             <dt className="text-muted-ink" data-part="envelope">{s.wrapped}</dt><dd className={`${MONO} leading-6 [overflow-wrap:anywhere]`} data-part="envelope">{envelope}</dd>
           </dl>
-        </Fold>
+        </div>
       )}
     </section>
   )
 }
-
-/** What the caller can send, by name. Types, defaults and limits are the implementer's, and fold behind Show. */
-const ParamNames = ({ narrows }: { narrows: NonNullable<Endpoint["narrows"]> }) => (
-  <span className="text-sm leading-6"><span className="text-muted-ink">{s.sends}.</span> {s.sent(narrows.map((n) => n.name))}</span>
-)
 
 function Params({ narrows }: { narrows: NonNullable<Endpoint["narrows"]> }) {
   return (
@@ -104,9 +99,8 @@ const StatusCode = ({ status }: { status: number }) => (
   <span className={`mt-px inline-flex h-5 w-10 shrink-0 items-center justify-center rounded-md bg-secondary font-mono text-xs font-medium ring-1 ring-foreground/10 ${status < 400 ? "text-foreground" : "text-muted-ink"}`}>{status}</span>
 )
 
-/** The status, name and sentence stay. The requirement chips and the shape name are cross-references: slim draws them only when the
- *  outcome's shape is open. */
-function OutcomeLine({ o, open }: { o: Outcome; open: boolean }) {
+/** The status, name and sentence, then the requirement chips and the shape name. */
+function OutcomeLine({ o }: { o: Outcome }) {
   const refs = (o.serves?.length || o.shape) && (
     <span className="mt-1 flex flex-wrap items-center gap-1" data-part="outcome-refs">
       <Chips ids={o.serves} />
@@ -116,7 +110,7 @@ function OutcomeLine({ o, open }: { o: Outcome; open: boolean }) {
   return (
     <span className="min-w-0 flex-1 text-sm leading-5">
       <span className="font-medium">{o.title}.</span> <span className="text-muted-foreground">{o.when}</span>
-      {open ? refs : <FullOnly>{refs}</FullOnly>}
+      {refs}
     </span>
   )
 }
@@ -140,14 +134,13 @@ function Fields({ body, go }: { body: NonNullable<Outcome["body"]>; go: Go }) {
 }
 
 function OutcomeRow({ o, shapes, go }: { o: Outcome; shapes: Record<string, string>; go: Go }) {
-  const [open, setOpen] = useState(false)
   const shape = o.shape ? shapes[o.shape] : undefined
-  if (!shape && !o.body?.length) return <li className="flex items-start gap-3 px-2.5 py-2"><StatusCode status={o.status} /><OutcomeLine o={o} open={false} /></li>
+  if (!shape && !o.body?.length) return <li className="flex items-start gap-3 px-2.5 py-2"><StatusCode status={o.status} /><OutcomeLine o={o} /></li>
   return (
     <li>
-      <details onToggle={(e) => setOpen(e.currentTarget.open)} className="group/details rounded-2xl hover:bg-muted/50 open:bg-muted/50 dark:open:bg-muted/30">
+      <details className="group/details rounded-2xl hover:bg-muted/50 open:bg-muted/50 dark:open:bg-muted/30">
         <summary className="flex cursor-pointer list-none items-start gap-3 rounded-2xl px-2.5 py-2 outline-none focus-visible:ring-2 focus-visible:ring-focus [&::-webkit-details-marker]:hidden">
-          <StatusCode status={o.status} /><OutcomeLine o={o} open={open} />
+          <StatusCode status={o.status} /><OutcomeLine o={o} />
           <ChevronDownIcon className="mt-0.5 size-4 shrink-0 text-muted-ink motion-safe:transition-transform group-open/details:rotate-180" />
         </summary>
         <div className="mx-2.5 pb-2.5">
@@ -173,20 +166,18 @@ function EndpointCard({ e, shapes, go }: { e: Call; shapes: Record<string, strin
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-ink">
           <span className="inline-flex flex-wrap items-center gap-1.5">{s.serves} <Chips ids={e.serves} /></span>
           <span data-part="who">{s.who} <span className="text-foreground">{e.who.text}</span> <MarkTag mark={e.who.mark} /></span>
-          <FullOnly>
-            {e.readBy.length > 0 && (
-              <span data-part="read-by">{s.readBy} {e.readBy.map((c, i) => <span key={c.id}>{i > 0 && ", "}<button type="button" className={`${LINK} font-mono`} onClick={() => go(c.id)}>{c.name}</button></span>)}</span>
-            )}
-            {e.builtIn.length > 0 && <span data-part="built-in">{s.builtIn} <BuiltIn builds={e.builtIn} go={go} /></span>}
-          </FullOnly>
+          {e.readBy.length > 0 && (
+            <span data-part="read-by">{s.readBy} {e.readBy.map((c, i) => <span key={c.id}>{i > 0 && ", "}<button type="button" className={`${LINK} font-mono`} onClick={() => go(c.id)}>{c.name}</button></span>)}</span>
+          )}
+          {e.builtIn.length > 0 && <span data-part="built-in">{s.builtIn} <BuiltIn builds={e.builtIn} go={go} /></span>}
         </div>
         {e.noTransition && <p className="mt-1.5 max-w-[70ch] text-xs leading-5 text-muted-ink">{s.noTransition} {e.noTransition}</p>}
       </div>
       <div className={narrows.length ? "grid divide-border/70 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:divide-x max-lg:divide-y" : "grid"}>
         {narrows.length > 0 && (
-          <Fold part="params" row={e.id} className="px-4 py-3 sm:px-5" summary={<ParamNames narrows={narrows} />}>
+          <div className="px-4 py-3 sm:px-5">
             <Params narrows={narrows} />
-          </Fold>
+          </div>
         )}
         <div className="px-4 py-3 sm:px-5">
           <Subhead extra={opens ? s.openShape : undefined}>{s.answers}</Subhead>
@@ -210,9 +201,3 @@ export function EndpointsView({ input, go }: ViewProps<EndpointsInput>) {
     </>
   )
 }
-
-/** The folded API card: how many calls, and how many are new or changed. The view draws no loose end of its own. */
-export const endpointsRow = ({ endpoints }: EndpointsInput): RowLine => ({
-  says: s.row(endpoints.length, endpoints.filter((e) => e.mark === "new").length, endpoints.filter((e) => e.mark === "changed").length),
-  loose: [],
-})

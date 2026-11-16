@@ -3,13 +3,12 @@ import { CheckIcon, CopyIcon, DownloadIcon, Undo2Icon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ACT_COPY, COPY } from "./copy.ts"
+import { readName, saveName, saveShown } from "./changed.ts"
 import { usePage } from "./parts.tsx"
 import { actOf, type PageData } from "./plan.ts"
 import { buildReviewText, resultOf, tally } from "./review.ts"
 import type { Act } from "../../scripts/model.ts"
 import type { SubmitView } from "../../scripts/manifest.ts"
-
-const NAME_KEY = "sign-off:name"
 
 /** What the server recorded: the items whose verdicts count now, the ones that changed since this page was built, and how many
  *  events were new to the log. */
@@ -58,25 +57,14 @@ export function saveAs(name: string, text: string, type: string) {
   URL.revokeObjectURL(a.href)
 }
 
-/** The name this browser saved at Submit. The shell also reads it at boot, to tell what changed since this reader decided. */
-export const readName = () => { try { return localStorage.getItem(NAME_KEY) ?? "" } catch { return "" } }
-const saveName = (name: string) => { try { localStorage.setItem(NAME_KEY, name) } catch { /* the name only labels this review */ } }
-// yagni: per browser, like the name; a field on the submit event if a reader moving browsers must see what changed.
-const shownKey = (plan: string) => `sign-off:${plan}:shown`
-/** The item revs this browser showed at the reader's last Submit of the plan, so the next revision opens what changed since. */
-export function readShown(plan: string): Record<string, string> | null {
-  try {
-    const saved: unknown = JSON.parse(localStorage.getItem(shownKey(plan)) ?? "null")
-    return saved && typeof saved === "object" && !Array.isArray(saved) && Object.values(saved).every((v) => typeof v === "string") ? saved as Record<string, string> : null
-  } catch { return null }
-}
-const saveShown = (plan: string, items: Record<string, string>) => { try { localStorage.setItem(shownKey(plan), JSON.stringify(items)) } catch { /* nothing opens as changed next time */ } }
+/** The page draws every part, so the record's view is always full with nothing left unopened. The record keeps its schema, so
+ *  older logs and readers still parse it. */
+const VIEW: SubmitView = { mode: "full", unopened: [], count: 0 }
 
 type Stage = { kind: "confirm" } | { kind: "sending" } | { kind: "text"; text: string } | { kind: "sent"; outcome: Outcome }
 
-/** A native modal: `showModal` keeps focus inside, makes the page inert and closes on Escape. `onClose` runs however it closes.
- *  `record` is the view and its never-opened folds, taken when the dialog opened, and goes into the payload as it is. */
-export function SubmitDialog({ acts, record, onShowAll, onClose }: { acts: Act[]; record: SubmitView; onShowAll: () => void; onClose: () => void }) {
+/** A native modal: `showModal` keeps focus inside, makes the page inert and closes on Escape. `onClose` runs however it closes. */
+export function SubmitDialog({ acts, onClose }: { acts: Act[]; onClose: () => void }) {
   const { data, review } = usePage()
   const ref = useRef<HTMLDialogElement>(null)
   const [name, setName] = useState(readName)
@@ -85,7 +73,6 @@ export function SubmitDialog({ acts, record, onShowAll, onClose }: { acts: Act[]
   const [said, setSaid] = useState("")
   const m = data.manifest, revision = m.revision ?? ""
   const all = tally(review, m.items), result = resultOf(all)
-  const unopenedCount = record.count ?? record.unopened.length
 
   useEffect(() => { ref.current?.showModal() }, [])
 
@@ -94,7 +81,7 @@ export function SubmitDialog({ acts, record, onShowAll, onClose }: { acts: Act[]
     if (!by) { setEmpty(true); document.getElementById("review-name")?.focus(); return }
     saveName(by)
     saveShown(m.id, data.revs.items)
-    const text = buildReviewText(review, data, by, new Date().toISOString(), record)
+    const text = buildReviewText(review, data, by, new Date().toISOString(), VIEW)
     setStage({ kind: "sending" })
     const outcome = await sendToAgent(text)
     setStage(outcome ? { kind: "sent", outcome } : { kind: "text", text })
@@ -113,12 +100,6 @@ export function SubmitDialog({ acts, record, onShowAll, onClose }: { acts: Act[]
         </div>
         <div className="px-5 py-5 sm:px-6">
           <Covers data={data} acts={acts} />
-          {record.mode === "slim" && (
-            <p className="mt-2 flex flex-wrap items-center gap-x-2 text-xs leading-5 text-muted-ink" data-part="unopened" data-count={unopenedCount}>
-              {COPY.submit.unopened(unopenedCount)}
-              {unopenedCount > 0 && stage.kind === "confirm" && <Button variant="ghost" size="xs" onClick={onShowAll}>{COPY.submit.showAll}</Button>}
-            </p>
-          )}
           <div className="mt-4 flex flex-wrap items-start gap-2.5">
             {result === "approved" ? <Badge variant="pass"><CheckIcon />{COPY.submit.result.approved}</Badge>
               : result === "partial" ? <Badge variant="ask">{COPY.submit.result.partial}</Badge>

@@ -6,9 +6,9 @@ import type { ReportJson, StatechartInput } from "../../../scripts/views.ts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { COPY } from "../copy.ts"
-import { Fold, IdChip, LooseEnd, Subhead, useOpenFold } from "../parts.tsx"
+import { IdChip, LooseEnd, Subhead } from "../parts.tsx"
 import type { Links, Ref } from "../plan.ts"
-import type { RowLine, ViewProps } from "../views.tsx"
+import type { ViewProps } from "../views.tsx"
 
 type Run = StatechartInput["runs"][number]
 type Status = "holds" | "breaks" | "unchecked"
@@ -31,18 +31,8 @@ function statusOf(report: ReportJson | null, rule: string): Status {
 const noteOf = (input: StatechartInput, run: string, rule: string): Note | undefined => input.notes?.[`${run}:${rule}`]
 const isFixed = (input: StatechartInput, run: string, rule: string) => noteOf(input, run, rule)?.verdict === "fixed"
 const ruleNames = (input: StatechartInput) => Object.keys(input.says).filter((n) => !input.hide?.includes(n))
-/** A rule that guards no requirement and is not parked: a loose end, so slim never folds it away. */
+/** A rule that guards no requirement and is not parked: a loose end. */
 const guardsNone = (input: StatechartInput, rule: string) => !input.serves?.[rule]?.length && !input.parked?.[rule]
-
-/** How slim folds one run. `breaks`: the chart folds to the way a rule breaks, and the rules that hold to a count. `hold`: every rule
- *  holds, so the chart and the rules fold together to that count. `show`: no chart, no report or a rule not checked, so it all shows. */
-type ChartFold = "breaks" | "hold" | "show"
-function chartFold(input: StatechartInput, run: Run, chart: RunLayout | undefined): ChartFold {
-  // With no report every rule is not checked.
-  const status = ruleNames(input).map((n) => statusOf(run.report, n))
-  if (!chart) return "show"
-  return status.includes("breaks") ? "breaks" : status.includes("unchecked") ? "show" : "hold"
-}
 
 const redRule = (look: Look, chart: RunLayout | undefined) => (look.bug ?? chart?.focus ?? null)
 
@@ -347,8 +337,8 @@ function RuleRow({ name, run, input, chart, stepping, onStep }: {
 
 const RANK: Record<Status, number> = { breaks: 0, unchecked: 1, holds: 2 }
 
-function Rules({ run, input, chart, look, fold, onBug }: {
-  run: Run; input: StatechartInput; chart: RunLayout | undefined; look: Look; fold: ChartFold; onBug: (rule: string) => void
+function Rules({ run, input, chart, look, onBug }: {
+  run: Run; input: StatechartInput; chart: RunLayout | undefined; look: Look; onBug: (rule: string) => void
 }) {
   const names = ruleNames(input)
     .sort((a, b) => RANK[statusOf(run.report, a)] - RANK[statusOf(run.report, b)])
@@ -360,9 +350,9 @@ function Rules({ run, input, chart, look, fold, onBug }: {
       <Subhead extra={s.rulesCount(rest.length, holding.length)}>{s.rules}</Subhead>
       {rest.length > 0 && <ul className="grid gap-2 lg:grid-cols-2" data-part="rules-open">{rest.map(row)}</ul>}
       {holding.length > 0 && (
-        <Fold part={fold === "hold" ? "chart" : "rules"} summary={fold === "hold" ? undefined : s.othersHold(holding.length)} className={rest.length ? "mt-2" : ""}>
+        <div className={rest.length ? "mt-2" : ""}>
           <ul className="grid gap-2 lg:grid-cols-2" data-part="rules-holding">{holding.map(row)}</ul>
-        </Fold>
+        </div>
       )}
     </section>
   )
@@ -385,7 +375,6 @@ function ChartSource({ module, chart, checked }: { module: string; chart: RunLay
 export function StatechartView({ input, layout = {}, links, focus, go }: ViewProps<StatechartInput, ChartLayout>) {
   const runs = runsOf(input, layout)
   const [look, setLook] = useState<Look>({ run: runs[0]?.id ?? BARE, all: false, bug: null, step: 0 })
-  const openFold = useOpenFold()
   const run = runs.find((r) => r.id === look.run) ?? runs[0]
   const chart = run && layout[run.id]
   const rule = redRule(look, chart)
@@ -399,7 +388,6 @@ export function StatechartView({ input, layout = {}, links, focus, go }: ViewPro
   if (!run) return null
   const pickRun = (id: string) => setLook((l) => ({ ...l, run: id, bug: null, step: 0 }))
   const bug = (name: string) => {
-    if (look.bug !== name) openFold("chart")
     setLook((l) => (l.bug === name ? { ...l, bug: null, step: 0 } : { ...l, bug: name, step: 1 }))
   }
   const last = look.bug && chart?.paths[look.bug] ? chart.paths[look.bug].states.length - 1 : 0
@@ -413,11 +401,6 @@ export function StatechartView({ input, layout = {}, links, focus, go }: ViewPro
   const back = chart ? chart.arrows.length - drawn : 0
   const decision = rule && run.report ? noteOf(input, run.id, rule)?.decision : undefined
   const module = run.report?.module ?? chart?.states[0]?.id.match(/^sc:([^/]+)\//)?.[1] ?? ""
-  const fold = chartFold(input, run, chart)
-  const shown = rule !== null && statusOf(run.report, rule) === "breaks" ? rule : ruleNames(input).find((n) => statusOf(run.report, n) === "breaks")
-  const broken = run.report?.rules.find((r) => r.name === shown)
-  const way = broken?.outcome === "broken" ? (broken.path ?? []).map((at) => at.state) : []
-  const summary = fold === "breaks" ? <BrokenWay states={way} /> : <span className="text-sm">{s.allHold(ruleNames(input).length)}</span>
 
   return (
     <div onKeyDown={onKey}>
@@ -425,14 +408,14 @@ export function StatechartView({ input, layout = {}, links, focus, go }: ViewPro
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         {runs.length > 1 || run.id !== BARE ? <RunTabs runs={runs} input={input} current={run.id} onPick={pickRun} /> : <span />}
         {chart && (look.all || back > 0) && (
-          <Fold part="chart" keep={fold === "show"}>
+          <div>
             <Button variant={look.all ? "secondary" : "outline"} size="sm" aria-pressed={look.all} onClick={() => setLook((l) => ({ ...l, all: !l.all }))}>
               {look.all ? s.listBack : s.drawAll(chart.arrows.length)}
             </Button>
-          </Fold>
+          </div>
         )}
       </div>
-      <Fold part="chart" keep={fold === "show"} summary={summary} className="mt-3">
+      <div className="mt-3">
         <p className="max-w-[78ch] text-sm leading-6 text-muted-foreground" data-part="reading">
           {run.note && <>{run.note} </>}
           <span className="text-foreground">{!chart ? s.noChart : look.all ? s.readAll(chart.arrows.length) : s.read(drawn, back)}</span>
@@ -444,44 +427,14 @@ export function StatechartView({ input, layout = {}, links, focus, go }: ViewPro
             <div className="mt-3"><ChartLegend chart={chart} graph={graph} red={lit.path !== null} /></div>
           </>
         )}
-      </Fold>
+      </div>
       {look.bug && chart?.paths[look.bug] && (
         <Stepper rule={look.bug} run={run} look={look} input={input} links={links} runs={runs} onStep={step} onRun={pickRun} go={go} />
       )}
       {decision && <Decision decision={decision} />}
-      <Rules run={run} input={input} chart={chart} look={look} fold={fold} onBug={bug} />
+      <Rules run={run} input={input} chart={chart} look={look} onBug={bug} />
       {chart && module && <ChartSource module={module} chart={chart} checked={run.checked} />}
     </div>
   )
 }
 
-/** The folded chart: the states on the way the rule breaks, the last one where it breaks. */
-function BrokenWay({ states }: { states: string[] }) {
-  return (
-    <span className="inline-flex flex-wrap items-center gap-1.5 text-sm" data-part="broken-way">
-      <span className="text-muted-ink">{s.bugPath}</span>
-      {states.map((st, i) => (
-        <Fragment key={i}>
-          {i > 0 && <ArrowRightIcon aria-hidden className="size-3.5 text-muted-foreground" />}
-          <span className={`rounded-lg px-2 py-0.5 font-medium ring-1 ${i === states.length - 1 ? "bg-break-soft text-break-ink ring-break-solid" : "ring-foreground/15"}`}>{st}</span>
-        </Fragment>
-      ))}
-    </span>
-  )
-}
-
-/** The folded Behavior card, from the plan's own run: how many rules and how many hold, then each broken rule, each rule not checked
- *  and each rule that guards no requirement as a loose end. */
-export function statechartRow(input: StatechartInput): RowLine {
-  const run = input.runs[0]
-  const report = run?.report ?? null
-  const names = ruleNames(input)
-  const count = (status: Status) => names.filter((n) => statusOf(report, n) === status).length
-  const breaks = names.filter((n) => statusOf(report, n) === "breaks" && !isFixed(input, run?.id ?? "", n)).length
-  const unchecked = count("unchecked")
-  const unguarded = names.filter((n) => guardsNone(input, n))
-  return {
-    says: s.row(names.length, report ? count("holds") : null),
-    loose: [...(breaks ? [s.breaksLine(breaks)] : []), ...(unchecked ? [s.uncheckedLine(unchecked)] : []), ...unguarded.map((n) => s.guardsNoneLine(input.says[n]))],
-  }
-}

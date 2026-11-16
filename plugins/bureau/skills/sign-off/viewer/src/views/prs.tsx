@@ -4,8 +4,8 @@ import type { PrsInput, PullRequest } from "../../../scripts/views.ts"
 import { Badge } from "@/components/ui/badge"
 import { COPY } from "../copy.ts"
 import type { Links, Ref } from "../plan.ts"
-import { Fold, IdChip, LooseEnd } from "../parts.tsx"
-import type { RowLine, ViewProps } from "../views.tsx"
+import { IdChip, LooseEnd } from "../parts.tsx"
+import type { ViewProps } from "../views.tsx"
 
 /** A pull request and its column in the order: one more than the latest stage it waits for. */
 type Placed = PrsInput["prs"][number] & { stage: number }
@@ -39,23 +39,14 @@ export function PrsView({ input, links, go }: ViewProps<PrsInput>) {
     <>
       <SharedFacts input={input} />
       <section className="mt-6">
-        <Fold part="order" summary={<span className="text-sm leading-6">{orderSays(prs)}</span>}>
+        <div>
           <p className="mb-3 text-sm leading-6 text-muted-foreground">{COPY.prs.count(prs.length, repos.length)}</p>
           <PrLanes prs={prs} repos={repos} go={go} />
-        </Fold>
+        </div>
       </section>
       <ul className="mt-6 grid gap-4 lg:grid-cols-2">{prs.map((p) => <PrCard key={p.id} pr={p} units={input.units} links={links} go={go} />)}</ul>
     </>
   )
-}
-
-const list = (ids: string[]) => (ids.length < 2 ? ids.join("") : `${ids.slice(0, -1).join(", ")} and ${ids.at(-1)}`)
-
-/** The order in one sentence: the pull requests of each stage, first stage first. */
-function orderSays(prs: Placed[]): string {
-  const stages = Math.max(0, ...prs.map((p) => p.stage))
-  if (stages < 2) return COPY.prs.noOrder
-  return COPY.prs.firstThen(Array.from({ length: stages }, (_, i) => list(prs.filter((p) => p.stage === i + 1).map((p) => p.id))))
 }
 
 function SharedFacts({ input }: { input: PrsInput }) {
@@ -217,7 +208,7 @@ function Evidence({ evidence, links }: { evidence: string[]; links: Links }) {
   )
 }
 
-function PrCard({ pr: p, units, links, go }: { pr: Pr; units: PrsInput["units"]; links: Links; go: (ref: Ref) => void }) {
+export function PrCard({ pr: p, units, links, go }: { pr: Pr; units: PrsInput["units"]; links: Links; go: (ref: Ref) => void }) {
   const s = COPY.prs
   const row = (term: string, value: ReactNode) => (
     <div className="grid gap-1 py-2.5 sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:gap-3"><dt className="text-xs leading-5 font-medium text-muted-ink">{term}</dt><dd className="min-w-0 text-[13px] leading-5">{value}</dd></div>
@@ -234,7 +225,7 @@ function PrCard({ pr: p, units, links, go }: { pr: Pr; units: PrsInput["units"];
         {p.planInto && <LooseEnd>{s.planSays(p.planInto)}</LooseEnd>}
         {!p.serves.length && <LooseEnd>{s.servesNone}</LooseEnd>}
       </div>
-      <Fold part="detail" row={p.id} className="mt-1" summary={<span className="text-sm leading-6 text-muted-ink">{s.detail}</span>}>
+      <div className="mt-1">
         <dl className="divide-y divide-border/60">
           {row(s.branch, (
             <>
@@ -264,16 +255,7 @@ function PrCard({ pr: p, units, links, go }: { pr: Pr; units: PrsInput["units"];
           {row(s.autoMerge, <><span className="font-medium">{s.merges[p.merge.by]}</span> <span className="text-muted-foreground">{p.merge.why}</span></>)}
           {p.note && row(s.note, <span className="text-muted-foreground">{p.note}</span>)}
         </dl>
-      </Fold>
+      </div>
     </li>
   )
 }
-
-/** The folded pull request card: how many, and the loose ends each pull request carries, named by id. */
-export const prsRow = ({ prs }: PrsInput): RowLine => ({
-  says: COPY.prs.row(prs.length, new Set(prs.map((p) => p.repo)).size),
-  loose: prs.flatMap((p) => [
-    ...(p.planInto ? [COPY.prs.planSaysFor(p.id, p.planInto)] : []),
-    ...(p.serves.length ? [] : [COPY.prs.servesNoneFor(p.id)]),
-  ]),
-})

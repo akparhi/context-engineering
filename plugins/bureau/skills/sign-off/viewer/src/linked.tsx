@@ -1,28 +1,45 @@
 import { useEffect, useRef } from "react"
-import { XIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { ACTS } from "../../scripts/model.ts"
+import { prCardProps, testDetailProps } from "./adapter.ts"
 import { actEyebrow, COPY, KIND_LABEL } from "./copy.ts"
 import { usePage, Subhead } from "./parts.tsx"
 import type { Ref, RefInfo } from "./plan.ts"
+import { PrCard } from "./views/prs.tsx"
+import { TestDetail } from "./views/trace.tsx"
 
 const CHIP = "inline-flex h-5 shrink-0 cursor-pointer items-center rounded-md bg-secondary px-1.5 font-mono text-xs font-medium text-foreground ring-1 ring-foreground/10 hover:ring-foreground/30"
+const closeOf = (popup: HTMLElement | null) => popup?.querySelector<HTMLElement>('[data-slot="sheet-close"]') ?? null
 
-/** Everything one ref links to, grouped by act and kind. Not modal: there is no backdrop, and the page behind it stays live.
- *  Focus moves to its close button on open. Escape or Close hands focus back through `onClose`. */
-export function LinkedPanel({ at, onClose, onRecenter }: { at: Ref; onClose: () => void; onRecenter: (ref: Ref) => void }) {
+/** One ref in a drawer: the detail its kind's view draws for it (a pull request's card, a test's detail), a requirement's
+ *  text, then everything it links to, grouped by act and kind. Focus moves to the close button on open and on each
+ *  re-centre. Escape, Close or a press outside hand focus back through `onClose`. `at` is null while closed. */
+export function LinkedDrawer({ at, onClose, onRecenter }: { at: Ref | null; onClose: () => void; onRecenter: (ref: Ref) => void }) {
+  const popup = useRef<HTMLDivElement>(null)
+  const shownWhileClosing = useRef(at)
+  if (at !== null) shownWhileClosing.current = at
+  const ref = at ?? shownWhileClosing.current
+
+  useEffect(() => { if (at !== null) closeOf(popup.current)?.focus({ preventScroll: true }) }, [at])
+
+  return (
+    <Sheet open={at !== null} onOpenChange={(open) => { if (!open) onClose() }}>
+      <SheetContent ref={popup} data-linked={ref ?? undefined} initialFocus={() => closeOf(popup.current) ?? true} finalFocus={false}
+        className="gap-0 antialiased data-[side=right]:w-full data-[side=right]:sm:max-w-xl">
+        {ref !== null && <LinkedBody key={ref} at={ref} onRecenter={onRecenter} />}
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+function LinkedBody({ at, onRecenter }: { at: Ref; onRecenter: (ref: Ref) => void }) {
   const { data, refs, go } = usePage()
-  const close = useRef<HTMLButtonElement>(null)
   const self = refs.get(at)
-  const linked = (data.links[at] ?? []).flatMap((ref) => { const info = refs.get(ref); return info ? [info] : [] })
-
-  useEffect(() => { close.current?.focus({ preventScroll: true }) }, [at])
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !e.defaultPrevented && !document.querySelector("dialog:modal")) onClose() }
-    document.addEventListener("keydown", onKey)
-    return () => document.removeEventListener("keydown", onKey)
-  }, [onClose])
-
+  const linked = (data.links[at] ?? []).flatMap((r) => { const info = refs.get(r); return info ? [info] : [] })
+  const requirement = self?.kind === "requirement" && !("none" in data.manifest.product) ? data.manifest.product.requirements.find((r) => r.id === at) : undefined
+  const pr = self?.kind === "pr" ? prCardProps(data, at, go) : null
+  const test = self?.kind === "test" ? testDetailProps(data, at) : null
   const groups = ACTS.flatMap((act) => {
     const inAct = linked.filter((l) => l.act === act)
     const kinds = [...new Set(inAct.map((l) => l.kind))]
@@ -36,22 +53,22 @@ export function LinkedPanel({ at, onClose, onRecenter }: { at: Ref; onClose: () 
     </li>
   )
   return (
-    <aside role="dialog" aria-modal="false" aria-labelledby="linked-title" data-linked={at}
-      className="fixed inset-x-0 bottom-0 z-40 flex max-h-[78dvh] flex-col rounded-t-4xl bg-card text-sm text-card-foreground shadow-2xl ring-1 ring-foreground/10 md:inset-x-auto md:top-3 md:right-3 md:bottom-3 md:max-h-none md:w-[27rem] md:rounded-4xl">
-      <div className="flex items-center justify-between gap-3 border-b px-5 py-3.5">
-        <div className="min-w-0">
-          <div className="text-xs text-muted-ink">{COPY.linked.title}</div>
-          <h2 id="linked-title" className="flex min-w-0 items-center gap-2 font-heading text-base font-medium">
-            <span className="font-mono text-sm">{at}</span><span className="truncate">{self?.label !== at ? self?.label : ""}</span>
-          </h2>
-        </div>
-        <Button ref={close} variant="ghost" size="icon-sm" aria-label={COPY.linked.close} onClick={onClose}><XIcon /></Button>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
+    <>
+      <SheetHeader className="gap-0 border-b px-5 py-3.5 pr-14">
+        <div className="text-xs text-muted-ink">{COPY.linked.title}</div>
+        <SheetTitle className="flex min-w-0 items-center gap-2">
+          <span className="font-mono text-sm">{at}</span><span className="truncate">{self?.label !== at ? self?.label : ""}</span>
+        </SheetTitle>
+        {requirement && <SheetDescription className="mt-1 leading-6">{requirement.text}</SheetDescription>}
+      </SheetHeader>
+      {/* Opaque, so a scrolling body rasters its text over the drawer's color, as the page does, not over transparency. */}
+      <div className="min-h-0 flex-1 overflow-y-auto bg-popover px-5 pb-5">
+        {pr && <ul className="mt-4"><PrCard {...pr} /></ul>}
+        {test && <div className="mt-4"><TestDetail {...test} /></div>}
         {self?.home && <Button variant="outline" size="sm" className="mt-4" onClick={() => go(at)}>{COPY.linked.showIt}</Button>}
         {groups.length === 0 && <p className="mt-4 text-sm text-muted-ink">{COPY.linked.nothing}</p>}
         {groups.map((g) => <section key={g.key} className="mt-5"><Subhead>{g.head}</Subhead><ul className="flex flex-col gap-2">{g.rows.map(row)}</ul></section>)}
       </div>
-    </aside>
+    </>
   )
 }
