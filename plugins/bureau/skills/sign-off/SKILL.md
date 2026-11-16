@@ -8,7 +8,7 @@ description: "Present a finished plan to a person for approval as one self-conta
 The page asks a person, the reader, to approve a plan item by item. The log of their answers says which steps may start. Run every command by path:
 
 ```sh
-<skill dir>/scripts/sign-off <command> <plan-dir> ...
+bun ${CLAUDE_SKILL_DIR}/scripts/sign-off <command> <plan-dir> ...
 ```
 
 The first run installs the pinned dependencies with bun. Run a command with no arguments to print every usage line. Exit 2 is a usage error, and exit 1 is a refusal with its reason.

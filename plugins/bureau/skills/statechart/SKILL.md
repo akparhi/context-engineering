@@ -12,7 +12,7 @@ The chart shows how a system moves between states, in the words of the person wh
 Work in a scratch folder outside the repo. Write a TLA+ spec and its config. Then run:
 
 ```sh
-<skill dir>/scripts/statechart SPEC.tla [--config FILE] [--view FILE] [--out DIR]
+${CLAUDE_SKILL_DIR}/scripts/statechart SPEC.tla [--config FILE] [--view FILE] [--out DIR]
 ```
 
 `scripts/statechart.ts` is TypeScript, so run it with a runtime that can execute TypeScript.
