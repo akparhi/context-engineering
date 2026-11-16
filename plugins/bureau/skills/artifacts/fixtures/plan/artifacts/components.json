@@ -1,0 +1,197 @@
+{
+  "type": "components",
+  "v": 1,
+  "components": [
+    {
+      "id": "C1",
+      "name": "AccountLayout",
+      "role": "layout",
+      "does": "The account frame with the side menu.",
+      "mark": "reused",
+      "file": "src/layouts/account.tsx",
+      "serves": [
+        "R4"
+      ],
+      "repo": "shelf-web"
+    },
+    {
+      "id": "C2",
+      "name": "SideMenu",
+      "role": "component",
+      "does": "Gains the My holds entry.",
+      "mark": "changed",
+      "parent": "C1",
+      "file": "src/layouts/side-menu.tsx",
+      "serves": [
+        "R4"
+      ]
+    },
+    {
+      "id": "C3",
+      "name": "MyHoldsPage",
+      "role": "route",
+      "does": "The page at /account/holds.",
+      "mark": "new",
+      "parent": "C1",
+      "file": "src/routes/my-holds.tsx",
+      "serves": [
+        "R4"
+      ]
+    },
+    {
+      "id": "C4",
+      "name": "HoldCounts",
+      "role": "component",
+      "does": "How many holds wait, and how many are ready.",
+      "mark": "new",
+      "parent": "C3",
+      "reads": [
+        "E2"
+      ],
+      "serves": [
+        "R4"
+      ]
+    },
+    {
+      "id": "C5",
+      "name": "HoldTabs",
+      "role": "component",
+      "does": "Switches between all, waiting and ready holds.",
+      "mark": "new",
+      "parent": "C3",
+      "serves": [
+        "R4"
+      ]
+    },
+    {
+      "id": "C6",
+      "name": "SearchFilters",
+      "role": "component",
+      "does": "The search box and filter pills from the loans page.",
+      "mark": "reused",
+      "parent": "C3",
+      "file": "src/components/search-filters.tsx",
+      "serves": [
+        "R4"
+      ],
+      "repo": "shelf-web"
+    },
+    {
+      "id": "C7",
+      "name": "HoldTable",
+      "role": "component",
+      "does": "One row per hold, with its place in line or its pickup day.",
+      "mark": "new",
+      "parent": "C3",
+      "reads": [
+        "E2"
+      ],
+      "serves": [
+        "R1",
+        "R4"
+      ]
+    },
+    {
+      "id": "C8",
+      "name": "Pager",
+      "role": "component",
+      "does": "Previous and next page.",
+      "mark": "reused",
+      "parent": "C3",
+      "file": "src/components/pager.tsx",
+      "serves": [
+        "R4"
+      ],
+      "repo": "shelf-web"
+    },
+    {
+      "id": "C9",
+      "name": "PickupSheet",
+      "role": "component",
+      "does": "Where and by when to pick up a ready copy, and Cancel hold.",
+      "mark": "new",
+      "parent": "C3",
+      "reads": [
+        "E2",
+        "E3"
+      ],
+      "serves": [
+        "R3",
+        "R5"
+      ]
+    },
+    {
+      "id": "C10",
+      "name": "EmptyHolds",
+      "role": "component",
+      "does": "Says there are no holds and links to the catalogue.",
+      "mark": "new",
+      "parent": "C3",
+      "serves": [
+        "R4"
+      ]
+    },
+    {
+      "id": "C11",
+      "name": "BookPage",
+      "role": "route",
+      "does": "Shows Place a hold when every copy is out.",
+      "mark": "changed",
+      "file": "src/routes/book.tsx",
+      "serves": [
+        "R1"
+      ]
+    },
+    {
+      "id": "C12",
+      "name": "PlaceHoldForm",
+      "role": "component",
+      "does": "Picks the pickup branch and places the hold.",
+      "mark": "new",
+      "parent": "C11",
+      "reads": [
+        "E1"
+      ],
+      "file": "src/books/place-hold-form.tsx",
+      "serves": [
+        "R1"
+      ]
+    },
+    {
+      "id": "C13",
+      "name": "useHolds",
+      "role": "data",
+      "does": "Loads the holds, and loads them again after a cancel.",
+      "mark": "new",
+      "reads": [
+        "E2",
+        "E3"
+      ],
+      "file": "src/holds/use-holds.ts",
+      "serves": [
+        "R4",
+        "R5"
+      ],
+      "shows": "C7"
+    },
+    {
+      "id": "C14",
+      "name": "holdsClient",
+      "role": "wiring",
+      "does": "Calls the holds endpoints with the member's session.",
+      "mark": "new",
+      "reads": [
+        "E1",
+        "E2",
+        "E3"
+      ],
+      "file": "src/api/holds.ts",
+      "serves": [
+        "R1",
+        "R4",
+        "R5"
+      ]
+    }
+  ],
+  "note": "The page runs on mock answers from design/api.json until P2 reaches staging."
+}

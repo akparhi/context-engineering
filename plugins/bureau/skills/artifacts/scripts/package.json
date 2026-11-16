@@ -1,0 +1,17 @@
+{
+  "name": "@cursor-skill/artifacts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.16",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "typescript": "7.0.2"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "type": "acceptance",
+  "v": 1,
+  "rows": [
+    {
+      "id": "A1",
+      "requirement": "R1",
+      "given": "Every copy of a book is lent",
+      "when": "a member places a hold",
+      "then": "they join the line and see their place",
+      "screens": [
+        "book-out",
+        "holds"
+      ]
+    },
+    {
+      "id": "A2",
+      "requirement": "R1",
+      "says": "A member who already holds a book cannot hold it again.",
+      "guards": "rule:OneHoldPerMember"
+    },
+    {
+      "id": "A3",
+      "requirement": "R2",
+      "given": "Two members wait for a book",
+      "when": "the desk scans a returned copy",
+      "then": "the copy is shelved for the first of them",
+      "guards": "rule:OpenShelfOnlyWhenNobodyWaits"
+    },
+    {
+      "id": "A4",
+      "requirement": "R2",
+      "says": "Every copy shelved for a hold carries a printed slip with the member's name.",
+      "addedFor": "rule:NoTurnSkipped"
+    },
+    {
+      "id": "A5",
+      "requirement": "R3",
+      "given": "A copy has waited three opening days",
+      "when": "the night run starts",
+      "then": "the copy passes to the next member, or to the open shelf",
+      "screens": [
+        "ready"
+      ]
+    },
+    {
+      "id": "A6",
+      "requirement": "R3",
+      "says": "The member gets an email the day their copy is shelved."
+    },
+    {
+      "id": "A7",
+      "requirement": "R4",
+      "says": "My holds lists every open hold with its place in line or its pickup day.",
+      "screens": [
+        "holds",
+        "no-holds"
+      ]
+    },
+    {
+      "id": "A8",
+      "requirement": "R5",
+      "when": "the member a shelved copy waits for cancels",
+      "then": "the copy passes on and is never held for nobody",
+      "addedFor": "rule:HeldForSomeone"
+    },
+    {
+      "id": "A9",
+      "requirement": null,
+      "says": "Holds on the paper lists stay on paper until the desk moves them by hand."
+    }
+  ]
+}

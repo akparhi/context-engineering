@@ -1,0 +1,33 @@
+{
+  "type": "grant",
+  "v": 1,
+  "allow": [
+    {
+      "says": "Commits on the unit branches.",
+      "key": "commit"
+    },
+    {
+      "says": "Pushes those branches, never with force.",
+      "key": "push"
+    },
+    {
+      "says": "Opens the three pull requests.",
+      "key": "pr"
+    },
+    {
+      "says": "Runs the checks each pull request must pass, and attaches the evidence.",
+      "key": "gates"
+    }
+  ],
+  "ask": [
+    {
+      "says": "Merging P1 or P2.",
+      "key": "merge"
+    },
+    {
+      "says": "Turning the holds switch on for any branch.",
+      "key": "deploy"
+    }
+  ],
+  "clearance": "The review bot may merge P3 once its checks pass. It changes no schema and no permission, and the page stays behind the holds switch."
+}

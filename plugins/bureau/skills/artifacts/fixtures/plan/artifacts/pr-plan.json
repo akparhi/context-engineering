@@ -1,0 +1,185 @@
+{
+  "type": "pr-plan",
+  "v": 1,
+  "units": [
+    {
+      "id": "U1",
+      "title": "Holds table and queue",
+      "source": "plan.md",
+      "heading": "U1 Holds table and queue",
+      "serves": [
+        "R1",
+        "R2",
+        "R3"
+      ],
+      "repo": "shelf-api",
+      "files": [
+        "db/changes/0042_book_holds.sql",
+        "src/holds/queue.ts",
+        "src/holds/opening-days.ts"
+      ],
+      "delivers": [
+        "db:book_holds"
+      ],
+      "tasks": 3,
+      "qa": "Run the schema change on a copy of the live database and time the queue query.",
+      "done": "The schema change runs up and down. T1 to T3 pass."
+    },
+    {
+      "id": "U2",
+      "title": "Holds endpoints and the desk return",
+      "source": "plan.md",
+      "heading": "U2 Holds endpoints",
+      "serves": [
+        "R1",
+        "R2",
+        "R3",
+        "R5"
+      ],
+      "mergesAfter": [
+        "U1"
+      ],
+      "repo": "shelf-api",
+      "files": [
+        "src/holds/routes.ts",
+        "src/desk/return.ts",
+        "src/holds/night-run.ts"
+      ],
+      "delivers": [
+        "E1",
+        "E2",
+        "E3"
+      ],
+      "tasks": 5,
+      "done": "All behavior tests pass. A desk return on staging prints a slip."
+    },
+    {
+      "id": "U3",
+      "title": "My holds page",
+      "source": "plan.md",
+      "heading": "U3 My holds page",
+      "serves": [
+        "R1",
+        "R3",
+        "R4",
+        "R5"
+      ],
+      "mergesAfter": [
+        "U2"
+      ],
+      "repo": "shelf-web",
+      "files": [
+        "src/routes/my-holds.tsx",
+        "src/routes/book.tsx",
+        "src/layouts/side-menu.tsx",
+        "src/holds/use-holds.ts",
+        "src/api/holds.ts"
+      ],
+      "delivers": [
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C7",
+        "C9",
+        "C10",
+        "C11",
+        "C12",
+        "C13",
+        "C14"
+      ],
+      "tasks": 6,
+      "qa": "Check the page at 360 px and with a screen reader.",
+      "done": "T8 passes, and the screenshots match the screen states."
+    }
+  ],
+  "prs": [
+    {
+      "id": "P1",
+      "title": "Holds table and queue",
+      "repo": "shelf-api",
+      "branch": "feat/LIB-7-holds-table",
+      "from": "develop",
+      "into": "develop",
+      "promotes": [
+        "main"
+      ],
+      "steps": [
+        "U1"
+      ],
+      "review": "A maintainer reviews every schema change.",
+      "merge": {
+        "by": "human",
+        "why": "It changes the database schema."
+      },
+      "evidence": [
+        "schema change up and down on a fresh database",
+        "T1",
+        "T2",
+        "queue query timed on a copy of the live database"
+      ],
+      "reviewer": "Tomás R."
+    },
+    {
+      "id": "P2",
+      "title": "Holds endpoints and the desk return",
+      "repo": "shelf-api",
+      "branch": "feat/LIB-7-holds-api",
+      "from": "develop",
+      "into": "develop",
+      "promotes": [
+        "main"
+      ],
+      "after": [
+        "P1"
+      ],
+      "steps": [
+        "U2"
+      ],
+      "review": "The review bot reviews on open.",
+      "merge": {
+        "by": "human",
+        "why": "It adds who may cancel a hold."
+      },
+      "evidence": [
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "a desk return on staging prints a slip"
+      ]
+    },
+    {
+      "id": "P3",
+      "title": "My holds page",
+      "repo": "shelf-web",
+      "branch": "feat/LIB-7-my-holds",
+      "from": "main",
+      "into": "main",
+      "after": [
+        "P2"
+      ],
+      "steps": [
+        "U3"
+      ],
+      "review": "The review bot reviews on open, then a designer checks the screenshots.",
+      "merge": {
+        "by": "bot",
+        "why": "A page behind the holds switch, with no schema or permission change."
+      },
+      "evidence": [
+        "T8",
+        "screenshots at 360 px and 1280 px"
+      ],
+      "planInto": "develop",
+      "note": "shelf-web has no develop branch, so the page goes straight into main behind the switch.",
+      "waits": "Waits for P2 to reach develop, so the page calls the real endpoints."
+    }
+  ],
+  "note": "U1, U2 and U3 run in order. U3 starts on mock answers once U2 lands its contract.",
+  "bot": "shelf-review[bot]",
+  "label": "review:ready",
+  "notes": [
+    "Both repos name branches feat/<ticket>-<topic>."
+  ]
+}

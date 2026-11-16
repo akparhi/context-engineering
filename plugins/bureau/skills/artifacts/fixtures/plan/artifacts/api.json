@@ -1,0 +1,170 @@
+{
+  "type": "api",
+  "v": 1,
+  "endpoints": [
+    {
+      "id": "E1",
+      "method": "POST",
+      "path": "/holds",
+      "mark": "new",
+      "answers": "Puts the member in line for a book that is out, and says their place.",
+      "who": {
+        "text": "Signed-in members",
+        "mark": "reused"
+      },
+      "outcomes": [
+        {
+          "status": 201,
+          "when": "Every copy is lent and the member was not in line.",
+          "body": [
+            {
+              "name": "place",
+              "type": "integer",
+              "means": "Place in line, from 1"
+            },
+            {
+              "name": "status",
+              "type": "'waiting'",
+              "column": "book_holds.status"
+            }
+          ],
+          "title": "In line",
+          "shape": "Hold",
+          "serves": [
+            "R1"
+          ]
+        },
+        {
+          "status": 409,
+          "when": "The member already holds this book.",
+          "title": "Already in line",
+          "shape": "Error",
+          "serves": [
+            "R1"
+          ]
+        },
+        {
+          "status": 422,
+          "when": "A copy is on the open shelf.",
+          "title": "Copy on the shelf",
+          "shape": "Error",
+          "serves": [
+            "R1"
+          ]
+        }
+      ],
+      "serves": [
+        "R1"
+      ]
+    },
+    {
+      "id": "E2",
+      "method": "GET",
+      "path": "/holds",
+      "mark": "new",
+      "answers": "The member's open holds with their counts, newest first.",
+      "who": {
+        "text": "Signed-in members, for their own holds",
+        "mark": "reused"
+      },
+      "narrows": [
+        {
+          "name": "status",
+          "type": "waiting | on_shelf | all",
+          "default": "all",
+          "serves": [
+            "R4"
+          ]
+        },
+        {
+          "name": "page",
+          "means": "20 holds to a page",
+          "type": "integer >= 1",
+          "default": "1",
+          "serves": [
+            "R4"
+          ]
+        }
+      ],
+      "outcomes": [
+        {
+          "status": 200,
+          "when": "Always, for a signed-in member.",
+          "body": [
+            {
+              "name": "pickupBy",
+              "type": "string | null",
+              "means": "ISO date, set while a copy waits",
+              "column": "book_holds.pickup_by"
+            }
+          ],
+          "title": "Holds",
+          "shape": "HoldList",
+          "serves": [
+            "R3",
+            "R4"
+          ]
+        }
+      ],
+      "serves": [
+        "R3",
+        "R4"
+      ]
+    },
+    {
+      "id": "E3",
+      "method": "DELETE",
+      "path": "/holds/:holdId",
+      "mark": "new",
+      "answers": "Cancels a hold. A shelved copy passes to the next member in line.",
+      "who": {
+        "text": "The member who placed it, or a desk librarian",
+        "mark": "new"
+      },
+      "outcomes": [
+        {
+          "status": 204,
+          "when": "The hold was open.",
+          "title": "Cancelled",
+          "serves": [
+            "R5"
+          ]
+        },
+        {
+          "status": 403,
+          "when": "The caller neither placed the hold nor works at the desk.",
+          "title": "Not yours",
+          "shape": "Error",
+          "serves": [
+            "R5"
+          ]
+        },
+        {
+          "status": 404,
+          "when": "No open hold has that id.",
+          "title": "Not found",
+          "shape": "Error"
+        }
+      ],
+      "serves": [
+        "R5"
+      ]
+    }
+  ],
+  "src": "design/api.json",
+  "access": {
+    "who": "Members for their own holds. Desk librarians for any hold.",
+    "permission": "holds:cancel-any",
+    "switch": "holds",
+    "serves": [
+      "R5"
+    ],
+    "ask": "Q3"
+  },
+  "envelope": "T, or { message: string } on an error",
+  "shapes": {
+    "Hold": "{\n  id: string\n  bookId: string\n  title: string\n  status: 'waiting' | 'on_shelf'\n  place: number | null      // while waiting\n  pickupBy: string | null   // ISO, while on the shelf\n  placedAt: string\n}",
+    "HoldList": "{\n  holds: Hold[]\n  counts: { waiting: number, ready: number }\n  page: { number: number, size: number, total: number }\n}",
+    "Error": "{\n  message: string\n}"
+  }
+}

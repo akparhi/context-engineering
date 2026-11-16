@@ -1,0 +1,20 @@
+{
+  "id": "LIB-7",
+  "kind": "change",
+  "title": "Holds on books that are out",
+  "ask": "Approve the plan for holds on books that are out, and answer the question that blocks the endpoints.",
+  "ticket": "https://tracker.example.com/browse/LIB-7",
+  "sources": [
+    {
+      "label": "Figma",
+      "url": "https://design.example.com/file/holds-on-books-that-are-out"
+    },
+    {
+      "label": "Desk survey",
+      "url": "https://docs.example.com/library/desk-survey"
+    }
+  ],
+  "repos": {
+    "shelf-web": "repos/shelf-web"
+  }
+}

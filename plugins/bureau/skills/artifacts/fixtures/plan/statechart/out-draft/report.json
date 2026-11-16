@@ -1,0 +1,321 @@
+{
+  "v": 1,
+  "module": "HoldQueue",
+  "chart": {
+    "states": [
+      {
+        "path": [
+          "Out on loan"
+        ],
+        "start": true,
+        "group": "With a reader"
+      },
+      {
+        "path": [
+          "Out on loan, members waiting"
+        ],
+        "start": false,
+        "group": "With a reader"
+      },
+      {
+        "path": [
+          "On the open shelf"
+        ],
+        "start": false,
+        "group": "In the library"
+      },
+      {
+        "path": [
+          "On the hold shelf"
+        ],
+        "start": false,
+        "group": "In the library"
+      },
+      {
+        "path": [
+          "On the hold shelf, others waiting"
+        ],
+        "start": false,
+        "group": "In the library"
+      },
+      {
+        "path": [
+          "On the hold shelf for nobody"
+        ],
+        "start": false,
+        "group": "In the library",
+        "mark": "breaks"
+      },
+      {
+        "path": [
+          "Lent past a member's turn"
+        ],
+        "start": false,
+        "mark": "breaks"
+      }
+    ],
+    "arrows": [
+      {
+        "from": [
+          "Out on loan"
+        ],
+        "to": [
+          "Out on loan, members waiting"
+        ],
+        "step": "a member places a hold"
+      },
+      {
+        "from": [
+          "Out on loan"
+        ],
+        "to": [
+          "On the open shelf"
+        ],
+        "step": "the copy comes back"
+      },
+      {
+        "from": [
+          "Out on loan, members waiting"
+        ],
+        "to": [
+          "Out on loan"
+        ],
+        "step": "a waiting member cancels"
+      },
+      {
+        "from": [
+          "Out on loan, members waiting"
+        ],
+        "to": [
+          "On the hold shelf"
+        ],
+        "step": "the copy comes back"
+      },
+      {
+        "from": [
+          "On the open shelf"
+        ],
+        "to": [
+          "Out on loan"
+        ],
+        "step": "someone borrows it"
+      },
+      {
+        "from": [
+          "On the hold shelf"
+        ],
+        "to": [
+          "Out on loan"
+        ],
+        "step": "the member picks it up"
+      },
+      {
+        "from": [
+          "On the hold shelf"
+        ],
+        "to": [
+          "On the hold shelf, others waiting"
+        ],
+        "step": "a member places a hold"
+      },
+      {
+        "from": [
+          "On the hold shelf"
+        ],
+        "to": [
+          "On the hold shelf for nobody"
+        ],
+        "step": "the member it waits for cancels"
+      },
+      {
+        "from": [
+          "On the hold shelf"
+        ],
+        "to": [
+          "Lent past a member's turn"
+        ],
+        "step": "the desk lends it to someone else"
+      },
+      {
+        "from": [
+          "Out on loan, members waiting"
+        ],
+        "to": [
+          "On the hold shelf, others waiting"
+        ],
+        "step": "the copy comes back"
+      },
+      {
+        "from": [
+          "On the hold shelf, others waiting"
+        ],
+        "to": [
+          "Out on loan, members waiting"
+        ],
+        "step": "the member picks it up"
+      },
+      {
+        "from": [
+          "On the hold shelf, others waiting"
+        ],
+        "to": [
+          "On the hold shelf"
+        ],
+        "step": "a waiting member cancels or three days pass"
+      },
+      {
+        "from": [
+          "On the hold shelf, others waiting"
+        ],
+        "to": [
+          "On the hold shelf for nobody"
+        ],
+        "step": "the member it waits for cancels"
+      },
+      {
+        "from": [
+          "On the hold shelf, others waiting"
+        ],
+        "to": [
+          "Lent past a member's turn"
+        ],
+        "step": "the desk lends it to someone else"
+      },
+      {
+        "from": [
+          "On the hold shelf for nobody"
+        ],
+        "to": [
+          "Out on loan"
+        ],
+        "step": "the member picks it up"
+      },
+      {
+        "from": [
+          "On the hold shelf for nobody"
+        ],
+        "to": [
+          "Out on loan, members waiting"
+        ],
+        "step": "the member picks it up"
+      },
+      {
+        "from": [
+          "On the hold shelf"
+        ],
+        "to": [
+          "On the open shelf"
+        ],
+        "step": "three days pass"
+      },
+      {
+        "from": [
+          "On the hold shelf for nobody"
+        ],
+        "to": [
+          "On the open shelf"
+        ],
+        "step": "three days pass"
+      },
+      {
+        "from": [
+          "On the hold shelf for nobody"
+        ],
+        "to": [
+          "On the hold shelf"
+        ],
+        "step": "three days pass"
+      },
+      {
+        "from": [
+          "On the hold shelf for nobody"
+        ],
+        "to": [
+          "On the hold shelf, others waiting"
+        ],
+        "step": "three days pass"
+      }
+    ],
+    "colors": {
+      "With a reader": "blue",
+      "In the library": "teal"
+    }
+  },
+  "rules": [
+    {
+      "kind": "invariant",
+      "name": "TypeOK",
+      "outcome": "holds"
+    },
+    {
+      "kind": "invariant",
+      "name": "HeldForSomeone",
+      "outcome": "broken",
+      "path": [
+        {
+          "state": "Out on loan"
+        },
+        {
+          "state": "Out on loan, members waiting",
+          "step": "a member places a hold",
+          "action": "PlaceHold"
+        },
+        {
+          "state": "On the hold shelf",
+          "step": "the copy comes back",
+          "action": "Return"
+        },
+        {
+          "state": "On the hold shelf for nobody",
+          "step": "the member it waits for cancels",
+          "action": "CancelOnShelf"
+        }
+      ]
+    },
+    {
+      "kind": "invariant",
+      "name": "NoTurnSkipped",
+      "outcome": "broken",
+      "path": [
+        {
+          "state": "Out on loan"
+        },
+        {
+          "state": "Out on loan, members waiting",
+          "step": "a member places a hold",
+          "action": "PlaceHold"
+        },
+        {
+          "state": "On the hold shelf",
+          "step": "the copy comes back",
+          "action": "Return"
+        },
+        {
+          "state": "Lent past a member's turn",
+          "step": "the desk lends it to someone else",
+          "action": "DeskLendsHeldCopy"
+        }
+      ]
+    },
+    {
+      "kind": "invariant",
+      "name": "OneHoldPerMember",
+      "outcome": "holds"
+    },
+    {
+      "kind": "invariant",
+      "name": "OpenShelfOnlyWhenNobodyWaits",
+      "outcome": "holds"
+    },
+    {
+      "kind": "invariant",
+      "name": "PickupWindowKept",
+      "outcome": "holds"
+    },
+    {
+      "kind": "deadlock",
+      "name": "NoDeadlock",
+      "outcome": "holds"
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "type": "statechart",
+  "v": 1,
+  "says": {
+    "TypeOK": "Every value stays in its allowed set",
+    "HeldForSomeone": "A copy on the hold shelf is always held for a member",
+    "NoTurnSkipped": "The desk never lends a held copy to someone else",
+    "OneHoldPerMember": "A member is in line for a book at most once",
+    "OpenShelfOnlyWhenNobodyWaits": "A copy goes on the open shelf only when nobody waits for it",
+    "PickupWindowKept": "A copy waits on the hold shelf for three days at most",
+    "NoDeadlock": "The copy can always move on"
+  },
+  "terms": [
+    {
+      "word": "Hold shelf",
+      "means": "the shelf behind the desk where a copy waits for the member it is held for."
+    },
+    {
+      "word": "Open shelf",
+      "means": "the shelves any member can borrow from."
+    },
+    {
+      "word": "Hold slip",
+      "means": "the paper the desk prints with the member's name and puts in the copy."
+    }
+  ],
+  "runs": [
+    {
+      "id": "plan",
+      "label": "This plan",
+      "note": "The plan as it stands. A cancel on the shelf passes the copy on. The desk app still does not read holds.",
+      "dir": "statechart/out-plan"
+    },
+    {
+      "id": "draft",
+      "label": "Before review",
+      "note": "The plan before review. A cancel on the shelf left the copy held for nobody.",
+      "dir": "statechart/out-draft"
+    }
+  ],
+  "serves": {
+    "TypeOK": [],
+    "HeldForSomeone": [
+      "R3",
+      "R5"
+    ],
+    "NoTurnSkipped": [
+      "R2"
+    ],
+    "OneHoldPerMember": [
+      "R1"
+    ],
+    "OpenShelfOnlyWhenNobodyWaits": [
+      "R2"
+    ],
+    "PickupWindowKept": [],
+    "NoDeadlock": [
+      "R2"
+    ]
+  },
+  "hide": [
+    "TypeOK"
+  ],
+  "parked": {
+    "PickupWindowKept": "The model counts whole days. R3 counts opening days, which the model leaves out."
+  },
+  "steps": {
+    "a member places a hold": "hold",
+    "a waiting member cancels": "cancel",
+    "the copy comes back": "return",
+    "the member picks it up": "pick up",
+    "three days pass": "3 days",
+    "the member it waits for cancels": "cancel on shelf",
+    "someone borrows it": "borrow",
+    "the desk lends it to someone else": "desk lends"
+  },
+  "notes": {
+    "plan:NoTurnSkipped": {
+      "verdict": "open",
+      "text": "The desk app does not read holds, so a librarian can lend a copy from the hold shelf to the wrong member.",
+      "decision": {
+        "chosen": [
+          "Print a hold slip with the member's name, and leave the desk app as it is",
+          "The desk puts the slip in the copy when it shelves it, and reads it before lending. The model cannot show that a person reads it."
+        ],
+        "other": [
+          "Block the loan in the desk app",
+          "Another team owns the desk app and ships it monthly, so this plan would wait for its next release."
+        ]
+      }
+    },
+    "draft:HeldForSomeone": {
+      "verdict": "fixed",
+      "text": "Before review, a member who cancelled a hold on the shelf left the copy held for nobody. Now the cancel passes the copy to the next member, or to the open shelf."
+    }
+  },
+  "triggers": {
+    "a member places a hold": {
+      "endpoint": "E1"
+    },
+    "a waiting member cancels": {
+      "endpoint": "E3"
+    },
+    "the member it waits for cancels": {
+      "endpoint": "E3"
+    },
+    "the copy comes back": {
+      "ops": "the desk app's return scan"
+    },
+    "the member picks it up": {
+      "ops": "the desk app's loan scan"
+    },
+    "someone borrows it": {
+      "ops": "the desk app's loan scan"
+    },
+    "the desk lends it to someone else": {
+      "ops": "the desk app's loan scan"
+    },
+    "three days pass": {
+      "job": "the night run"
+    }
+  },
+  "stored": {
+    "Out on loan, members waiting": "book_holds.status",
+    "On the hold shelf": "book_holds.copy_id",
+    "On the hold shelf, others waiting": "book_holds.copy_id"
+  }
+}

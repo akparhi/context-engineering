@@ -1,0 +1,129 @@
+{
+  "type": "db-schema",
+  "v": 1,
+  "src": "design/schema.dbml",
+  "sql": "design/db.sql",
+  "base": "design/base.sql",
+  "tables": [
+    {
+      "name": "book_holds",
+      "mark": "new",
+      "role": "One row per hold. A book's line is its waiting rows.",
+      "serves": [
+        "R1",
+        "R2",
+        "R3",
+        "R5"
+      ]
+    },
+    {
+      "name": "copies",
+      "mark": "reused",
+      "role": "One row per physical copy.",
+      "serves": [
+        "R2"
+      ]
+    },
+    {
+      "name": "books",
+      "mark": "reused"
+    },
+    {
+      "name": "members",
+      "mark": "reused"
+    }
+  ],
+  "indexes": [
+    {
+      "name": "book_holds_one_open_per_member",
+      "unique": true,
+      "where": "status IN ('waiting', 'on_shelf')",
+      "serves": [
+        "R1"
+      ]
+    },
+    {
+      "name": "book_holds_one_per_shelved_copy",
+      "unique": true,
+      "where": "status = 'on_shelf'",
+      "serves": [
+        "R2"
+      ]
+    },
+    {
+      "name": "book_holds_queue",
+      "where": "status = 'waiting'",
+      "serves": [
+        "R2"
+      ]
+    }
+  ],
+  "says": "book_holds stores the line for each book: one row per hold, read in placed_at order. Two partial unique indexes keep one open hold per member and book, and one hold per shelved copy.",
+  "writers": [
+    {
+      "column": "book_holds.status",
+      "states": [
+        "a member places a hold",
+        "the copy comes back",
+        "the member picks it up",
+        "three days pass",
+        "a waiting member cancels",
+        "the member it waits for cancels"
+      ]
+    },
+    {
+      "column": "book_holds.copy_id",
+      "states": [
+        "the copy comes back",
+        "three days pass"
+      ]
+    },
+    {
+      "column": "book_holds.pickup_by",
+      "states": [
+        "the copy comes back"
+      ]
+    }
+  ],
+  "columns": [
+    {
+      "column": "book_holds.status",
+      "serves": [
+        "R2",
+        "R3",
+        "R5"
+      ]
+    },
+    {
+      "column": "book_holds.placed_at",
+      "serves": [
+        "R2"
+      ]
+    },
+    {
+      "column": "book_holds.pickup_by",
+      "serves": [
+        "R3",
+        "R4"
+      ]
+    },
+    {
+      "column": "book_holds.copy_id",
+      "serves": [
+        "R2"
+      ]
+    }
+  ],
+  "unused": [
+    {
+      "value": "hold_status.paused",
+      "why": "Reserved for pausing a hold, a non-goal."
+    }
+  ],
+  "loose": [
+    {
+      "from": "book_holds.pickup_branch_id",
+      "to": "branches.id"
+    }
+  ]
+}

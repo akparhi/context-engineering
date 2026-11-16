@@ -1,0 +1,38 @@
+{
+  "type": "evidence",
+  "v": 1,
+  "figures": [
+    {
+      "value": "312",
+      "label": "books on the paper hold lists at the central branch.",
+      "source": "goal.md",
+      "serves": [
+        "R1"
+      ]
+    },
+    {
+      "value": "6 days",
+      "label": "typical wait from asking at the desk to picking up.",
+      "source": "desk survey",
+      "serves": [
+        "R3"
+      ]
+    },
+    {
+      "value": "1 in 5",
+      "label": "held copies a member never collects, so the three-day limit matters.",
+      "source": "desk survey",
+      "inferred": true,
+      "serves": [
+        "R3"
+      ]
+    },
+    {
+      "value": "40 ms",
+      "label": "to find the first member in line, on a copy of the live database.",
+      "serves": [
+        "R2"
+      ]
+    }
+  ]
+}

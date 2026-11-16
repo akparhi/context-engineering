@@ -1,0 +1,292 @@
+{
+  "format": 2,
+  "revision": "r2",
+  "note": "One feature across two repos. One rule in the model still breaks in this plan, and its note tells you why the plan accepts it.",
+  "items": [
+    {
+      "id": "scope",
+      "section": "Scope",
+      "title": "Product plan",
+      "why": "It sets what members and the desk get.",
+      "type": "part",
+      "source": "plan.md#Scope",
+      "touches": [
+        "scope"
+      ],
+      "artifacts": [
+        "requirements"
+      ]
+    },
+    {
+      "id": "Q1",
+      "section": "Scope",
+      "title": "Do you want members to hold a book while a copy is on the open shelf?",
+      "why": "The desk does this for members who cannot come in this week.",
+      "serves": [
+        "R1"
+      ],
+      "type": "question",
+      "options": [
+        {
+          "id": "Q1a",
+          "label": "No, only when every copy is out",
+          "detail": "The member takes the copy from the shelf, as today."
+        },
+        {
+          "id": "Q1b",
+          "label": "Yes, and the desk sets the copy aside",
+          "detail": "The desk walks to the shelf for each hold.",
+          "facts": [
+            [
+              "Desk walks a day",
+              "about 40"
+            ],
+            [
+              "Members who asked",
+              "a few"
+            ]
+          ]
+        }
+      ],
+      "recommended": "Q1a",
+      "default": null,
+      "blocks": [
+        "U2"
+      ],
+      "artifacts": []
+    },
+    {
+      "id": "Q2",
+      "section": "Scope",
+      "title": "How many books do you want a member to hold at once?",
+      "why": "The desk has no limit today. A limit stops one member from holding a whole series.",
+      "serves": [
+        "R1"
+      ],
+      "type": "question",
+      "default": "Five books at a time.",
+      "blocks": [],
+      "placeholder": "A number, or no limit",
+      "artifacts": []
+    },
+    {
+      "id": "screens",
+      "section": "Screens",
+      "title": "Screens",
+      "why": "Two pages change for members.",
+      "type": "part",
+      "source": "plan.md#Screens",
+      "touches": [
+        "user-visible"
+      ],
+      "artifacts": [
+        "screens"
+      ]
+    },
+    {
+      "id": "evidence",
+      "section": "Evidence",
+      "title": "Evidence",
+      "type": "part",
+      "touches": [],
+      "artifacts": [
+        "evidence"
+      ]
+    },
+    {
+      "id": "decisions",
+      "section": "Decisions",
+      "title": "Decisions",
+      "type": "part",
+      "source": "plan.md#Decisions",
+      "touches": [],
+      "artifacts": [
+        "decisions"
+      ]
+    },
+    {
+      "id": "D1",
+      "section": "Decisions",
+      "type": "decision",
+      "touches": [],
+      "artifacts": [
+        "decisions"
+      ]
+    },
+    {
+      "id": "D2",
+      "section": "Decisions",
+      "type": "decision",
+      "touches": [],
+      "artifacts": [
+        "decisions"
+      ]
+    },
+    {
+      "id": "behavior",
+      "section": "Behavior",
+      "title": "Behavior",
+      "why": "One rule still breaks in this plan.",
+      "type": "part",
+      "source": "plan.md#Behavior",
+      "touches": [
+        "open-rule"
+      ],
+      "artifacts": [
+        "statechart"
+      ]
+    },
+    {
+      "id": "data",
+      "section": "Data",
+      "title": "Data",
+      "why": "One new table stores every hold.",
+      "type": "part",
+      "source": "plan.md#Data",
+      "touches": [
+        "schema"
+      ],
+      "artifacts": [
+        "db-schema"
+      ]
+    },
+    {
+      "id": "api",
+      "section": "API",
+      "title": "API",
+      "why": "Three new endpoints, and cancel takes a new permission.",
+      "type": "part",
+      "source": "plan.md#API",
+      "touches": [
+        "api",
+        "permission"
+      ],
+      "artifacts": [
+        "api"
+      ]
+    },
+    {
+      "id": "Q3",
+      "section": "API",
+      "title": "Do you want desk librarians to cancel any member's hold?",
+      "serves": [
+        "R5"
+      ],
+      "type": "question",
+      "options": [
+        {
+          "id": "Q3a",
+          "label": "Yes, any desk librarian",
+          "detail": "Members often ask at the desk. This needs the new permission."
+        },
+        {
+          "id": "Q3b",
+          "label": "No, only the member",
+          "detail": "No new permission, and the desk sends members to the website."
+        }
+      ],
+      "recommended": "Q3a",
+      "default": "Q3a",
+      "blocks": [
+        "U2"
+      ],
+      "artifacts": []
+    },
+    {
+      "id": "components",
+      "section": "Components",
+      "title": "Components",
+      "type": "part",
+      "source": "plan.md#Components",
+      "touches": [],
+      "artifacts": [
+        "components"
+      ]
+    },
+    {
+      "id": "units",
+      "section": "Units",
+      "title": "Units",
+      "type": "part",
+      "source": "plan.md#Units",
+      "touches": [],
+      "artifacts": [
+        "pr-plan"
+      ]
+    },
+    {
+      "id": "U1",
+      "section": "Units",
+      "type": "step",
+      "touches": [],
+      "artifacts": [
+        "pr-plan"
+      ]
+    },
+    {
+      "id": "U2",
+      "section": "Units",
+      "type": "step",
+      "touches": [],
+      "artifacts": [
+        "pr-plan"
+      ]
+    },
+    {
+      "id": "U3",
+      "section": "Units",
+      "type": "step",
+      "touches": [],
+      "artifacts": [
+        "pr-plan"
+      ]
+    },
+    {
+      "id": "risks",
+      "section": "Risks",
+      "title": "Risks and defaults",
+      "type": "part",
+      "source": "plan.md#Risks and defaults",
+      "touches": [],
+      "artifacts": [
+        "risks"
+      ]
+    },
+    {
+      "id": "acceptance",
+      "section": "Acceptance",
+      "title": "Acceptance and tests",
+      "why": "These rows define done.",
+      "type": "part",
+      "touches": [
+        "acceptance"
+      ],
+      "artifacts": [
+        "acceptance",
+        "test-plan",
+        "prose"
+      ]
+    },
+    {
+      "id": "prs",
+      "section": "Pull requests",
+      "title": "Pull requests",
+      "type": "part",
+      "source": "plan.md#Pull requests",
+      "touches": [],
+      "artifacts": [
+        "pr-plan"
+      ]
+    },
+    {
+      "id": "grant",
+      "section": "Grant",
+      "title": "Grant",
+      "type": "grant",
+      "source": "plan.md#Grant",
+      "artifacts": [
+        "grant"
+      ]
+    }
+  ]
+}

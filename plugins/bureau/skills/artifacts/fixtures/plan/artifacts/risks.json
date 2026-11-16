@@ -1,0 +1,47 @@
+{
+  "type": "risks",
+  "v": 1,
+  "risks": [
+    {
+      "id": "K1",
+      "title": "A librarian lends a held copy to the wrong member",
+      "bound": "The printed slip is the only guard until the desk app reads holds. The night report lists copies lent while held.",
+      "serves": [
+        "R2"
+      ]
+    },
+    {
+      "id": "K2",
+      "title": "Ready emails land in spam",
+      "bound": "My holds shows ready holds too, so a member who checks it still sees the day.",
+      "serves": [
+        "R3"
+      ]
+    },
+    {
+      "id": "K3",
+      "title": "The night run misses a day",
+      "bound": "The next run passes on every copy past its day, so a copy waits one extra day at most.",
+      "serves": [
+        "R3"
+      ]
+    }
+  ],
+  "defaults": [
+    {
+      "id": "F1",
+      "says": "Three opening days count from the morning after a copy is shelved.",
+      "note": "The desk asked for opening days. Calendar days would be simpler.",
+      "serves": [
+        "R3"
+      ]
+    },
+    {
+      "id": "F2",
+      "says": "The pickup branch is the member's home branch unless they pick another.",
+      "serves": [
+        "R1"
+      ]
+    }
+  ]
+}

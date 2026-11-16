@@ -1,0 +1,127 @@
+{
+  "type": "test-plan",
+  "v": 1,
+  "tests": [
+    {
+      "id": "T1",
+      "type": "unit",
+      "name": "queue-order",
+      "proves": [
+        "A3"
+      ],
+      "unit": "U1",
+      "file": "src/holds/queue.test.ts",
+      "says": "The queue returns the member with the oldest waiting hold first.",
+      "run": "bun test src/holds/queue.test.ts"
+    },
+    {
+      "id": "T2",
+      "type": "unit",
+      "name": "one-open-hold",
+      "proves": [
+        "A2"
+      ],
+      "unit": "U1",
+      "file": "src/holds/schema.test.ts",
+      "says": "The partial unique index refuses a second open hold by the same member.",
+      "run": "bun test src/holds/schema.test.ts"
+    },
+    {
+      "id": "T3",
+      "type": "unit",
+      "name": "opening-days",
+      "proves": [
+        "A5"
+      ],
+      "unit": "U1",
+      "file": "src/holds/opening-days.test.ts",
+      "says": "Three opening days skip the days the branch is closed.",
+      "run": "bun test src/holds/opening-days.test.ts"
+    },
+    {
+      "id": "T4",
+      "type": "behavior",
+      "name": "place-hold",
+      "proves": [
+        "A1",
+        "A2"
+      ],
+      "unit": "U2",
+      "file": "test/holds/place.test.ts",
+      "says": "POST /holds answers 201 with the place in line, 409 for a second hold, and 422 when a copy is on the shelf.",
+      "run": "bun test test/holds/place.test.ts"
+    },
+    {
+      "id": "T5",
+      "type": "behavior",
+      "name": "shelve-on-return",
+      "proves": [
+        "A3",
+        "A4"
+      ],
+      "unit": "U2",
+      "file": "test/desk/return.test.ts",
+      "says": "A desk return shelves the copy for the first member and prints a slip with their name.",
+      "run": "bun test test/desk/return.test.ts"
+    },
+    {
+      "id": "T6",
+      "type": "behavior",
+      "name": "night-run",
+      "proves": [
+        "A5"
+      ],
+      "unit": "U2",
+      "file": "test/holds/night-run.test.ts",
+      "says": "The night run passes a copy on after three opening days.",
+      "run": "bun test test/holds/night-run.test.ts"
+    },
+    {
+      "id": "T7",
+      "type": "behavior",
+      "name": "cancel-on-shelf",
+      "proves": [
+        "A8"
+      ],
+      "unit": "U2",
+      "file": "test/holds/cancel.test.ts",
+      "says": "Cancelling a hold whose copy is shelved passes the copy to the next member.",
+      "run": "bun test test/holds/cancel.test.ts"
+    },
+    {
+      "id": "T8",
+      "type": "e2e",
+      "name": "my-holds",
+      "proves": [
+        "A1",
+        "A7"
+      ],
+      "unit": "U3",
+      "file": "e2e/my-holds.spec.ts",
+      "says": "A member places a hold from the book page and sees it on My holds.",
+      "run": "npx playwright test e2e/my-holds.spec.ts"
+    },
+    {
+      "id": "T9",
+      "type": "e2e",
+      "name": "cancel-hold",
+      "proves": [
+        "A8"
+      ],
+      "unit": "U3",
+      "file": "e2e/cancel-hold.spec.ts",
+      "says": "A member cancels a ready hold from its pickup details.",
+      "run": "npx playwright test e2e/cancel-hold.spec.ts"
+    },
+    {
+      "id": "T10",
+      "type": "live",
+      "name": "ready-email",
+      "proves": [
+        "A6"
+      ],
+      "unit": "U2",
+      "says": "On the staging library, a returned test copy sends the ready email to the test member."
+    }
+  ]
+}

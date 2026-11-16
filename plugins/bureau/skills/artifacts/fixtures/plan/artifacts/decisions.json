@@ -1,0 +1,68 @@
+{
+  "type": "decisions",
+  "v": 1,
+  "decisions": [
+    {
+      "id": "D1",
+      "title": "Do you agree with how a returned copy reaches the next member?",
+      "why": "A member should hear the same day the copy is back.",
+      "serves": [
+        "R2",
+        "R3"
+      ],
+      "options": [
+        {
+          "id": "D1a",
+          "label": "The desk scan shelves it",
+          "detail": "When the desk scans a returned copy, the server finds the first member in line and prints a hold slip.",
+          "facts": [
+            [
+              "New staff steps",
+              "none"
+            ],
+            [
+              "Member hears",
+              "the same day"
+            ]
+          ]
+        },
+        {
+          "id": "D1b",
+          "label": "A nightly job shelves returned copies",
+          "detail": "Returned copies wait on a cart until the morning sort.",
+          "facts": [
+            [
+              "New staff steps",
+              "a morning sort"
+            ],
+            [
+              "Member hears",
+              "the next day"
+            ]
+          ]
+        }
+      ],
+      "chosen": "D1a"
+    },
+    {
+      "id": "D2",
+      "title": "Do you agree with how a member is told a copy is ready?",
+      "serves": [
+        "R3"
+      ],
+      "options": [
+        {
+          "id": "D2a",
+          "label": "Email, through the existing notices",
+          "detail": "Every member has an email on file."
+        },
+        {
+          "id": "D2b",
+          "label": "Text message, through a new provider",
+          "detail": "A new contract and a new service to run."
+        }
+      ],
+      "chosen": "D2a"
+    }
+  ]
+}

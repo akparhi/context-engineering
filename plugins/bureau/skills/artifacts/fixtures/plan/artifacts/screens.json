@@ -1,0 +1,322 @@
+{
+  "type": "screens",
+  "v": 1,
+  "screens": [
+    {
+      "id": "book-out",
+      "screen": "Book page",
+      "label": "Every copy is out",
+      "when": "A member opens a book whose copies are all lent.",
+      "regions": [
+        {
+          "mark": "reused",
+          "name": "Side menu",
+          "component": "C1",
+          "sketch": "nav",
+          "sample": {
+            "items": [
+              {
+                "t": "Catalogue",
+                "open": true
+              },
+              {
+                "t": "My loans"
+              },
+              {
+                "t": "Account"
+              }
+            ]
+          }
+        },
+        {
+          "mark": "new",
+          "name": "Place a hold",
+          "serves": [
+            "R1"
+          ],
+          "component": "C12",
+          "sketch": "form",
+          "sample": {
+            "title": "Place a hold",
+            "fields": [
+              [
+                "Pick up at",
+                "Central branch"
+              ]
+            ],
+            "button": "Place hold",
+            "note": "You would be 3rd in line."
+          }
+        }
+      ],
+      "serves": [
+        "R1"
+      ],
+      "on": "Opens a book that is out",
+      "states": [
+        {
+          "id": "out",
+          "says": "Every copy is lent, so the page shows Place a hold where the shelf code would be."
+        }
+      ]
+    },
+    {
+      "id": "no-holds",
+      "screen": "My holds",
+      "label": "No holds",
+      "when": "The member has no open holds.",
+      "regions": [
+        {
+          "mark": "changed",
+          "name": "Menu entry",
+          "serves": [
+            "R4"
+          ],
+          "component": "C2",
+          "sketch": "nav",
+          "sample": {
+            "items": [
+              {
+                "t": "Catalogue"
+              },
+              {
+                "t": "My loans"
+              },
+              {
+                "t": "My holds",
+                "entry": true
+              },
+              {
+                "t": "Account"
+              }
+            ]
+          }
+        },
+        {
+          "mark": "new",
+          "name": "Nothing on hold",
+          "serves": [
+            "R4"
+          ],
+          "component": "C10",
+          "sketch": "message",
+          "sample": {
+            "tone": "empty",
+            "title": "Nothing on hold",
+            "text": "Find a book that is out and place a hold from its page."
+          }
+        }
+      ],
+      "serves": [
+        "R4"
+      ],
+      "on": "Opens My holds with nothing on hold"
+    },
+    {
+      "id": "holds",
+      "screen": "My holds",
+      "label": "Holds in line",
+      "when": "The member has open holds, some waiting and one ready.",
+      "regions": [
+        {
+          "mark": "changed",
+          "name": "Menu entry",
+          "serves": [
+            "R4"
+          ],
+          "component": "C2",
+          "sketch": "nav",
+          "sample": {
+            "items": [
+              {
+                "t": "Catalogue"
+              },
+              {
+                "t": "My loans"
+              },
+              {
+                "t": "My holds",
+                "entry": true
+              },
+              {
+                "t": "Account"
+              }
+            ]
+          }
+        },
+        {
+          "mark": "new",
+          "name": "Counts",
+          "serves": [
+            "R4"
+          ],
+          "component": "C4",
+          "sketch": "figures",
+          "sample": {
+            "figures": [
+              [
+                "3",
+                "holds"
+              ],
+              [
+                "1",
+                "ready to pick up"
+              ]
+            ]
+          }
+        },
+        {
+          "mark": "new",
+          "name": "Tabs",
+          "serves": [
+            "R4"
+          ],
+          "component": "C5",
+          "sketch": "tabs",
+          "sample": {
+            "tabs": [
+              [
+                "All",
+                3
+              ],
+              [
+                "Waiting",
+                2
+              ],
+              [
+                "Ready",
+                1
+              ]
+            ]
+          }
+        },
+        {
+          "mark": "copy",
+          "name": "Search and filters",
+          "component": "C6",
+          "sketch": "filters",
+          "sample": {
+            "search": "Title or author",
+            "pills": [
+              "Branch"
+            ]
+          }
+        },
+        {
+          "mark": "new",
+          "name": "Hold list",
+          "serves": [
+            "R1",
+            "R4"
+          ],
+          "component": "C7",
+          "sketch": "table",
+          "sample": {
+            "columns": [
+              "Book",
+              "Status",
+              "Pick up by"
+            ],
+            "rows": [
+              [
+                "The Salt Road",
+                "2nd in line",
+                ""
+              ],
+              [
+                "Winter Orchard",
+                "Ready",
+                "Friday"
+              ],
+              [
+                "A Short History of Bridges",
+                "5th in line",
+                ""
+              ]
+            ]
+          }
+        },
+        {
+          "mark": "reused",
+          "name": "Pages",
+          "component": "C8",
+          "sketch": "pagination",
+          "sample": {
+            "text": "1 to 3 of 3"
+          }
+        }
+      ],
+      "serves": [
+        "R1",
+        "R4"
+      ],
+      "subtitle": "3 holds",
+      "from": "book-out",
+      "on": "Places a hold",
+      "states": [
+        {
+          "id": "list",
+          "says": "Holds load newest first, 20 to a page."
+        }
+      ]
+    },
+    {
+      "id": "ready",
+      "screen": "My holds",
+      "label": "Ready to pick up",
+      "when": "A copy waits on the hold shelf for the member.",
+      "regions": [
+        {
+          "mark": "new",
+          "name": "Pickup details",
+          "serves": [
+            "R3",
+            "R5"
+          ],
+          "component": "C9",
+          "sketch": "sheet",
+          "sample": {
+            "title": "Winter Orchard",
+            "sub": "On the hold shelf at the central branch",
+            "badge": "Ready",
+            "figures": [
+              [
+                "Friday",
+                "pick up by"
+              ],
+              [
+                "Desk 2",
+                "where"
+              ]
+            ],
+            "rows": [
+              [
+                "Shelved",
+                "Tuesday"
+              ],
+              [
+                "Pick up by",
+                "Friday, at closing"
+              ]
+            ],
+            "button": "Cancel hold"
+          }
+        }
+      ],
+      "serves": [
+        "R3",
+        "R5"
+      ],
+      "chart": "sc:HoldQueue/On the hold shelf",
+      "subtitle": "Pick up by Friday",
+      "from": "holds",
+      "on": "Opens a ready hold",
+      "states": [
+        {
+          "id": "ready",
+          "says": "The sheet opens over the list and keeps the list's tab."
+        }
+      ]
+    }
+  ]
+}

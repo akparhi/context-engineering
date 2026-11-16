@@ -1,0 +1,38 @@
+{
+  "format": 2,
+  "items": [
+    {
+      "id": "last-bus",
+      "section": "Scope",
+      "title": "Does the last night bus wait for the late train?",
+      "why": "The late train runs ten minutes behind on most Fridays.",
+      "type": "question",
+      "options": [
+        {
+          "id": "wait-yes",
+          "label": "Yes, up to ten minutes",
+          "detail": "Riders off the train make the bus, and the route ends later."
+        },
+        {
+          "id": "wait-no",
+          "label": "No, it leaves on time",
+          "detail": "The route keeps its times, and some riders wait for a taxi."
+        }
+      ],
+      "recommended": "wait-yes",
+      "default": null,
+      "blocks": [],
+      "artifacts": []
+    },
+    {
+      "id": "weekends",
+      "section": "Scope",
+      "title": "Which nights does the night bus run?",
+      "type": "question",
+      "default": "Friday and Saturday nights.",
+      "blocks": [],
+      "placeholder": "The nights it runs",
+      "artifacts": []
+    }
+  ]
+}

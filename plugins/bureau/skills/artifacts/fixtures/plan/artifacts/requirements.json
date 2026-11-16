@@ -1,0 +1,82 @@
+{
+  "type": "requirements",
+  "v": 1,
+  "problem": "Members cannot reserve a book that is out. They ask at the desk, and the desk keeps a paper list for each book. Two members can be promised the same copy, and a returned copy can go back on the open shelf while someone still waits for it.",
+  "users": [
+    {
+      "who": "Member",
+      "need": "Places a hold from the book page, sees their place in line, and picks the copy up from the hold shelf."
+    },
+    {
+      "who": "Desk librarian",
+      "need": "Shelves a returned copy for the next member in line, and cancels a hold when a member asks at the desk."
+    }
+  ],
+  "notFor": "Branch managers. Reports on which books people wait for come in a later plan.",
+  "goals": [
+    "A member can hold any book whose copies are all out, without asking at the desk.",
+    "Each returned copy goes to the first member in line, and that member hears about it the same day."
+  ],
+  "nonGoals": [
+    {
+      "what": "Holds on a book with a copy on the open shelf",
+      "why": "The member can take that copy now."
+    },
+    {
+      "what": "Pausing a hold while away",
+      "why": "Few members asked for it, and it doubles the cases the line must handle."
+    },
+    {
+      "what": "Text message alerts"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "R1",
+      "title": "Place a hold on a book that is out",
+      "text": "When every copy of a book is lent, a member can join the line for it from the book page and sees their place.",
+      "who": "Member"
+    },
+    {
+      "id": "R2",
+      "title": "The first in line gets the returned copy",
+      "text": "A returned copy goes to the first member in line, and nobody else can take it from the hold shelf.",
+      "who": "Desk librarian"
+    },
+    {
+      "id": "R3",
+      "title": "Three opening days to pick it up",
+      "text": "The member hears the same day the copy is shelved, and has three opening days to collect it. After that it passes to the next member."
+    },
+    {
+      "id": "R4",
+      "title": "See every hold in one place",
+      "text": "A member sees each hold with their place in line, or the day to pick it up by.",
+      "who": "Member"
+    },
+    {
+      "id": "R5",
+      "title": "Cancel a hold",
+      "text": "A member can cancel any hold, and a desk librarian can cancel one for them. The line moves up."
+    }
+  ],
+  "rollout": [
+    {
+      "stage": "Staff only",
+      "says": "Desk librarians try holds on their own library cards for one week."
+    },
+    {
+      "stage": "Central branch",
+      "says": "Members of the central branch see Place a hold on the book page."
+    },
+    {
+      "stage": "Every branch",
+      "says": "Every member sees it, and the desk stops taking paper holds."
+    }
+  ],
+  "metric": {
+    "name": "Holds collected",
+    "target": "8 in 10 holds end with the member picking the copy up",
+    "readFrom": "The weekly hold report"
+  }
+}
