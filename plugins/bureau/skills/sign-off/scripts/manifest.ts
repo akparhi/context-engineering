@@ -143,11 +143,13 @@ const base = {
   id, section: Section, title: z.string(), why: z.string().optional(),
   body: z.array(Block).optional(),
   source: z.string().optional(),                                                   // `plan.md#<heading>`; its text goes into `itemRev`
-  serves: ids.optional(), dependsOn: ids.optional(),
+  serves: ids.optional(),
 };
 const Item = z.discriminatedUnion("type", [
   z.strictObject({ ...base, type: z.literal("part"), touches: z.array(Touch) }),
   z.strictObject({ ...base, type: z.literal("step"), touches: z.array(Touch), repo: z.string().optional(), files: z.array(z.string()).optional(),
+    mergesAfter: ids.optional(),                                                   // units whose pull requests merge first; it never delays the start
+    startsAfter: z.strictObject({ units: ids.min(1), reason: z.string().trim().min(1, "a unit that starts late needs a reason") }).optional(), // only when a contract is not fixed yet
     delivers: ids.optional(), tasks: z.number().int().optional(), qa: z.string().optional(), done: z.string().optional() }),
   z.strictObject({ ...base, type: z.literal("decision"), touches: z.array(Touch), options: z.array(Option), chosen: id }),
   z.strictObject({ ...base, type: z.literal("question"), options: z.array(Option).optional(), recommended: id.optional(),

@@ -51,7 +51,7 @@ async function reachedFromPart(): Promise<string[]> {
 }
 
 /** The step page's shell. The part page draws views alone, so neither its JS nor its CSS may come from these. */
-const SHELL_ONLY = ["App.tsx", "linked.tsx", "placed.tsx", "components/ui/sidebar.tsx", "components/ui/sheet.tsx", "components/ui/tabs.tsx"]
+const SHELL_ONLY = ["App.tsx", "linked.tsx", "placed.tsx", "components/ui/sidebar.tsx", "components/ui/sheet.tsx"]
 
 const write = async (name: string, html: string) => {
   await Bun.write(`${here}/${name}`, html)

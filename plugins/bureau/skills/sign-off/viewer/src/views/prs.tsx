@@ -1,13 +1,13 @@
 import { Fragment, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react"
-import { ArrowRightIcon, BotIcon, CircleAlertIcon, CircleHelpIcon, GitBranchIcon, RouteIcon, UserIcon, type LucideIcon } from "lucide-react"
+import { ArrowRightIcon, CircleAlertIcon } from "lucide-react"
 import type { PrsInput, PullRequest } from "../../../scripts/views.ts"
 import { Badge } from "@/components/ui/badge"
 import { COPY } from "../copy.ts"
 import type { Links, Ref } from "../plan.ts"
-import { IdChip, LooseEnd } from "../parts.tsx"
+import { Disclosure, IdChip, LooseEnd } from "../parts.tsx"
 import type { ViewProps } from "../views.tsx"
 
-/** A pull request and its column in the order: one more than the latest stage it waits for. */
+/** A pull request and its column in the merge order: one more than the latest stage it merges after. */
 type Placed = PrsInput["prs"][number] & { stage: number }
 
 function place(prs: PrsInput["prs"]): Placed[] {
@@ -37,32 +37,34 @@ export function PrsView({ input, links, go }: ViewProps<PrsInput>) {
   const repos = useMemo(() => [...new Set(prs.map((p) => p.repo))], [prs])
   return (
     <>
+      <PrLanes prs={prs} repos={repos} go={go} />
       <SharedFacts input={input} />
-      <section className="mt-6">
-        <div>
-          <p className="mb-3 text-sm leading-6 text-muted-foreground">{COPY.prs.count(prs.length, repos.length)}</p>
-          <PrLanes prs={prs} repos={repos} go={go} />
-        </div>
-      </section>
       <ul className="mt-6 grid gap-4 lg:grid-cols-2">{prs.map((p) => <PrCard key={p.id} pr={p} units={input.units} links={links} go={go} />)}</ul>
     </>
   )
 }
 
+/** What holds for every pull request: who merges, who reviews, and the reviewer named. The planner's notes sit behind a fold. */
 function SharedFacts({ input }: { input: PrsInput }) {
   const s = COPY.prs
   const auto = input.prs.filter((p) => p.merge.by !== "human")
-  const fact = (Icon: LucideIcon, body: ReactNode, key: string) => (
-    <li key={key} className="flex gap-2.5 text-sm leading-6"><Icon className="mt-1 size-4 shrink-0 text-muted-ink" aria-hidden /><span className="min-w-0">{body}</span></li>
+  const row = (term: string, value: ReactNode) => (
+    <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-3 py-1.5"><dt className="text-xs leading-6 font-medium text-muted-ink">{term}</dt><dd className="min-w-0 text-sm leading-6">{value}</dd></div>
   )
+  const reviewers = [...new Set(input.prs.flatMap((p) => p.reviewer ?? []))]
   return (
-    <ul className="grid gap-x-8 gap-y-2 md:grid-cols-2">
-      {fact(UserIcon, auto.length ? s.mergeSome(auto.map((p) => p.id).join(", "), auto.length === 1, auto.length < input.prs.length) : s.mergeNone, "merge")}
-      {input.bot && fact(BotIcon, <><Mono>{input.bot}</Mono>{s.botReviews}{input.label && <>{s.botLabel[0]}<Mono>{input.label}</Mono>{s.botLabel[1]}</>}.</>, "bot")}
-      {fact(RouteIcon, s.route, "route")}
-      {(input.notes ?? []).map((n, i) => fact(GitBranchIcon, n, `note-${i}`))}
-      {input.prs.every((p) => !p.reviewer) && fact(CircleHelpIcon, s.unnamed, "unnamed")}
-    </ul>
+    <div className="mt-4" data-part="shared">
+      <dl className="max-w-xl divide-y divide-border/60">
+        {row(s.merge, auto.length
+          ? <>{auto.map((p) => <span key={p.id} className="mr-3">{s.by[p.merge.by]} · {p.id}</span>)}{auto.length < input.prs.length && <span>{s.by.human} · {s.rest}</span>}</>
+          : <>{s.by.human} · {s.all(input.prs.length)}</>)}
+        {input.bot && row(s.review, <><Mono>{input.bot}</Mono>{input.label && <> · {s.label} <Mono>{input.label}</Mono></>}</>)}
+        {row(s.reviewer, reviewers.length ? reviewers.join(", ") : <LooseEnd>{s.unnamed}</LooseEnd>)}
+      </dl>
+      {input.notes?.length ? (
+        <div className="mt-2"><Disclosure label={s.notes}><ul className="flex flex-col gap-1 text-sm leading-6 text-muted-foreground">{input.notes.map((n, i) => <li key={i}>{n}</li>)}</ul></Disclosure></div>
+      ) : null}
+    </div>
   )
 }
 
@@ -117,7 +119,7 @@ function arrows(root: HTMLElement, prs: Placed[], repos: string[], stages: numbe
   })
 }
 
-/** The order: a lane per repo, a column per stage, an arrow from each pull request to each one that waits for it. It pans when it is
+/** The order: a lane per repo, a column per stage, an arrow from each pull request to each one that merges after it. It pans when it is
  *  wider than the card. */
 function PrLanes({ prs, repos, go }: { prs: Placed[]; repos: string[]; go: (ref: Ref) => void }) {
   const stages = Math.max(1, ...prs.map((p) => p.stage))
@@ -148,7 +150,7 @@ function PrLanes({ prs, repos, go }: { prs: Placed[]; repos: string[]; go: (ref:
         <div className="grid grid-cols-[8rem_repeat(var(--stages),minmax(0,1fr))] gap-x-10 gap-y-3">
           <div />
           {Array.from({ length: stages }, (_, i) => (
-            <div key={i} data-col={i + 1} className="text-xs font-medium text-muted-ink"><span className="font-mono">{i + 1}</span> {COPY.prs.stage(i, stages)}</div>
+            <div key={i} data-col={i + 1} className="text-xs font-medium text-muted-ink"><span className="font-mono">{i + 1}</span></div>
           ))}
           {repos.map((repo) => (
             <Fragment key={repo}>
@@ -162,7 +164,6 @@ function PrLanes({ prs, repos, go }: { prs: Placed[]; repos: string[]; go: (ref:
           ))}
         </div>
       </div>
-      <p className="mt-2.5 text-xs leading-5 text-muted-ink">{COPY.prs.arrows}</p>
     </div>
   )
 }
@@ -230,14 +231,14 @@ export function PrCard({ pr: p, units, links, go }: { pr: Pr; units: PrsInput["u
           {row(s.branch, (
             <>
               <div className="font-mono text-xs leading-5 [overflow-wrap:anywhere]">{p.branch}</div>
-              <div className="mt-0.5 text-xs text-muted-ink">{s.from} <Mono><span className="text-foreground">{p.from}</span></Mono> {s.into} <Mono><span className="text-foreground">{p.into}</span></Mono></div>
+              <div className="mt-0.5 text-xs text-muted-ink">{s.from} <Mono><span className="text-foreground">{p.from}</span></Mono></div>
               {p.planInto && <p className="mt-1 text-xs leading-5 text-muted-ink">{s.planDiffers(p.repo, p.into, p.planInto)}</p>}
             </>
           ))}
-          {row(s.waitsFor, (
-            <>{p.after?.length ? <>{and(p.after.map(jump))} {s.toMerge}</> : s.startsFirst}{p.waits && <> <span className="text-muted-foreground">{p.waits}</span></>}</>
+          {row(s.mergesAfter, (
+            <>{p.after?.length ? and(p.after.map(jump)) : s.first}{p.waits && <>. <span className="text-muted-foreground">{p.waits}</span></>}</>
           ))}
-          {row(s.promotion, (
+          {p.promotes?.length ? row(s.promotion, (
             <div className="flex flex-wrap items-center gap-1">
               {bases.map((b, i) => (
                 <Fragment key={i}>
@@ -246,13 +247,12 @@ export function PrCard({ pr: p, units, links, go }: { pr: Pr; units: PrsInput["u
                 </Fragment>
               ))}
             </div>
-          ))}
-          {row(s.units, <span className="flex flex-wrap gap-1">{p.steps.map((id) => <IdChip key={id} id={id} />)}</span>)}
+          )) : null}
           {p.serves.length > 0 && row(s.serves, <span className="flex flex-wrap gap-1">{p.serves.map((r) => <IdChip key={r} id={r} />)}</span>)}
           {row(s.evidence, <Evidence evidence={p.evidence} links={links} />)}
           {row(s.review, p.review)}
           {p.reviewer && row(s.reviewer, p.reviewer)}
-          {row(s.autoMerge, <><span className="font-medium">{s.merges[p.merge.by]}</span> <span className="text-muted-foreground">{p.merge.why}</span></>)}
+          {row(s.merge, <><span className="font-medium">{s.by[p.merge.by]}</span>{p.merge.why && <> · <span className="text-muted-foreground">{p.merge.why}</span></>}</>)}
           {p.note && row(s.note, <span className="text-muted-foreground">{p.note}</span>)}
         </dl>
       </div>

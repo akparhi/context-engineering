@@ -20,16 +20,32 @@ const chromium = (() => {
   }
 })();
 
-/** Moves to the Decide step, clicks every act's "Approve the N open items" there, then reads the draft the page saved. */
+/** Moves to the Decide step, clicks "Approve all remaining", then reads the draft the page saved. */
 const APPROVE_EVERY_ACT = `(async () => {
   const tick = () => new Promise((ok) => setTimeout(ok, 100));
   location.hash = "#decide";
   await tick();
-  const buttons = [...document.querySelectorAll('[id^="foot-"] button')].filter((b) => b.textContent.startsWith("Approve the"));
+  const buttons = [...document.querySelectorAll('[data-focus="approve-all"]')];
   for (const b of buttons) { b.click(); await tick(); }
   await tick();
   const key = Object.keys(localStorage).find((k) => k.startsWith("sign-off:LIB-7:"));
   return { clicked: buttons.length, approved: Object.keys(JSON.parse(localStorage.getItem(key) ?? "{}").review?.verdicts ?? {}) };
+})()`;
+
+/** Walks every stop with the footer's Next and returns each stop whose page is wider than the window. */
+const SIDEWAYS = `(async () => {
+  const tick = () => new Promise((ok) => setTimeout(ok, 60));
+  const wide = [];
+  let stops = 0;
+  for (; stops < 80; stops++) {
+    await tick();
+    const page = document.scrollingElement;
+    if (page.scrollWidth > page.clientWidth) wide.push(location.hash + " " + page.scrollWidth + ">" + page.clientWidth);
+    const next = document.querySelector('[data-focus="foot:next"]');
+    if (!next || next.disabled) break;
+    next.click();
+  }
+  return { wide, stops, width: innerWidth, at: location.hash };
 })()`;
 
 /** Opens the PR plan, measures what it shows, then presses the first pull request in the diagram. */
@@ -85,7 +101,7 @@ const ROOT_BOX = `(() => { const root = document.getElementById("root"); return 
 const RootBox = z.object({ height: z.number(), content: z.number(), shown: z.number() });
 
 describe.skipIf(chromium === null)("the built page", () => {
-  test("each act's bulk approve leaves the grant open, which takes its own click", async () => {
+  test("Decide's approve-all leaves the grant open, which takes its own click", async () => {
     const dir = join(scratch, "plan");
     cpSync(FIXTURE, dir, { recursive: true });
     const { errors, value } = await inChromium(chromium ?? "", pathToFileURL(await build(dir)).href, APPROVE_EVERY_ACT,
@@ -122,6 +138,17 @@ describe.skipIf(chromium === null)("the built page", () => {
     expect(value.picked).not.toBe(value.last);
     expect(value.again).toBe(value.last);
     expect(value.shown).toBe(true);
+  }, 60_000);
+
+  test("no stop scrolls the page sideways in a 1024 by 768 window", async () => {
+    const dir = join(scratch, "narrow");
+    cpSync(FIXTURE, dir, { recursive: true });
+    const { errors, value } = await inChromium(chromium ?? "", pathToFileURL(await build(dir)).href, SIDEWAYS,
+      z.object({ wide: z.array(z.string()), stops: z.number(), width: z.number(), at: z.string() }), "1024,768");
+    expect(errors).toEqual([]);
+    expect(value.width).toBeLessThanOrEqual(1024);
+    expect(value.at).toBe("#decide");
+    expect(value.wide).toEqual([]);
   }, 60_000);
 
   test("caps the part at 800px when the host injects a theme style", async () => {

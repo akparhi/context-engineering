@@ -1,9 +1,12 @@
 import { createContext, useContext, useState, type KeyboardEvent, type ReactNode } from "react"
-import { CheckIcon, CircleAlertIcon, MessageSquareIcon, Undo2Icon } from "lucide-react"
+import { CheckIcon, ChevronRightIcon, CircleAlertIcon, MessageSquareIcon, Undo2Icon } from "lucide-react"
 import type { Item } from "../../scripts/manifest.ts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { COPY, TOUCH_WHY } from "./copy.ts"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { COPY, KIND_LABEL, TOUCH_WHY } from "./copy.ts"
 import { defaultWords, holds, hostOf, isGate, ownsCard, type PageData, type Question, type Ref, type RefIndex } from "./plan.ts"
 import { itemState, questionState, sentBack, type EditorKey, type Review, type ReviewAction } from "./review.ts"
 import { revisedFor } from "./changed.ts"
@@ -33,7 +36,7 @@ export function usePage() {
 }
 
 const ID_CHIP = "inline-flex h-5 shrink-0 items-center rounded-md bg-secondary px-1.5 font-mono text-xs font-medium text-foreground ring-1 ring-foreground/10"
-/** An id. When the page knows what it names, it opens the Linked panel. */
+/** An id. When the page knows what it names, hovering names it and a press opens the Linked panel. */
 export function IdChip({ id }: { id: string }) {
   const { refs, openLinked } = usePage()
   if (!refs.get(id)) return <span className={ID_CHIP}>{id}</span>
@@ -45,9 +48,19 @@ export function IdChip({ id }: { id: string }) {
 
 export const Subhead = ({ children, extra }: { children: ReactNode; extra?: ReactNode }) => (
   <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-    <h4 className="text-xs font-medium tracking-wide text-muted-ink uppercase">{children}</h4>
+    <h4 className="text-xs font-medium text-muted-ink">{children}</h4>
     {extra && <span className="text-xs text-muted-ink">{extra}</span>}
   </div>
+)
+
+/** A section that starts closed under its one-line label. */
+export const Disclosure = ({ label, children }: { label: ReactNode; children: ReactNode }) => (
+  <Collapsible>
+    <CollapsibleTrigger className="group flex items-center gap-1.5 rounded-md text-sm font-medium text-muted-ink hover:text-foreground">
+      <ChevronRightIcon aria-hidden className="size-4 transition-transform group-data-[panel-open]:rotate-90" />{label}
+    </CollapsibleTrigger>
+    <CollapsibleContent className="pt-3">{children}</CollapsibleContent>
+  </Collapsible>
 )
 
 export const LooseEnd = ({ children }: { children: ReactNode }) => (
@@ -60,10 +73,16 @@ export function StatusPill({ item }: { item: Item }) {
   if (s === "open") return <Badge variant="ask">{COPY.item.open}</Badge>
   if (s === "approved") return <Badge variant="pass"><CheckIcon />{COPY.item.approved}</Badge>
   if (sentBack(s)) return <Badge variant="revise"><Undo2Icon />{s === "changes" ? COPY.item.sentBack : COPY.item.objected}</Badge>
-  return <Badge variant="dashed">{COPY.item.fyi}</Badge>
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<span className="inline-flex" />}><Badge variant="dashed">{COPY.item.fyi}</Badge></TooltipTrigger>
+      <TooltipContent>{COPY.item.fyiWhy}</TooltipContent>
+    </Tooltip>
+  )
 }
 
-export function VerdictButtons({ item }: { item: Item }) {
+/** `approve` is false on a card, where the step footer holds the one Approve. */
+export function VerdictButtons({ item, approve = true }: { item: Item; approve?: boolean }) {
   const { review, act } = usePage()
   const id = item.id, s = itemState(review, item)
   if (review.typing[`back:${id}`] !== undefined) return null
@@ -71,7 +90,7 @@ export function VerdictButtons({ item }: { item: Item }) {
   if (s === "open") return (
     <>
       <Button key="ask" variant="ghost" size="sm" data-focus={`ask-changes:${id}`} onClick={() => act(draft(), `back:${id}`)}>{COPY.item.requestChanges}</Button>
-      <Button key="verdict" variant="outline" size="sm" data-focus={`verdict:${id}`} onClick={() => act({ type: "approve", ids: [id] }, `verdict:${id}`)}><CheckIcon />{COPY.item.approve}</Button>
+      {approve && <Button key="verdict" variant="outline" size="sm" data-focus={`verdict:${id}`} onClick={() => act({ type: "approve", ids: [id] }, `verdict:${id}`)}><CheckIcon />{COPY.item.approve}</Button>}
     </>
   )
   if (s === "fyi") return <Button key="verdict" variant="ghost" size="xs" data-focus={`verdict:${id}`} onClick={() => act(draft(), `back:${id}`)}>{COPY.item.object}</Button>
@@ -86,7 +105,7 @@ const editorKeys = (save: () => void, cancel: () => void) => (e: KeyboardEvent) 
   if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); save() }
 }
 
-function BackStrip({ item }: { item: Item }) {
+export function BackStrip({ item }: { item: Item }) {
   const { review, act } = usePage()
   const [empty, setEmpty] = useState(false)
   const id = item.id, key: EditorKey = `back:${id}`, gate = isGate(item)
@@ -198,7 +217,7 @@ export function Card({ item }: { item: Item }) {
   const shell = { links: data.links, sources: data.sources, focus: focused?.item === item.id ? focused.ref : null, go }
   return (
     <article id={`item-${item.id}`} data-item={item.id} data-ref={item.id} data-state={itemState(review, item)} data-focus={`item:${item.id}`} tabIndex={-1}
-      className={`${CARD} flex scroll-mt-20 flex-col overflow-hidden text-sm ring-1 ring-foreground/5 outline-none focus-visible:ring-2 focus-visible:ring-focus dark:ring-foreground/10`}>
+      className={`${CARD} flex scroll-mt-20 flex-col overflow-clip text-base ring-1 ring-foreground/5 outline-none focus-visible:ring-2 focus-visible:ring-focus dark:ring-foreground/10`}>
       <CardHead item={item} />
       <RevisedStrip ids={[item.id, ...m.items.filter((it) => !ownsCard(it) && hostOf(m, it) === item).map((it) => it.id)]} />
       <BackStrip item={item} />
@@ -219,24 +238,38 @@ function CardHead({ item }: { item: Item }) {
   const { review } = usePage()
   const why = "touches" in item ? item.touches.map((t) => TOUCH_WHY[t]).join(". ") : ""
   return (
-    <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 border-b px-5 py-4 sm:px-6">
+    <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 border-b px-5 py-3.5 sm:flex-nowrap sm:px-6">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
           <h3 className="font-heading text-lg font-medium">{item.title}</h3>
           <StatusPill item={item} />
           {why && itemState(review, item) === "open" && <span className="text-xs text-muted-ink">{why}</span>}
+          {item.why && longWhy(item.why) && <Why text={item.why} />}
         </div>
-        {item.why && <p className="mt-1 max-w-[68ch] text-sm leading-6 text-muted-foreground">{item.why}</p>}
+        {item.why && !longWhy(item.why) && <p data-part="why" className="mt-1 max-w-[68ch] text-base leading-7 text-muted-foreground">{item.why}</p>}
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <CommentButton item={item} /><VerdictButtons item={item} />
+      <div className="flex shrink-0 items-center gap-2">
+        <CommentButton item={item} /><VerdictButtons item={item} approve={false} />
       </div>
     </header>
   )
 }
 
-/** A question: its options or a text box until answered, then the answer and Change. */
-export function QuestionCard({ q }: { q: Question }) {
+const WHY_WORDS = 16
+const longWhy = (text: string) => text.trim().split(/\s+/).length > WHY_WORDS
+/** The planner's reason when it runs past `check`'s budget: one word on the title line that opens it on hover or focus. */
+function Why({ text }: { text: string }) {
+  return (
+    <HoverCard>
+      <HoverCardTrigger delay={150} render={<span data-part="why" tabIndex={0} className="cursor-help rounded-sm text-xs text-muted-ink underline decoration-dotted underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-focus" />}>{COPY.item.why}</HoverCardTrigger>
+      <HoverCardContent align="start" className="w-[min(34rem,90vw)] leading-6">{text}</HoverCardContent>
+    </HoverCard>
+  )
+}
+
+/** A question: its options or a text box until answered, then the answer and Change. `wide` is one full-width row, the question
+ *  left and its controls right, for a question that runs on a default. */
+export function QuestionCard({ q, wide = false }: { q: Question; wide?: boolean }) {
   const { review, act } = usePage()
   const s = questionState(review, q)
   const answer = review.answers[q.id]
@@ -244,49 +277,45 @@ export function QuestionCard({ q }: { q: Question }) {
   const defaultLabel = defaultWords(q)
   const label = (id: string) => q.options?.find((o) => o.id === id)?.label ?? id
   const answerText = () => { const text = typed.trim(); if (text) act({ type: "answer", id: q.id, answer: { text } }, key) }
-  const defaultLine = !holds(q) && defaultLabel && <p className="mt-3 text-sm leading-6"><span className="text-muted-ink">{COPY.question.defaultIs}</span> {defaultLabel}</p>
+  const controls = wide ? "mt-3 lg:mt-0" : "mt-3"
   return (
     <div id={`item-${q.id}`} data-question={q.id} data-ref={q.id} data-state={s}
-      className={`scroll-mt-28 rounded-3xl p-4 ring-1 ${s === "open" ? "ring-ask-line" : "ring-foreground/10"}`}>
-      <div className="flex flex-wrap items-center gap-2">
-        <IdChip id={q.id} />
-        {s === "answered" ? <Badge variant="pass"><CheckIcon />{COPY.question.answered}</Badge>
-          : s === "open" ? <Badge variant="askline">{COPY.question.open}</Badge>
-          : <Badge variant="dashed">{COPY.question.default}</Badge>}
-        {q.serves?.map((r) => <IdChip key={r} id={r} />)}
-      </div>
-      <div className="mt-2 font-medium">{q.title}</div>
-      <div>
+      className={`scroll-mt-28 rounded-3xl p-4 ring-1 ${s === "open" ? "ring-ask-line" : "ring-foreground/10"} ${wide ? "lg:col-span-2 lg:flex lg:items-center lg:gap-6" : ""}`}>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <IdChip id={q.id} />
+          {s === "answered" ? <Badge variant="pass"><CheckIcon />{COPY.question.answered}</Badge>
+            : s === "open" ? <Badge variant="askline">{COPY.question.open}</Badge>
+            : <Badge variant="dashed">{COPY.question.default}</Badge>}
+          {q.serves?.map((r) => <IdChip key={r} id={r} />)}
+        </div>
+        <div className="mt-2 font-medium">{q.title}</div>
         {q.why && <p className="mt-0.5 text-sm text-muted-ink">{q.why}</p>}
-        {answer ? null : q.options?.length ? (
-          <>
-            {defaultLine}
-            <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={q.title}>
-              {q.options.map((o, i) => (
-                <Button key={o.id} variant="outline" size="sm" data-focus={i === 0 ? key : undefined} className="h-auto min-h-8 py-1.5 text-left whitespace-normal"
-                  onClick={() => act({ type: "answer", id: q.id, answer: { option: o.id } }, key)}>
-                  {o.label}{o.id === q.recommended && <span className="text-xs font-normal text-muted-ink">{COPY.question.recommended}</span>}
-                </Button>
-              ))}
-            </div>
-          </>
+        {!answer && !holds(q) && defaultLabel && <p className={`${wide ? "mt-1" : "mt-3"} text-sm leading-6`}><span className="text-muted-ink">{COPY.question.defaultIs}</span> {defaultLabel}</p>}
+      </div>
+      <div className={wide ? "lg:w-96 lg:shrink-0" : undefined}>
+        {answer ? (
+          <div className={`${controls} flex flex-wrap items-start justify-between gap-2`}>
+            <p className="min-w-0 flex-1 text-sm leading-6"><CheckIcon className="mr-1.5 inline size-4 text-pass-ink" />{"option" in answer ? label(answer.option) : answer.text}</p>
+            <Button key="change" variant="ghost" size="xs" data-focus={key} onClick={() => act({ type: "clearAnswer", id: q.id }, key)}>{COPY.question.change}</Button>
+          </div>
+        ) : q.options?.length ? (
+          <div className={`${controls} flex flex-wrap gap-2`} role="group" aria-label={q.title}>
+            {q.options.map((o, i) => (
+              <Button key={o.id} variant="outline" size="sm" data-focus={i === 0 ? key : undefined} className="h-auto min-h-8 py-1.5 text-left whitespace-normal"
+                onClick={() => act({ type: "answer", id: q.id, answer: { option: o.id } }, key)}>
+                {o.label}{o.id === q.recommended && <span className="text-xs font-normal text-muted-ink">{COPY.question.recommended}</span>}
+              </Button>
+            ))}
+          </div>
         ) : (
-          <>
-            {defaultLine}
-            <form className="mt-3 flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); answerText() }}>
-              <input type="text" data-focus={key} value={typed} onChange={(e) => act({ type: "type", key, text: e.target.value })} placeholder={q.placeholder ?? COPY.question.placeholder} aria-label={q.title}
-                className="h-9 min-w-0 flex-1 basis-56 rounded-2xl border border-transparent bg-input/50 px-3 text-sm placeholder:text-muted-foreground" />
-              <Button type="submit" variant="outline" size="sm">{COPY.question.answer}</Button>
-            </form>
-          </>
+          <form className={`${controls} flex flex-wrap gap-2`} onSubmit={(e) => { e.preventDefault(); answerText() }}>
+            <input type="text" data-focus={key} value={typed} onChange={(e) => act({ type: "type", key, text: e.target.value })} placeholder={q.placeholder ?? COPY.question.placeholder} aria-label={q.title}
+              className="h-9 min-w-0 flex-1 basis-56 rounded-2xl border border-transparent bg-input/50 px-3 text-sm placeholder:text-muted-foreground" />
+            <Button type="submit" variant="outline" size="sm">{COPY.question.answer}</Button>
+          </form>
         )}
       </div>
-      {answer && (
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-2">
-          <p className="min-w-0 flex-1 text-sm leading-6"><CheckIcon className="mr-1.5 inline size-4 text-pass-ink" />{"option" in answer ? label(answer.option) : answer.text}</p>
-          <Button key="change" variant="ghost" size="xs" data-focus={key} onClick={() => act({ type: "clearAnswer", id: q.id }, key)}>{COPY.question.change}</Button>
-        </div>
-      )}
     </div>
   )
 }

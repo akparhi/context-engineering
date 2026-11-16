@@ -20,6 +20,8 @@ The first run installs the pinned dependencies with bun. Run a command with no a
 
 The page is always the agent asking the reader. Write the `ask`, the `note`, each `why` and each question as the agent, with the reader as "you": "Approve the plan for holds, and answer the question that blocks the endpoints." The page has no author view, and nothing on it or in `status` depends on who reads it. The reader's name labels the review and nothing else.
 
+The reader is an engineer. Do not define standard terms, say how to use the page, or restate a title. `check` warns (`budget`) when a `why`, a component's `does`, a note or a test's `says` runs long.
+
 ## The loop
 
 1. **Author.** Write `sign-off.json` in the plan folder, beside `plan.md`, by [references/manifest.md](references/manifest.md). The schema is [scripts/manifest.ts](scripts/manifest.ts), and [fixtures/plan/](fixtures/plan/) is a complete worked example. Fill `ticket` and `sources` from the ticket and its attachments. Never invent a URL.
@@ -27,7 +29,7 @@ The page is always the agent asking the reader. Write the `ask`, the `note`, eac
 3. **Open.** Run `sign-off open <plan-dir>` as a background command. It builds `sign-off.html` when the page is missing or older than its inputs, starts one server for the plan on `127.0.0.1` or reuses the live one, prints the URL, and waits 25 minutes for a review. `--wait <minutes>` sets the wait, and `--wait 0` prints the URL and returns. `sign-off build <plan-dir>` writes the page alone, for a file to share. `sign-off render <plan-dir> --part <view>` writes one view, such as `statechart` or `erd`, as its own page in `parts/<view>.html`, or in `--out <file>`, and prints the path. The part page uses no viewport height unit, so it can sit inside another page's frame. A view the plan has no block for exits 1 and lists the views it has.
 4. **Show.** Open the URL in the reader's default browser, such as Chrome. Use `open <url>` on macOS or `xdg-open <url>` on Linux. Also give the reader the URL in your reply. The reader gives the verdicts. You may load the page to check that it works, but never approve on the reader's behalf.
 5. **Wait.** When the reader submits, the page posts the review to the server, and the Submit dialog lists the items recorded and the items that were stale. When the post fails, the dialog shows the review text with Copy, and the reader pastes it to you. `open` prints "Review received", ingests the review and exits, which wakes you. When the wait ends with no review, end your turn. The server stays up until the plan settles or sits idle for 2 hours, so a review that comes back within 2 hours still lands in the log. After that, `open` starts it again on the same port, and the reader keeps the draft.
-6. **Read.** Run `sign-off status <plan-dir>`. It lists each act, each item's state, and each step with "may run" or the unsettled items it waits on (an FYI item counts as settled). `--json` gives the same as data. Start every step that may run, and only those.
+6. **Read.** Run `sign-off status <plan-dir>`. It lists each act, each item's state, and each step with "may run" or the unsettled items it waits on (an FYI item counts as settled). `--json` gives the same as data. Start every step that may run, all of them together, and only those. A step's `mergesAfter` orders its pull request and never holds its start. Only `startsAfter` does.
 
 `open` on a settled plan starts no server and says so. `status` and `open` refuse a plan that fails `check`.
 

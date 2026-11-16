@@ -49,8 +49,13 @@ const NETWORK = /(?:\b(?:src|href|action|srcset|poster)\s*=\s*["']?|url\(\s*["']
 export const networkLoads = (html: string) => [...new Set(html.match(NETWORK) ?? [])];
 
 const VIEWPORT_HEIGHT = /\d(?:\.\d+)?[sdl]?vh\b/g;
+/** base-ui seeds every anchored popup's --available-height with the first literal. A page may hold a Tooltip, HoverCard or Popover as
+ *  long as no rule reads that variable, so the literal is exempt and a read of it is reported. The second is base-ui's scroll lock,
+ *  which Popover bundles and only a modal popup runs. Nothing here checks for one: a part page must not open a modal popup. */
+const POPUP_SEED = /AVAILABLE_HEIGHT_VAR\]\s*=\s*"100vh"|\[[\w$]+\]="100vh"|`calc\(100dvh - \$\{[^}]+\}px\)`:"100dvh"/g;
 /** Every viewport height length in the text, CSS or JS. A frame that grows to fit its page rejects any. */
-export const viewportUnits = (html: string) => [...new Set(html.match(VIEWPORT_HEIGHT) ?? [])];
+export const viewportUnits = (html: string) =>
+  [...new Set([...(html.replace(POPUP_SEED, "").match(VIEWPORT_HEIGHT) ?? []), ...(html.match(/var\(--available-height\)/g) ?? [])])];
 
 const DECLARATION = /^(--[a-zA-Z0-9-]+)\s*:\s*([a-zA-Z0-9 #%.,()+\-*/]+)$/;
 /** The theme as one `:root` rule. Each `;`-separated piece must be `--name: value`, and a value holds only the characters

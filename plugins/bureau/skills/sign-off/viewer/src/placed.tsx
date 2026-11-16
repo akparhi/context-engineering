@@ -1,9 +1,10 @@
-import { Fragment, useState, type MouseEvent } from "react"
+import { useState, type MouseEvent } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { endpointProps, type PropsOf } from "./adapter.ts"
 import { usePage } from "./parts.tsx"
 import type { Ref } from "./plan.ts"
 import type { VIEWS } from "./views.tsx"
+import { atSlashes } from "./views/components.tsx"
 import { EndpointsView } from "./views/endpoints.tsx"
 import { PrsView } from "./views/prs.tsx"
 
@@ -20,9 +21,6 @@ function PrPlan(props: PropsOf<"prs">) {
   }
   return <div data-placed="prs" className="[&>ul:last-child]:hidden" onClickCapture={openCard}><PrsView {...props} /></div>
 }
-
-/** A path that wraps after a slash before it breaks inside a segment. */
-const atSlashes = (path: string) => path.split("/").map((part, i) => <Fragment key={i}>{i > 0 && <>/<wbr /></>}{part}</Fragment>)
 
 /** One tab per endpoint, each panel the original endpoints view narrowed to that endpoint. A link to an endpoint selects its tab
  *  in the same render, so `go` finds the card it scrolls to. Each `go` sets a new `focused`, so the same link followed twice selects

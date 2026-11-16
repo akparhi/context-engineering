@@ -79,14 +79,14 @@ async function devtoolsUrl(proc: Bun.Subprocess<"ignore", "ignore", "pipe">): Pr
   throw new NoBrowser(`it exited or printed no DevTools address within ${START_MS / 1000} s, last output: ${text.trim().split("\n").at(-1) || "none"}`);
 }
 
-/** Loads `url` in a fresh headless browser at 1280 by 900, evaluates `script` (an expression that may return a promise) once the
+/** Loads `url` in a fresh headless browser at 1280 by 900, or at `size` ("width,height"), evaluates `script` (an expression that may return a promise) once the
  *  load event fires, parses what it returned with `returns`, and closes the browser. Throws `NoBrowser` when the binary will not start. */
-export async function inChromium<T>(binary: string, url: string, script: string, returns: z.ZodType<T>): Promise<PageRun<T>> {
+export async function inChromium<T>(binary: string, url: string, script: string, returns: z.ZodType<T>, size = "1280,900"): Promise<PageRun<T>> {
   const profile = mkdtempSync(join(tmpdir(), "sign-off-chromium-"));
   let proc: Bun.Subprocess<"ignore", "ignore", "pipe">;
   try {
     proc = Bun.spawn([binary, "--headless", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "--no-first-run",
-      "--no-default-browser-check", "--disable-gpu", "--window-size=1280,900", "about:blank"], { stdin: "ignore", stdout: "ignore", stderr: "pipe" });
+      "--no-default-browser-check", "--disable-gpu", `--window-size=${size}`, "about:blank"], { stdin: "ignore", stdout: "ignore", stderr: "pipe" });
   } catch (error) {
     rmSync(profile, { recursive: true, force: true });
     throw new NoBrowser(`${binary} would not start: ${error instanceof Error ? error.message : String(error)}`);

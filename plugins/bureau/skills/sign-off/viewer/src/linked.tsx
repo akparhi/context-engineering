@@ -2,17 +2,18 @@ import { useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { ACTS } from "../../scripts/model.ts"
-import { prCardProps, testDetailProps } from "./adapter.ts"
+import { acceptanceProps, prCardProps, testDetailProps } from "./adapter.ts"
 import { actEyebrow, COPY, KIND_LABEL } from "./copy.ts"
 import { usePage, Subhead } from "./parts.tsx"
 import type { Ref, RefInfo } from "./plan.ts"
 import { PrCard } from "./views/prs.tsx"
+import { AcceptanceDetail } from "./verify.tsx"
 import { TestDetail } from "./views/trace.tsx"
 
 const CHIP = "inline-flex h-5 shrink-0 cursor-pointer items-center rounded-md bg-secondary px-1.5 font-mono text-xs font-medium text-foreground ring-1 ring-foreground/10 hover:ring-foreground/30"
 const closeOf = (popup: HTMLElement | null) => popup?.querySelector<HTMLElement>('[data-slot="sheet-close"]') ?? null
 
-/** One ref in a drawer: the detail its kind's view draws for it (a pull request's card, a test's detail), a requirement's
+/** One ref in a drawer: the detail its kind's view draws for it (a pull request's card, a test's detail, an acceptance row), a requirement's
  *  text, then everything it links to, grouped by act and kind. Focus moves to the close button on open and on each
  *  re-centre. Escape, Close or a press outside hand focus back through `onClose`. `at` is null while closed. */
 export function LinkedDrawer({ at, onClose, onRecenter }: { at: Ref | null; onClose: () => void; onRecenter: (ref: Ref) => void }) {
@@ -40,6 +41,7 @@ function LinkedBody({ at, onRecenter }: { at: Ref; onRecenter: (ref: Ref) => voi
   const requirement = self?.kind === "requirement" && !("none" in data.manifest.product) ? data.manifest.product.requirements.find((r) => r.id === at) : undefined
   const pr = self?.kind === "pr" ? prCardProps(data, at, go) : null
   const test = self?.kind === "test" ? testDetailProps(data, at) : null
+  const acceptance = self?.kind === "acceptance" ? acceptanceProps(data, at) : null
   const groups = ACTS.flatMap((act) => {
     const inAct = linked.filter((l) => l.act === act)
     const kinds = [...new Set(inAct.map((l) => l.kind))]
@@ -65,6 +67,7 @@ function LinkedBody({ at, onRecenter }: { at: Ref; onRecenter: (ref: Ref) => voi
       <div className="min-h-0 flex-1 overflow-y-auto bg-popover px-5 pb-5">
         {pr && <ul className="mt-4"><PrCard {...pr} /></ul>}
         {test && <div className="mt-4"><TestDetail {...test} /></div>}
+        {acceptance && <AcceptanceDetail {...acceptance} />}
         {self?.home && <Button variant="outline" size="sm" className="mt-4" onClick={() => go(at)}>{COPY.linked.showIt}</Button>}
         {groups.length === 0 && <p className="mt-4 text-sm text-muted-ink">{COPY.linked.nothing}</p>}
         {groups.map((g) => <section key={g.key} className="mt-5"><Subhead>{g.head}</Subhead><ul className="flex flex-col gap-2">{g.rows.map(row)}</ul></section>)}

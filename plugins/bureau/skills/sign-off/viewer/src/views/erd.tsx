@@ -117,16 +117,6 @@ function Diagram({ layout, drawing, pick, open, onPick, onFold }: {
   layout: ErdLayout; drawing: ErdDrawing; pick: Pick; open: boolean; onPick: PickFn; onFold: () => void
 }) {
   const pan = useRef<HTMLDivElement>(null)
-  const [wide, setWide] = useState(false)
-  useLayoutEffect(() => {
-    const el = pan.current
-    if (!el) return
-    const check = () => setWide(el.scrollWidth > el.clientWidth + 1)
-    check()
-    const watch = new ResizeObserver(check)
-    watch.observe(el)
-    return () => watch.disconnect()
-  }, [drawing])
   useEffect(() => {
     const el = pan.current, box = drawing.tables.find((b) => b.name === pick.table)
     if (el && box && (box.x < el.scrollLeft || box.x + box.width > el.scrollLeft + el.clientWidth)) el.scrollLeft = box.x - 20
@@ -156,7 +146,6 @@ function Diagram({ layout, drawing, pick, open, onPick, onFold }: {
           })}
         </div>
       </div>
-      {wide && <p className="mt-2 text-xs text-muted-ink">{e.pan}</p>}
     </>
   )
 }
@@ -257,7 +246,6 @@ function TableDetail({ t, input, layout, onPick }: { t: ErdTable; input: ErdInpu
           )) : <li className="text-xs text-muted-foreground">{e.none}</li>}
         </ul>
       </div>
-      <p className="mt-4 text-xs text-muted-foreground">{e.pickColumn}</p>
     </>
   )
 }
@@ -417,18 +405,20 @@ function Erd({ input, layout, sources, focus, go }: Omit<ViewProps<ErdInput>, "l
   return (
     <div className="@container/erd">
       {input.says && (
-        <div className="flex max-w-[72ch] flex-col gap-2 text-[15px] leading-7" data-part="says">
+        <div className="grid gap-x-10 gap-y-2 text-[15px] leading-7 md:grid-cols-2" data-part="says">
           {input.says.split(/\n\s*\n/).map((para) => <p key={para}>{para}</p>)}
         </div>
       )}
       <UnusedValues input={input} layout={layout} onPick={(table, c) => go(`db:${table}${c ? `.${c}` : ""}`)} />
-      <Tabs tab={tab} onTab={setTab} />
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 [&>:first-child]:mt-0">
+        <Tabs tab={tab} onTab={setTab} />
+        {tab === "diagram" && <ErdLegend layout={layout} />}
+      </div>
       {tab === "source" ? <ErdSource input={input} sources={sources} /> : (
       <div className="mt-3">
       <div className={`grid gap-5 ${t ? "@4xl/erd:grid-cols-[minmax(0,1fr)_19rem]" : ""}`}>
         <div ref={diagram} className="min-w-0">
           <Diagram layout={layout} drawing={drawing} pick={pick} open={open} onPick={onPick} onFold={onFold} />
-          <div className="mt-3"><ErdLegend layout={layout} /></div>
         </div>
         {t && (
           <aside ref={aside} className="relative min-w-0 self-start rounded-2xl p-4 ring-1 ring-foreground/10" data-part="inspector" aria-label={col ? `${t.name}.${col.name}` : t.name}>
@@ -442,4 +432,3 @@ function Erd({ input, layout, sources, focus, go }: Omit<ViewProps<ErdInput>, "l
     </div>
   )
 }
-

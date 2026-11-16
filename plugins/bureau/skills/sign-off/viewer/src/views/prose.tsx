@@ -11,7 +11,7 @@ export function ProseView({ input }: ViewProps<ProseInput>) {
     <figure>
       <figcaption className="font-mono text-xs text-muted-ink [overflow-wrap:anywhere]">{input.src}</figcaption>
       {input.text === null ? <div className="mt-2"><LooseEnd>{COPY.prose.missing}</LooseEnd></div> : (
-        <div className="mt-3 max-w-[78ch] text-sm leading-6 [overflow-wrap:anywhere]" data-part="prose">
+        <div className="mt-3 max-w-[78ch] text-base leading-7 [overflow-wrap:anywhere]" data-part="prose">
           <Markdown remarkPlugins={[remarkGfm]} urlTransform={safeUrl} components={COMPONENTS}>{input.text}</Markdown>
         </div>
       )}

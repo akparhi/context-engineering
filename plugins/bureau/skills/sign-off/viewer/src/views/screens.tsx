@@ -1,15 +1,17 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react"
-import { ArrowRightIcon, CircleAlertIcon, LockIcon, SearchIcon } from "lucide-react"
+import { CircleAlertIcon, LockIcon, SearchIcon } from "lucide-react"
 import type { Screen, ScreensInput } from "../../../scripts/views.ts"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { COPY } from "../copy.ts"
-import { IdChip, LooseEnd } from "../parts.tsx"
+import { IdChip, LooseEnd, usePage } from "../parts.tsx"
 import type { ViewProps } from "../views.tsx"
 
 type Region = Screen["regions"][number]
 type Sketch = Region["sketch"]
 type SampleOf<S extends Sketch> = NonNullable<Extract<Region, { sketch: S }>["sample"]>
-/** Which regions to outline, by the part each one draws, and what picking a region's part does. Both only in the components view.
+/** Which regions to outline, by the part each one draws, and what picking a region's part does. Both only in the components view,
+ *  where a region's head names its part's id and leaves the requirements to the parts list.
  *  `foldReused` boxes each reused or copied region's head and sample together, only in the screens view. */
 type Lighting = { lit?: ReadonlySet<string>; onPick?: (component: string) => void; foldReused?: boolean }
 
@@ -22,11 +24,12 @@ export function ScreensView({ input, focus }: ViewProps<ScreensInput>) {
   return (
     <>
       <FlowStrip screens={screens} picked={screen.id} onPick={setPicked} />
-      <p className="mt-5 text-sm leading-6 text-muted-foreground">
+      <p className="mt-4 text-base leading-7 text-muted-foreground">
         <span className="font-medium text-foreground">{screen.label}.</span> {screen.when}
         <span className="ml-1.5 inline-flex flex-wrap gap-1 align-middle">{screen.serves.map((r) => <IdChip key={r} id={r} />)}</span>
+        {screen.on && <span className="ml-2 text-sm text-muted-ink">{COPY.screens.after(screens.find((x) => x.id === screen.from)?.label, screen.on)}</span>}
       </p>
-      <div className="mt-3 rounded-3xl bg-muted/60 p-2 sm:p-3 dark:bg-muted/40"><ScreenPicture screen={screen} foldReused /></div>
+      <div className="mt-3"><ScreenPicture screen={screen} foldReused /></div>
     </>
   )
 }
@@ -35,60 +38,14 @@ const MARK_BADGE = { new: "delta", changed: "deltaline", reused: "dashed", copy:
 export const MarkBadge = ({ mark }: { mark: Region["mark"] }) => <Badge variant={MARK_BADGE[mark]}>{COPY.screens.marks[mark]}</Badge>
 const gates = (mark: Region["mark"]) => mark === "new" || mark === "changed"
 
-/** The usual path follows `from` out of the first state. Every other state is an outcome, named by the state it leaves. */
+/** Every state of the page as one row of tabs, by name. */
 export function FlowStrip({ screens, picked, onPick }: { screens: Screen[]; picked: string; onPick: (id: string) => void }) {
-  const path = screens.slice(0, 1)
-  for (let next; (next = screens.find((s) => s.from === path.at(-1)?.id && !path.includes(s)));) path.push(next)
-  const others = screens.filter((s) => !path.includes(s))
-  const c = COPY.screens
-  const event = (s: Screen, named: boolean) => {
-    if (!s.on) return null
-    const from = named ? screens.find((x) => x.id === s.from) : undefined
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-muted-ink">
-        {from ? c.after(from.label, s.on) : s.on}<ArrowRightIcon aria-hidden className="size-3.5 shrink-0" />
-      </span>
-    )
-  }
-  const lane = (title: string, list: Screen[], named: boolean) => list.length > 0 && (
-    <div className="grid gap-2 lg:grid-cols-[7.5rem_minmax(0,1fr)] lg:items-start">
-      <div className="text-xs font-medium text-muted-ink lg:pt-4">{title}</div>
-      <ol className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        {list.map((s) => {
-          const on = s.id === picked
-          return (
-            <li key={s.id} className="inline-flex flex-wrap items-center gap-2">
-              {event(s, named)}
-              <button type="button" data-ref={s.id} aria-pressed={on} onClick={() => onPick(s.id)}
-                className={`flex scroll-mt-28 items-center gap-2.5 rounded-2xl border py-1.5 pr-3 pl-1.5 text-left outline-offset-2 focus-visible:outline-2 focus-visible:outline-focus ${on ? "border-transparent bg-card outline-2 outline-focus" : "border-border hover:bg-muted/60"}`}>
-                <Thumb screen={s} /><span className="text-sm font-medium">{s.label}</span>
-              </button>
-            </li>
-          )
-        })}
-      </ol>
-    </div>
-  )
-  return <nav aria-label={c.flow} className="flex flex-col gap-3">{lane(c.usualPath, path, false)}{lane(c.otherOutcomes, others, true)}</nav>
-}
-
-/** A wireframe of the state in shapes only, so each step reads as a thumbnail. */
-const THUMB_ROW: Partial<Record<Sketch, string>> = { figures: "h-1.5", tabs: "h-1", filters: "h-1", table: "flex-1", pagination: "h-1", message: "flex-1", form: "flex-1" }
-const Thumb = ({ screen }: { screen: Screen }) => {
-  const rows = screen.regions.flatMap((r) => THUMB_ROW[r.sketch] ?? [])
-  const sheet = screen.regions.some((r) => r.sketch === "sheet")
   return (
-    <span aria-hidden className="relative grid h-9 w-14 shrink-0 grid-cols-[1fr_3fr] gap-0.5 overflow-hidden rounded-md bg-muted p-1">
-      <span className="rounded-[2px] bg-foreground/10" />
-      <span className="flex flex-col gap-0.5">
-        {(rows.length ? rows : ["h-1", "flex-1"]).map((row, i) => <span key={i} className={`${row} rounded-[2px] bg-foreground/15`} />)}
-      </span>
-      {sheet && (
-        <span className="absolute inset-y-0 right-0 flex w-1/2 flex-col gap-0.5 border-l border-foreground/20 bg-card p-1">
-          <span className="h-1 w-3/4 rounded-[2px] bg-foreground/30" /><span className="h-1 rounded-[2px] bg-foreground/15" /><span className="h-1 rounded-[2px] bg-foreground/15" />
-        </span>
-      )}
-    </span>
+    <Tabs value={picked} onValueChange={(v) => onPick(String(v))} data-part="strip">
+      <TabsList aria-label={COPY.screens.flow} className="h-auto! max-w-full flex-wrap justify-start">
+        {screens.map((s) => <TabsTrigger key={s.id} value={s.id} data-ref={s.id} className="h-7 flex-none scroll-mt-28">{s.label}</TabsTrigger>)}
+      </TabsList>
+    </Tabs>
   )
 }
 
@@ -129,24 +86,42 @@ const PageBehind = () => (
   </div>
 )
 
-/** One region with its mark, name and the requirements it serves. A reused or copied region is dashed, because it does not gate. */
+/** Requirement ids as quiet text, each opening its drawer as an id chip does. An id the page cannot open is plain text. */
+function RefIds({ ids }: { ids: string[] }) {
+  const { refs, openLinked } = usePage()
+  return (
+    <span className="inline-flex gap-1.5 font-mono text-xs text-muted-foreground">
+      {ids.map((id) => refs.get(id)
+        ? <button key={id} type="button" aria-haspopup="dialog" aria-label={COPY.linked.open(id)} onClick={(e) => openLinked(id, e.currentTarget)}
+          className="rounded-sm underline-offset-4 outline-offset-2 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-focus">{id}</button>
+        : <span key={id}>{id}</span>)}
+    </span>
+  )
+}
+
+/** The mark as a word in the region's label line: new and changed in the delta ink, reused and copied quiet. */
+const MARK_INK = { new: "text-delta-ink", changed: "text-delta-ink", reused: "text-muted-foreground", copy: "text-muted-foreground" } as const
+
+/** One region, marked by a rule down its left edge rather than a frame: solid for new or changed, dashed for reused or copied,
+ *  which do not gate. Its label line holds the name, the mark as a word and the requirements it serves. */
 export function RegionBox({ region, lit = false, onPick, foldReused = false }: { region: Region; lit?: boolean } & Pick<Lighting, "onPick" | "foldReused">) {
   const serves = region.serves ?? []
   const part = region.component
   const head = (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <MarkBadge mark={region.mark} />
+    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs leading-5">
+      {onPick && part && <span className="font-mono text-muted-ink">{part}</span>}
       {onPick && part
-        ? <button type="button" aria-pressed={lit} onClick={() => onPick(part)} className="rounded-md text-xs font-medium underline decoration-foreground/25 underline-offset-4 outline-offset-2 hover:decoration-foreground focus-visible:outline-2 focus-visible:outline-focus">{region.name}</button>
-        : <span className="text-xs font-medium">{region.name}</span>}
-      {serves.map((r) => <IdChip key={r} id={r} />)}
-      {!serves.length && gates(region.mark) && <LooseEnd>{COPY.screens.servesNone}</LooseEnd>}
+        ? <button type="button" aria-pressed={lit} onClick={() => onPick(part)} className="rounded-md font-medium underline-offset-4 outline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-focus">{region.name}</button>
+        : <span className="font-medium">{region.name}</span>}
+      <span className={MARK_INK[region.mark]}>{COPY.screens.marks[region.mark]}</span>
+      {!onPick && serves.length > 0 && <span className="ml-auto"><RefIds ids={serves} /></span>}
+      {!onPick && !serves.length && gates(region.mark) && <LooseEnd>{COPY.screens.servesNone}</LooseEnd>}
     </div>
   )
-  const sample = <div className="mt-2.5">{region.sample ? drawSample(region.sketch, region.sample) : <p className="text-xs text-muted-ink">{COPY.screens.notSketched}</p>}</div>
+  const sample = <div className="mt-2">{region.sample ? drawSample(region.sketch, region.sample) : <p className="text-xs text-muted-ink">{COPY.screens.notSketched}</p>}</div>
   return (
     <div data-mark={region.mark} data-lit={lit || undefined}
-      className={`min-w-0 rounded-xl border border-foreground/25 p-3 ${gates(region.mark) ? "" : "border-dashed"} ${lit ? "outline-2 outline-offset-2 outline-focus" : ""}`}>
+      className={`min-w-0 rounded-r-lg border-l-2 py-1 pr-2 pl-3 ${gates(region.mark) ? "border-delta-line" : "border-dashed border-foreground/20"} ${lit ? "bg-muted/60 outline-2 outline-offset-2 outline-focus" : ""}`}>
       {foldReused && !gates(region.mark)
         ? <div>{head}{sample}</div>
         : <>{head}{sample}</>}

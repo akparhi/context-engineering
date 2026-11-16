@@ -1,12 +1,15 @@
-import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react"
-import { ArrowRightIcon, CheckIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, PlayIcon, XIcon } from "lucide-react"
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react"
+import { ArrowRightIcon, CheckIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import type { ArrowId, BugPath, ChartGraph, ChartLayout, RunLayout, StateId } from "../../../scripts/layout/chart.ts"
 import { FONTS, textWidth } from "../../../scripts/layout/text.ts"
 import type { ReportJson, StatechartInput } from "../../../scripts/views.ts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { COPY } from "../copy.ts"
-import { IdChip, LooseEnd, Subhead } from "../parts.tsx"
+import { IdChip, LooseEnd } from "../parts.tsx"
 import type { Links, Ref } from "../plan.ts"
 import type { ViewProps } from "../views.tsx"
 
@@ -15,7 +18,8 @@ type Status = "holds" | "breaks" | "unchecked"
 type Trigger = NonNullable<StatechartInput["triggers"]>[string]
 type Note = NonNullable<StatechartInput["notes"]>[string]
 type Go = (ref: Ref) => void
-type Look = { run: string; all: boolean; bug: string | null; step: number }
+/** `bug` is the rule the reader picked, else the chart's own. `step` is the step shown, and null is the last one. */
+type Look = { run: string; all: boolean; bug: string | null; step: number | null }
 
 const s = COPY.statechart
 const ROW_H = 17, PAD = 12, BOX_PAD = 12
@@ -53,12 +57,24 @@ function roundedPath(points: { x: number; y: number }[], r: number) {
   return `${d} L${last.x},${last.y}`
 }
 
-function Glossary({ terms }: { terms: NonNullable<StatechartInput["terms"]> }) {
-  return (
-    <dl className="grid gap-x-6 gap-y-1.5 text-sm leading-6 md:grid-cols-3" data-part="glossary">
-      {terms.map((t) => <div key={t.word}><dt className="inline font-medium">{t.word}:</dt> <dd className="inline text-muted-foreground">{t.means}</dd></div>)}
-    </dl>
-  )
+type Term = NonNullable<StatechartInput["terms"]>[number]
+const wordOf = (terms: Term[]) => new RegExp(`\\b(${terms.map((t) => t.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\b`, "gi")
+
+/** A word of the plan's glossary, with what it means on hover or focus. */
+const TermWord = ({ term, children }: { term: Term; children: ReactNode }) => (
+  <HoverCard>
+    <HoverCardTrigger delay={150} render={<span tabIndex={0} className="cursor-help rounded-sm underline decoration-foreground/40 decoration-dotted underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-focus" />}>{children}</HoverCardTrigger>
+    <HoverCardContent align="start" className="w-auto max-w-80 px-3 py-2 text-sm leading-6"><span className="font-medium">{term.word}:</span> {term.means}</HoverCardContent>
+  </HoverCard>
+)
+
+/** `text` with each glossary word it uses turned into a TermWord. */
+function Termed({ text, terms }: { text: string; terms: Term[] }) {
+  if (!terms.length) return text
+  return text.split(wordOf(terms)).map((piece, i) => {
+    const term = i % 2 ? terms.find((t) => t.word.toLowerCase() === piece.toLowerCase()) : undefined
+    return term ? <TermWord key={i} term={term}>{piece}</TermWord> : piece
+  })
 }
 
 function RunTabs({ runs, input, current, onPick }: { runs: Run[]; input: StatechartInput; current: string; onPick: (run: string) => void }) {
@@ -70,10 +86,13 @@ function RunTabs({ runs, input, current, onPick }: { runs: Run[]; input: Statech
   return (
     <div role="group" aria-label={s.versions} className="inline-flex flex-wrap gap-1 rounded-4xl bg-muted p-1">
       {runs.map((r) => (
-        <button key={r.id} type="button" aria-pressed={r.id === current} onClick={() => onPick(r.id)}
-          className="h-8 rounded-4xl px-3 text-sm font-medium text-muted-ink outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-xs">
-          {r.label} · {word(r)}
-        </button>
+        <Tooltip key={r.id} disabled={!r.note}>
+          <TooltipTrigger render={<button type="button" aria-pressed={r.id === current} onClick={() => onPick(r.id)}
+            className="h-8 rounded-4xl px-3 text-sm font-medium text-muted-ink outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-xs" />}>
+            {r.label} · {word(r)}
+          </TooltipTrigger>
+          <TooltipContent className="max-w-80">{r.note}</TooltipContent>
+        </Tooltip>
       ))}
     </div>
   )
@@ -82,14 +101,15 @@ function RunTabs({ runs, input, current, onPick }: { runs: Run[]; input: Statech
 type Lit = { nodes: Set<StateId>; edges: Set<ArrowId>; curNode: StateId | null; curEdge: ArrowId | null; stepping: boolean; upTo: number; path: BugPath | null }
 function litOf(chart: RunLayout, look: Look, rule: string | null): Lit {
   const path = rule === null ? null : chart.paths[rule] ?? null
-  const stepping = look.bug !== null && path !== null
-  const upTo = stepping ? look.step : path ? path.states.length - 1 : -1
+  const last = path ? path.states.length - 1 : -1
+  const upTo = Math.min(look.step ?? last, last)
+  const stepping = path !== null && upTo < last
   return {
     path, stepping, upTo,
     nodes: new Set(path?.states.slice(0, upTo + 1)),
     edges: new Set(path?.arrows.slice(1, upTo + 1).filter((a): a is ArrowId => a !== null)),
-    curNode: stepping ? path!.states[look.step] : null,
-    curEdge: stepping ? path!.arrows[look.step] : null,
+    curNode: stepping ? path.states[upTo] : null,
+    curEdge: stepping ? path.arrows[upTo] : null,
   }
 }
 
@@ -201,6 +221,7 @@ function Chart({ chart, graph, lit, focus, label }: { chart: RunLayout; graph: C
 }
 
 const Swatch = ({ className }: { className: string }) => <span aria-hidden className={`h-3 w-4 shrink-0 rounded-[4px] ${className}`} />
+/** `red` adds the two red marks. The view leaves them out when a band already names the break. */
 function ChartLegend({ chart, graph, red }: { chart: RunLayout; graph: ChartGraph; red: boolean }) {
   const row = graph.nodes.flatMap((n) => n.rows)[0]
   const l = s.legend
@@ -210,7 +231,7 @@ function ChartLegend({ chart, graph, red }: { chart: RunLayout; graph: ChartGrap
       {graph.groups.length > 0 && <span className="inline-flex items-center gap-1.5"><Swatch className="border border-dashed border-foreground/30 bg-muted/60" />{l.group}</span>}
       {row && <span className="inline-flex items-center gap-1"><span className="font-medium text-foreground">{row.on}</span>→ {row.to}{l.row}</span>}
       {red && <span className="inline-flex items-center gap-1.5"><span aria-hidden className="h-0.5 w-4 bg-break-solid" />{l.path}</span>}
-      {Object.keys(chart.paths).length > 0 && <span className="inline-flex items-center gap-1.5"><Swatch className="bg-break-soft ring-[1.5px] ring-break-solid" />{l.breaks}</span>}
+      {red && Object.keys(chart.paths).length > 0 && <span className="inline-flex items-center gap-1.5"><Swatch className="bg-break-soft ring-[1.5px] ring-break-solid" />{l.breaks}</span>}
       {chart.states.some((st) => st.mark === "mayBreak") && <span className="inline-flex items-center gap-1.5"><Swatch className="border border-dashed border-break-line" />{l.mayBreak}</span>}
     </div>
   )
@@ -231,17 +252,17 @@ function StepRow({ i, k, last, at, input, onPick, go }: {
   const trigger = at.step === undefined ? undefined : input.triggers?.[at.step]
   const stored = input.stored?.[at.state]
   return (
-    <li className={`flex items-start gap-1 rounded-xl ${i === k ? "bg-muted" : ""} ${i > k ? "opacity-45" : ""} motion-safe:transition-opacity`}>
+    <li className={`rounded-xl ${i === k ? "bg-muted" : ""} ${i > k ? "opacity-45" : ""} motion-safe:transition-opacity`}>
       <button type="button" aria-current={i === k ? "step" : undefined} onClick={onPick}
-        className="flex min-w-0 flex-1 items-baseline gap-3 rounded-xl px-2.5 py-1.5 text-left text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-focus">
+        className="flex w-full min-w-0 items-baseline gap-2.5 rounded-xl px-2 py-1 text-left text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-focus">
         <span className={`inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-secondary font-mono text-xs font-semibold tabular-nums ${i === k ? "ring-[1.5px] ring-break-solid" : ""}`}>{i}</span>
         <span className="min-w-0">
           {at.step && <><span className="text-muted-foreground">{at.step}</span> <ArrowRightIcon aria-hidden className="inline size-3.5 text-muted-foreground" /> </>}
           <span className={`font-medium ${i === last ? "text-break-ink" : ""}`}>{at.state}</span>
         </span>
       </button>
-      {(trigger || stored) && (
-        <span className="flex shrink-0 flex-col items-end gap-0.5 px-2.5 py-1.5 text-right text-xs leading-5 text-muted-ink max-sm:hidden">
+      {i === k && (trigger || stored) && (
+        <span className="flex flex-wrap gap-x-3 gap-y-0.5 pr-2 pb-1.5 pl-[2.625rem] text-xs leading-5 text-muted-ink">
           {trigger && <TriggerLine trigger={trigger} />}
           {stored && <span>{s.kept} <button type="button" className={`${LINK} font-mono`} onClick={() => go(`db:${stored}`)}>{stored}</button></span>}
         </span>
@@ -250,55 +271,46 @@ function StepRow({ i, k, last, at, input, onPick, go }: {
   )
 }
 
-function Stepper({ rule, run, look, input, links, runs, onStep, onRun, go }: {
-  rule: string; run: Run; look: Look; input: StatechartInput; links: Links; runs: Run[]
-  onStep: (k: number) => void; onRun: (run: string) => void; go: Go
+/** The shortest path to the break, always open: the band above it names the rule. */
+function Stepper({ rule, run, k, input, runs, onStep, onRun, go }: {
+  rule: string; run: Run; k: number; input: StatechartInput; runs: Run[]; onStep: (k: number) => void; onRun: (run: string) => void; go: Go
 }) {
   const broken = run.report?.rules.find((r) => r.name === rule)
   const path = broken?.outcome === "broken" ? broken.path ?? [] : []
-  const k = look.step, last = path.length - 1
+  const last = path.length - 1
   const loop = broken?.outcome === "broken" ? broken.loop : undefined
-  const proven = links[`rule:${rule}`] ?? []
   const plan = runs[0]
   return (
-    <section className="mt-4 rounded-3xl p-4 ring-1 ring-foreground/10" aria-label={s.stepsTitle(input.says[rule] ?? rule)} data-part="stepper">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h4 className="text-sm font-medium">{s.stepsTitle(input.says[rule] ?? rule)}</h4>
+    <section aria-label={s.stepsTitle} data-part="stepper">
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="text-sm font-medium">{s.stepsTitle}</h4>
         <div className="flex items-center gap-1.5">
           <Button variant="outline" size="icon-sm" disabled={k === 0} aria-label={s.previous} onClick={() => onStep(k - 1)}><ChevronLeftIcon /></Button>
           <span className="w-20 text-center text-sm text-muted-foreground tabular-nums" aria-live="polite">{s.stepOf(k, last)}</span>
           <Button variant="outline" size="icon-sm" disabled={k === last} aria-label={s.next} onClick={() => onStep(k + 1)}><ChevronRightIcon /></Button>
         </div>
       </div>
-      <ol className="mt-3 flex flex-col gap-1">
+      <ol className="mt-2 flex flex-col gap-0.5">
         {path.map((at, i) => <StepRow key={i} i={i} k={k} last={last} at={at} input={input} onPick={() => onStep(i)} go={go} />)}
       </ol>
       {loop && <p className="mt-2 text-sm text-muted-foreground">{loop.stutters ? s.stutters(loop.start) : s.loop(loop.start)}</p>}
-      <p className="mt-3 flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
-        {isFixed(input, run.id, rule) && plan && plan.id !== run.id
-          ? <><button type="button" className={LINK} onClick={() => onRun(plan.id)}>{s.switchTo(plan.label)}</button> {s.holdsThere}</>
-          : proven.length ? <>{s.provenBy} {proven.map((id) => <IdChip key={id} id={id} />)}</>
-          : <LooseEnd>{s.noReplay}</LooseEnd>}
-      </p>
+      {isFixed(input, run.id, rule) && plan && plan.id !== run.id && (
+        <p className="mt-2 text-sm text-muted-foreground"><button type="button" className={LINK} onClick={() => onRun(plan.id)}>{s.switchTo(plan.label)}</button> {s.holdsThere}</p>
+      )}
     </section>
   )
 }
 
+/** Both sides of the open rule's decision, the plan's first. Each label says which button takes that side. */
 function Decision({ decision }: { decision: NonNullable<Note["decision"]> }) {
   const side = ([head, text]: readonly [string, string], chosen: boolean) => (
-    <div className={`rounded-2xl p-3.5 ${chosen ? "bg-muted/60 ring-1 ring-foreground/15 dark:bg-muted/40" : "border border-dashed border-foreground/25"}`}>
+    <div className={`rounded-2xl p-3 ${chosen ? "bg-muted/60 ring-1 ring-foreground/15 dark:bg-muted/40" : "border border-dashed border-foreground/25"}`}>
       <div className="text-xs font-medium text-muted-ink">{chosen ? s.chosen : s.other}</div>
-      <div className={`mt-1 font-medium ${chosen ? "" : "text-muted-foreground"}`}>{head}</div>
-      <p className="mt-1 text-sm leading-6 text-muted-foreground">{text}</p>
+      <div className={`mt-1 text-sm leading-5 font-medium ${chosen ? "" : "text-muted-foreground"}`}>{head}</div>
+      <p className="mt-1 text-sm leading-5 text-muted-foreground">{text}</p>
     </div>
   )
-  return (
-    <section className="mt-6" data-part="decision">
-      <Subhead>{s.decision}</Subhead>
-      <div className="grid gap-3 md:grid-cols-2">{side(decision.chosen, true)}{side(decision.other, false)}</div>
-      <p className="mt-2.5 text-sm leading-6">{s.decisionSays}</p>
-    </section>
-  )
+  return <section className="grid gap-2" data-part="decision">{side(decision.chosen, true)}{side(decision.other, false)}</section>
 }
 
 const STATUS_BADGE: Record<Status, ReactNode> = {
@@ -307,12 +319,10 @@ const STATUS_BADGE: Record<Status, ReactNode> = {
   unchecked: <Badge variant="dashed">{s.status.unchecked}</Badge>,
 }
 
-function RuleRow({ name, run, input, chart, stepping, onStep }: {
-  name: string; run: Run; input: StatechartInput; chart: RunLayout | undefined; stepping: boolean; onStep: () => void
-}) {
+/** `onShow` is set for a rule with a path to its break: the row then offers to put that rule in the band. */
+function RuleRow({ name, run, input, onShow }: { name: string; run: Run; input: StatechartInput; onShow?: () => void }) {
   const status = statusOf(run.report, name), note = noteOf(input, run.id, name), fixed = isFixed(input, run.id, name)
   const open = status === "breaks" && !fixed
-  const path = status === "breaks" ? chart?.paths[name] : undefined
   const serves = input.serves?.[name] ?? [], parked = input.parked?.[name]
   return (
     <li data-ref={`rule:${name}`} data-rule={name} data-status={status} className={`scroll-mt-28 rounded-2xl p-3 ${open ? "bg-break-soft" : ""}`}>
@@ -323,37 +333,59 @@ function RuleRow({ name, run, input, chart, stepping, onStep }: {
         {serves.map((r) => <IdChip key={r} id={r} />)}
         {guardsNone(input, name) && <LooseEnd>{s.guardsNone}</LooseEnd>}
         <span className="font-mono text-xs text-muted-ink">{name}</span>
+        {onShow && <Button variant="outline" size="xs" className="ml-auto" onClick={onShow}>{s.showPath}</Button>}
       </div>
       {parked && !serves.length && <p className="mt-1.5 text-sm leading-6 text-muted-foreground"><span className="font-medium text-foreground">{s.parked}</span> {parked}</p>}
       {note && status === "breaks" && <p className={`mt-2 text-sm leading-6 ${open ? "text-muted-ink" : "text-muted-foreground"}`}>{note.text}</p>}
-      {path && (
-        <Button variant={stepping ? "secondary" : "outline"} size="xs" className="mt-2.5" aria-pressed={stepping} onClick={onStep}>
-          {stepping ? <XIcon /> : <PlayIcon />}{stepping ? s.stop : s.stepThrough(path.states.length - 1)}
-        </Button>
-      )}
     </li>
   )
 }
 
 const RANK: Record<Status, number> = { breaks: 0, unchecked: 1, holds: 2 }
 
-function Rules({ run, input, chart, look, onBug }: {
-  run: Run; input: StatechartInput; chart: RunLayout | undefined; look: Look; onBug: (rule: string) => void
+/** Every rule but the one the band names, behind one button that counts the ones that hold. */
+function OtherRules({ names, run, input, open, onOpen, paths, onRule }: {
+  names: string[]; run: Run; input: StatechartInput; open: boolean; onOpen: (open: boolean) => void; paths: string[]; onRule: (rule: string) => void
 }) {
-  const names = ruleNames(input)
-    .sort((a, b) => RANK[statusOf(run.report, a)] - RANK[statusOf(run.report, b)])
-  const row = (n: string) => <RuleRow key={n} name={n} run={run} input={input} chart={chart} stepping={look.bug === n} onStep={() => onBug(n)} />
-  const holding = names.filter((n) => statusOf(run.report, n) === "holds" && !guardsNone(input, n))
-  const rest = names.filter((n) => !holding.includes(n))
+  if (!names.length) return null
+  const holding = names.filter((n) => statusOf(run.report, n) === "holds" && !guardsNone(input, n)).length
   return (
-    <section className="mt-6">
-      <Subhead extra={s.rulesCount(rest.length, holding.length)}>{s.rules}</Subhead>
-      {rest.length > 0 && <ul className="grid gap-2 lg:grid-cols-2" data-part="rules-open">{rest.map(row)}</ul>}
-      {holding.length > 0 && (
-        <div className={rest.length ? "mt-2" : ""}>
-          <ul className="grid gap-2 lg:grid-cols-2" data-part="rules-holding">{holding.map(row)}</ul>
+    <Popover open={open} onOpenChange={onOpen}>
+      <PopoverTrigger render={<Button variant="outline" size="sm" data-part="rules" />}>{s.rulesCount(names.length - holding, holding)}<ChevronDownIcon /></PopoverTrigger>
+      <PopoverContent align="end" className="w-[min(420px,90vw)] p-2">
+        <ul className="flex max-h-[28rem] flex-col gap-1 overflow-y-auto">{names.map((n) => <RuleRow key={n} name={n} run={run} input={input} onShow={paths.includes(n) ? () => { onRule(n); onOpen(false) } : undefined} />)}</ul>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+/** The rule the chart is red for, at full width: what breaks, what it guards, the test that replays it, and why it matters.
+ *  `broken` lists every rule with a path when there is more than one, so the reader can switch. */
+function RuleBand({ rule, broken, run, input, links, others, onRule }: {
+  rule: string; broken: string[]; run: Run; input: StatechartInput; links: Links; others: ReactNode; onRule: (rule: string) => void
+}) {
+  const note = noteOf(input, run.id, rule), serves = input.serves?.[rule] ?? [], proven = links[`rule:${rule}`] ?? []
+  const fixed = isFixed(input, run.id, rule)
+  return (
+    <section data-part="band" data-ref={`rule:${rule}`} data-rule={rule} data-status="breaks"
+      className={`mt-3 scroll-mt-28 rounded-2xl p-3.5 ring-1 ${fixed ? "bg-muted/60 ring-foreground/10" : "bg-break-soft ring-break-line"}`}>
+      {broken.length > 1 && (
+        <div role="group" aria-label={s.brokenRules} className="mb-2 flex flex-wrap gap-1">
+          {broken.map((n) => <Button key={n} variant={n === rule ? "secondary" : "ghost"} size="xs" className="font-mono" aria-pressed={n === rule} onClick={() => onRule(n)}>{n}</Button>)}
         </div>
       )}
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+        {fixed ? <Badge variant="pass"><CheckIcon />{s.fixed}</Badge> : <Badge variant="break">{s.status.breaks}</Badge>}
+        <h4 className="font-heading text-xl font-medium tracking-tight">{input.says[rule]}</h4>
+        {serves.map((r) => <IdChip key={r} id={r} />)}
+        {guardsNone(input, rule) && <LooseEnd>{s.guardsNone}</LooseEnd>}
+        <span className="font-mono text-xs text-muted-ink">{rule}</span>
+        <span className="ml-auto flex flex-wrap items-center gap-1.5 text-sm text-muted-ink">
+          {proven.length ? <>{s.provenBy} {proven.map((id) => <IdChip key={id} id={id} />)}</> : <LooseEnd>{s.noReplay}</LooseEnd>}
+          {others}
+        </span>
+      </div>
+      {note && <p className="mt-2 text-sm leading-5 text-muted-ink"><Termed text={note.text} terms={input.terms ?? []} /></p>}
     </section>
   )
 }
@@ -370,71 +402,80 @@ function ChartSource({ module, chart, checked }: { module: string; chart: RunLay
   )
 }
 
-/** The states a system moves through, laid out by `build`, the rules the checker tested, and each broken rule's shortest path
- *  as a step-through that lights the states and arrows of each step and dims the rest. */
+/** The states a system moves through, laid out by `build`. A bar holds the versions, the key and the arrow switch. When a rule
+ *  breaks, a band names it, and a rail beside the chart steps its shortest path and shows both sides of its decision. The step lights
+ *  the states and arrows walked so far and dims the rest; at the last step the whole path is red and nothing is dimmed. */
 export function StatechartView({ input, layout = {}, links, focus, go }: ViewProps<StatechartInput, ChartLayout>) {
   const runs = runsOf(input, layout)
-  const [look, setLook] = useState<Look>({ run: runs[0]?.id ?? BARE, all: false, bug: null, step: 0 })
+  const [look, setLook] = useState<Look>({ run: runs[0]?.id ?? BARE, all: false, bug: null, step: null })
+  const [rulesOpen, setRulesOpen] = useState(false)
   const run = runs.find((r) => r.id === look.run) ?? runs[0]
   const chart = run && layout[run.id]
   const rule = redRule(look, chart)
+  const path = rule === null ? undefined : chart?.paths[rule]
   const lit = chart ? litOf(chart, look, rule) : null
   const graph = chart && graphOf(chart, look, rule)
 
   useEffect(() => {
-    if (focus?.startsWith("rule:") || focus?.startsWith("sc:")) setLook((l) => ({ ...l, run: runs[0]?.id ?? l.run }))
+    if (!focus?.startsWith("rule:") && !focus?.startsWith("sc:")) return
+    const first = runs[0]?.id, name = focus.startsWith("rule:") ? focus.slice("rule:".length) : null
+    const breaks = name !== null && first !== undefined && layout[first]?.paths[name] !== undefined
+    setLook((l) => ({ ...l, run: first ?? l.run, ...(breaks ? { bug: name, step: null } : {}) }))
+    if (name !== null && !breaks) setRulesOpen(true)
   }, [focus])
 
   if (!run) return null
-  const pickRun = (id: string) => setLook((l) => ({ ...l, run: id, bug: null, step: 0 }))
-  const bug = (name: string) => {
-    setLook((l) => (l.bug === name ? { ...l, bug: null, step: 0 } : { ...l, bug: name, step: 1 }))
-  }
-  const last = look.bug && chart?.paths[look.bug] ? chart.paths[look.bug].states.length - 1 : 0
-  const step = (k: number) => setLook((l) => ({ ...l, step: Math.max(0, Math.min(last, k)) }))
+  const pickRun = (id: string) => setLook((l) => ({ ...l, run: id, bug: null, step: null }))
+  const last = path ? path.states.length - 1 : 0
+  const k = look.step ?? last
+  const step = (n: number) => setLook((l) => ({ ...l, step: Math.max(0, Math.min(last, n)) }))
   const onKey = (e: KeyboardEvent) => {
-    if (!look.bug || (e.key !== "ArrowRight" && e.key !== "ArrowLeft") || (e.target instanceof Element && e.target.closest("textarea,input,[role=region]"))) return
+    if (!path || (e.key !== "ArrowRight" && e.key !== "ArrowLeft") || (e.target instanceof Element && e.target.closest("textarea,input,[role=region]"))) return
     e.preventDefault()
-    step(look.step + (e.key === "ArrowRight" ? 1 : -1))
+    step(k + (e.key === "ArrowRight" ? 1 : -1))
   }
   const drawn = graph ? graph.edges.filter((e) => e.id !== "start").length : 0
   const back = chart ? chart.arrows.length - drawn : 0
-  const decision = rule && run.report ? noteOf(input, run.id, rule)?.decision : undefined
+  const banded = rule !== null && path !== undefined ? rule : null
+  const note = banded && run.report ? noteOf(input, run.id, banded) : undefined
   const module = run.report?.module ?? chart?.states[0]?.id.match(/^sc:([^/]+)\//)?.[1] ?? ""
+  const names = ruleNames(input).sort((a, b) => RANK[statusOf(run.report, a)] - RANK[statusOf(run.report, b)])
+  const paths = names.filter((n) => chart?.paths[n])
+  const pickRule = (n: string) => setLook((l) => ({ ...l, bug: n, step: null }))
+  const others = <OtherRules names={names.filter((n) => n !== banded)} run={run} input={input} open={rulesOpen} onOpen={setRulesOpen} paths={paths} onRule={pickRule} />
+  const loose = (input.terms ?? []).filter((t) => !banded || !noteOf(input, run.id, banded)?.text.match(wordOf([t])))
 
   return (
-    <div onKeyDown={onKey}>
-      {input.terms?.length ? <Glossary terms={input.terms} /> : null}
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-        {runs.length > 1 || run.id !== BARE ? <RunTabs runs={runs} input={input} current={run.id} onPick={pickRun} /> : <span />}
-        {chart && (look.all || back > 0) && (
-          <div>
+    <div onKeyDown={onKey} className="@container">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-part="bar">
+        {(runs.length > 1 || run.id !== BARE) && <RunTabs runs={runs} input={input} current={run.id} onPick={pickRun} />}
+        {chart && graph && lit && <ChartLegend chart={chart} graph={graph} red={lit.path !== null && !banded} />}
+        {loose.length > 0 && <span className="flex flex-wrap gap-x-3 text-xs text-muted-ink" data-part="glossary">{loose.map((t) => <TermWord key={t.word} term={t}>{t.word}</TermWord>)}</span>}
+        <span className="ml-auto flex flex-wrap items-center gap-2">
+          {!banded && others}
+          {chart && (look.all || back > 0) && (
             <Button variant={look.all ? "secondary" : "outline"} size="sm" aria-pressed={look.all} onClick={() => setLook((l) => ({ ...l, all: !l.all }))}>
               {look.all ? s.listBack : s.drawAll(chart.arrows.length)}
             </Button>
+          )}
+        </span>
+      </div>
+      {(!chart || !run.report) && <p className="mt-3 text-sm leading-6 text-muted-ink">{!chart ? s.noChart : s.noReport}</p>}
+      {banded && <RuleBand rule={banded} broken={paths} run={run} input={input} links={links} others={others} onRule={pickRule} />}
+      {chart && graph && lit && (
+        <div className={`mt-3 grid items-start gap-4 ${banded ? "@[60rem]:grid-cols-[642px_minmax(0,1fr)]" : ""}`}>
+          <div className="min-w-0">
+            <Chart chart={chart} graph={graph} lit={lit} focus={focus} label={s.chartLabel(module, chart.states.length)} />
+            {module && <ChartSource module={module} chart={chart} checked={run.checked} />}
           </div>
-        )}
-      </div>
-      <div className="mt-3">
-        <p className="max-w-[78ch] text-sm leading-6 text-muted-foreground" data-part="reading">
-          {run.note && <>{run.note} </>}
-          <span className="text-foreground">{!chart ? s.noChart : look.all ? s.readAll(chart.arrows.length) : s.read(drawn, back)}</span>
-          {!run.report && <> {s.noReport}</>}
-        </p>
-        {chart && graph && lit && (
-          <>
-            <div className="mt-4"><Chart chart={chart} graph={graph} lit={lit} focus={focus} label={s.chartLabel(module, chart.states.length)} /></div>
-            <div className="mt-3"><ChartLegend chart={chart} graph={graph} red={lit.path !== null} /></div>
-          </>
-        )}
-      </div>
-      {look.bug && chart?.paths[look.bug] && (
-        <Stepper rule={look.bug} run={run} look={look} input={input} links={links} runs={runs} onStep={step} onRun={pickRun} go={go} />
+          {banded && (
+            <aside className="order-first grid min-w-0 items-start gap-3 @2xl:grid-cols-2 @[60rem]:sticky @[60rem]:top-4 @[60rem]:order-none @[60rem]:grid-cols-1" data-part="rail">
+              <Stepper rule={banded} run={run} k={k} input={input} runs={runs} onStep={step} onRun={pickRun} go={go} />
+              {note?.decision && <Decision decision={note.decision} />}
+            </aside>
+          )}
+        </div>
       )}
-      {decision && <Decision decision={decision} />}
-      <Rules run={run} input={input} chart={chart} look={look} onBug={bug} />
-      {chart && module && <ChartSource module={module} chart={chart} checked={run.checked} />}
     </div>
   )
 }
-

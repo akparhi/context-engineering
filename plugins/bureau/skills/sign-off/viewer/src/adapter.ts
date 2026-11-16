@@ -4,6 +4,7 @@ import type { View as ViewKind } from "../../scripts/views.ts"
 import type { Ref } from "./plan.ts"
 import type { LayoutOf, Shell, ViewProps } from "./views.tsx"
 import type { PrCard } from "./views/prs.tsx"
+import type { AcceptanceDetail } from "./verify.tsx"
 import type { TestDetail } from "./views/trace.tsx"
 
 type BlockOf<V extends ViewKind> = Extract<BlockData, { view: V }>
@@ -48,6 +49,17 @@ export function prCardProps(data: PageData, id: Ref, go: (ref: Ref) => void): Co
 export function testDetailProps(data: PageData, id: Ref): ComponentProps<typeof TestDetail> | null {
   const t = blocksOf(data, "trace").flatMap((b) => b.input.rows.flatMap((r) => r.tests)).find((x) => x.id === id)
   return t ? { t, id: `linked-test-${id}` } : null
+}
+
+/** An acceptance row as the drawer draws it: the row, the tests that prove it, and the joins the trace view draws it with. */
+export function acceptanceProps(data: PageData, id: Ref): ComponentProps<typeof AcceptanceDetail> | null {
+  for (const { input } of blocksOf(data, "trace")) {
+    for (const row of input.rows) {
+      const a = row.acceptance.find((x) => x.id === id)
+      if (a) return { a, tests: row.tests.filter((t) => t.proves.includes(id)), prsOf: input.prsOf, rules: input.rules }
+    }
+  }
+  return null
 }
 
 /** Every block of one view kind, in manifest order, with the item that holds it: what a part page draws. */

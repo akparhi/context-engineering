@@ -31,7 +31,7 @@ function LayerLabel({ layer, className = "" }: { layer: Layer; className?: strin
 const provesRow = (a: Acceptance) => (t: Test) => t.proves.includes(a.id)
 
 /** Per layer, how many tests the plan names and how many it only proposes, and how many row-layer cells have no test. */
-function LayerCounts({ tests, acceptance }: { tests: Test[]; acceptance: { a: Acceptance; tests: Test[] }[] }) {
+export function LayerCounts({ tests, acceptance }: { tests: Test[]; acceptance: { a: Acceptance; tests: Test[] }[] }) {
   const holes = acceptance.reduce((sum, { tests: ts }) => sum + LAYERS.filter((l) => !ts.some((t) => t.type === l)).length, 0)
   return (
     <p className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm" data-part="counts">
@@ -181,7 +181,6 @@ export function TraceView({ input, go }: ViewProps<TraceInput>) {
     <>
       <LayerCounts tests={tests} acceptance={acceptance} />
       <Legend />
-      <div><p className="mt-3 max-w-[78ch] text-[13px] leading-5 text-muted-foreground" data-part="about">{s.about}</p></div>
       <div className="mt-5 flex flex-col gap-4">{input.rows.map((row) => <Lane key={row.requirement?.id ?? "none"} row={row} prsOf={input.prsOf} rules={input.rules} go={go} />)}</div>
     </>
   )

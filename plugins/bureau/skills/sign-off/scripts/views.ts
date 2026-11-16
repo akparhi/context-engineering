@@ -66,7 +66,8 @@ export type TraceInput = {
   prsOf: Record<string, string[]>
   rules: Record<string, RuleWords>
 };
-/** Each pull request with the requirements its units serve, and `units`: the title of each unit a pull request ships. */
+/** Each pull request with the requirements its units serve, and `units`: the title of each unit a pull request ships. `after` also
+ *  holds the pull requests that ship a unit its own units merge or start after, so the order is drawn from the units' fields. */
 export type PrsInput = Omit<BlockOf<"prs">, "view"> & { prs: (PullRequest & { serves: string[] })[]; units: Record<string, string> };
 /** `text` is the file or section as written, or null when it does not exist. */
 export type ProseInput = { src: string; text: string | null };
@@ -198,7 +199,13 @@ export const VIEWS: { [V in View]: Resolver<V> } = {
   },
   prs: ({ view: _, ...rest }, _item, m) => {
     const steps = new Map(itemsOf(m, "step").map((s) => [s.id, s]));
-    const prs = (m.facts.prs ?? []).map((p) => ({ ...p, serves: unique(p.steps.flatMap((id) => steps.get(id)?.serves ?? [])) }));
+    const shippedIn = prsOf(m);
+    const prs = (m.facts.prs ?? []).map((p) => {
+      const units = p.steps.flatMap((id) => steps.get(id) ?? []);
+      const before = units.flatMap((u) => [...(u.mergesAfter ?? []), ...(u.startsAfter?.units ?? [])]).flatMap((id) => shippedIn[id] ?? []);
+      const after = unique([...(p.after ?? []), ...before]).filter((id) => id !== p.id);
+      return { ...p, ...(after.length ? { after } : {}), serves: unique(units.flatMap((u) => u.serves ?? [])) };
+    });
     const units = Object.fromEntries(unique(prs.flatMap((p) => p.steps)).flatMap((id) => { const s = steps.get(id); return s ? [[id, s.title]] : []; }));
     return plain({ ...rest, prs, units });
   },

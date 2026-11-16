@@ -30,16 +30,16 @@ describe("check --selftest", () => {
     const { lines, err, code } = await selftest();
     expect({ err, code }).toEqual({ err: "", code: 0 });
     expect(lines.map((l) => l.match(/^(\w+)\s+(ok|skip|FAIL):/)?.slice(1, 3).join(" "))).toEqual(
-      ["build ok", "ingest ok", "status ok", `browser ${chromium ? "ok" : "skip"}`, `part ${chromium ? "ok" : "skip"}`, undefined]);
+      ["build ok", "ingest ok", "status ok", `browser ${chromium ? "ok" : "skip"}`, `part ${chromium ? "ok" : "skip"}`, `decide ${chromium ? "ok" : "skip"}`, undefined]);
     expect(lines[2]).toMatch(/^status +ok: ([1-9]\d*) of \1 reviewed items approved or answered, settled$/);
-    expect(lines.at(-1)).toBe(chromium ? "selftest passed" : "selftest passed, browser and part skipped");
+    expect(lines.at(-1)).toBe(chromium ? "selftest passed" : "selftest passed, browser, part, and decide skipped");
   }, 60_000);
 
-  test("with no browser, skips the browser and part steps and still exits 0", async () => {
+  test("with no browser, skips the browser, part and decide steps and still exits 0", async () => {
     const { lines, code } = await selftest({ SIGN_OFF_CHROMIUM: join(scratch, "no-such-chrome") });
     const missing = `SIGN_OFF_CHROMIUM=${join(scratch, "no-such-chrome")} does not exist`;
     expect(code).toBe(0);
-    expect(lines.slice(-3)).toEqual([`browser skip: ${missing}`, `part    skip: ${missing}`, "selftest passed, browser and part skipped"]);
+    expect(lines.slice(-4)).toEqual([`browser skip: ${missing}`, `part    skip: ${missing}`, `decide  skip: ${missing}`, "selftest passed, browser, part, and decide skipped"]);
   }, 60_000);
 });
 

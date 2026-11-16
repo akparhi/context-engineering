@@ -23,8 +23,8 @@ export function linksOf(m: Manifest): Links {
   }
 
   for (const it of m.items) {
-    link(it.id, it.serves); link(it.id, it.dependsOn)
-    if (it.type === "step") link(it.id, it.delivers)
+    link(it.id, it.serves)
+    if (it.type === "step") { link(it.id, it.delivers); link(it.id, it.mergesAfter); link(it.id, it.startsAfter?.units) }
     if (it.type === "question") link(it.id, it.blocks)
   }
   for (const s of f.screens ?? []) {

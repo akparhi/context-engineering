@@ -4,7 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checksum, encodeReview, MARK } from "../codec.ts";
 import { decodeReviews, ingestText, planStatus, type Review, readEvents, ReviewTextError, runIngest, runRecord, runRevise, runStatus } from "../review.ts";
+import { Manifest } from "../manifest.ts";
 import { computeRevs, type Revs } from "../revs.ts";
+import { deriveStatus } from "../status.ts";
 
 const FIXTURE = join(import.meta.dir, "../../fixtures/plan");
 const ENTRY = join(import.meta.dir, "../sign-off");
@@ -366,7 +368,7 @@ const cases: Case[] = [
     },
   },
   {
-    name: "a step may run once it, its act, what it needs, the grant and its blocking questions are settled",
+    name: "a step may run once it, its act, what it delivers, the grant and its blocking questions are settled",
     run: async (dir) => {
       const waits = async () => Object.fromEntries((await planStatus(dir)).steps.map((s) => [s.id, s.waitsOn]));
       expect((await waits()).U1).toContain("grant");
@@ -436,4 +438,16 @@ const cases: Case[] = [
 
 describe("review log", () => {
   test.each(cases)("$name", async ({ run }) => run(planCopy()), 60_000);
+});
+
+// Every unit sits in one act, and an act holds its steps until it settles. U1 moves to another act here, so only the two fields decide.
+test("a step waits to start on a unit in startsAfter, and never on one it only merges after", () => {
+  const json = JSON.parse(readFileSync(join(FIXTURE, "sign-off.json"), "utf8"));
+  const step = (id: string) => json.items.find((i: { id: string }) => i.id === id);
+  Object.assign(step("U1"), { section: "Acceptance", touches: ["authority"] });
+  step("U3").startsAfter = { units: ["U1"], reason: "U1 picks the table names while it builds." };
+  const waitsOn = Object.fromEntries(deriveStatus(Manifest.parse(json), { planRev: "", items: {} }, []).steps.map((s) => [s.id, s.waitsOn]));
+  expect(step("U2").mergesAfter).toEqual(["U1"]);
+  expect(waitsOn.U2).not.toContain("U1");
+  expect(waitsOn.U3).toContain("U1");
 });

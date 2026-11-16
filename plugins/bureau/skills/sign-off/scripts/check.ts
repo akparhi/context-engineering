@@ -1,5 +1,5 @@
 /** `sign-off check <plan-dir>` checks a plan's `sign-off.json` before anything draws it. Each rule in `RULES` is one function in
- *  `CHECKS` over a shared `Context`, and every error names its rule. Warnings are trace holes and a gate count above `MAX_GATES`. */
+ *  `CHECKS` over a shared `Context`, and every error names its rule. Warnings are trace holes, a gate count above `MAX_GATES` and prose over its `BUDGET`. */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
@@ -9,6 +9,7 @@ import type { ReportJson } from "../../statechart/scripts/backends/report.ts";
 import { type Block, Event, type Item, Manifest } from "./manifest.ts";
 import { headings, section } from "./markdown.ts";
 import { ACT_OF, IRREVERSIBLE, type Section } from "./model.ts";
+import { prCycle, unitCycle } from "./order.ts";
 
 export const RULES = [
   "schema", "id", "ref", "cite", "section", "touch", "jargon", "log",
@@ -20,6 +21,9 @@ export type Finding = { rule: Rule; message: string };
 export type Report = { errors: Finding[]; warnings: string[]; summary: string };
 
 const MAX_GATES = 7;
+/** Words a prose field may run to before `budget` warns. The reader is an engineer, and the page is one screen per stop. */
+const BUDGET = { why: 16, does: 14, review: 12, prNote: 16, note: 24, says: 24 } as const;
+const words = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 // Nothing in the facts can show these, so an item declares them on its own word. `money` waits for a consumer's money-column
 // patterns, and `dependency` for each ecosystem's manifest files. `authority` is not derived from auto-merge pull requests,
@@ -220,13 +224,16 @@ function* refs(c: Context) {
   for (const it of c.items) {
     const w = `item ${it.id}`;
     yield* wantAll(w, it.serves, reqs, "requirement");
-    yield* wantAll(w, it.dependsOn, itemIds, "item");
     if (it.source) {
       const text = c.read(it.source), heading = it.source.split("#")[1];
       if (text === null) yield `${w}: source ${it.source} does not exist`;
       else if (heading && !headings(text).some((h) => h.text === heading)) yield `${w}: source ${it.source} has no heading "${heading}"`;
     }
-    if (it.type === "step") yield* wantAll(w, it.delivers?.filter((d) => !(schemaUnknown && d.startsWith("db:"))), deliverable, "deliverable");
+    if (it.type === "step") {
+      yield* wantAll(w, it.delivers?.filter((d) => !(schemaUnknown && d.startsWith("db:"))), deliverable, "deliverable");
+      yield* wantAll(w, it.mergesAfter, steps, "unit");
+      yield* wantAll(w, it.startsAfter?.units, steps, "unit");
+    }
     if (it.type === "decision") yield* want(w, it.chosen, new Set(it.options.map((o) => o.id)), "option");
     if (it.type === "question") {
       yield* want(w, it.recommended, new Set((it.options ?? []).map((o) => o.id)), "option");
@@ -271,6 +278,11 @@ function* refs(c: Context) {
       }
     }
   }
+  const units = c.items.filter((i) => i.type === "step");
+  const cycle = unitCycle(units);
+  if (cycle) yield `units ${cycle.join(", ")} wait on each other through mergesAfter and startsAfter. Drop one of the links`;
+  const prs = cycle ? null : prCycle(f.prs ?? [], units);
+  if (prs) yield `pull requests ${prs.join(", ")} wait on each other through \`after\` and the order of their units. Drop one of the links`;
   for (const s of f.screens ?? []) {
     yield* want(`screen ${s.id}`, s.from, screens, "screen");
     yield* wantAll(`screen ${s.id}`, s.serves, reqs, "requirement");
@@ -534,6 +546,17 @@ function warningsOf(c: Context): string[] {
   }
   const gates = c.items.filter((i) => i.type === "grant" || ("touches" in i && i.touches.length > 0));
   if (gates.length > MAX_GATES) out.push(`${gates.length} gates, above ${MAX_GATES}: ${gates.map((g) => g.title).join(", ")}`);
+  const over = (what: string, text: string | undefined, cap: number) => {
+    if (text && words(text) > cap) out.push(`budget: ${what} runs to ${words(text)} words, over ${cap}. Cut it, or move the detail to plan.md`);
+  };
+  for (const i of c.items) over(`${i.id} why`, i.why, BUDGET.why);
+  for (const comp of f.components ?? []) over(`component ${comp.id} does`, comp.does, BUDGET.does);
+  for (const p of f.prs ?? []) { over(`${p.id} review`, p.review, BUDGET.review); over(`${p.id} note`, p.note, BUDGET.prNote); }
+  for (const t of f.tests ?? []) over(`test ${t.id} says`, t.says, BUDGET.says);
+  for (const i of c.items) for (const b of i.body ?? []) {
+    if ("note" in b) over(`${i.id} ${b.view} note`, b.note, BUDGET.note);
+    if (b.view === "statechart") for (const r of b.runs ?? []) over(`run ${r.id} note`, r.note, BUDGET.note);
+  }
   return out;
 }
 

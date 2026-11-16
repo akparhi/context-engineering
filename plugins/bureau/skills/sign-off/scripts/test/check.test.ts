@@ -45,6 +45,10 @@ const BREAKS: [Rule, string, Mutation][] = [
   ["schema", "a statechart block that names its chart by dir", { json: (m) => { item(m, "behavior").body[0] = { view: "statechart", dir: "statechart/out-plan", says: block(m, "statechart").says }; } }],
   ["id", "a risk reuses a requirement's id", { json: (m) => { m.facts.risks[0].id = "R1"; } }],
   ["ref", "a question blocks a unit that does not exist", { json: (m) => { item(m, "Q1").blocks = ["U9"]; } }],
+  ["schema", "a unit that starts late with no reason", { json: (m) => { item(m, "U2").startsAfter = { units: ["U1"], reason: " " }; } }],
+  ["ref", "a unit that merges after a unit that does not exist", { json: (m) => { item(m, "U2").mergesAfter = ["U9"]; } }],
+  ["ref", "units that wait on each other, one to merge and one to start", { json: (m) => { item(m, "U1").startsAfter = { units: ["U3"], reason: "U3 fixes the hold shape." }; } }],
+  ["ref", "pull requests that merge after each other", { json: (m) => { m.facts.prs[0].after = ["P3"]; } }],
   ["ref", "a step that ships in no pull request", { json: (m) => { m.facts.prs.find((p: Json) => p.steps.includes("U3")).steps = []; } }],
   ["ref", "the plan's report.json comes from another version of statechart", { files: { [PLAN_RUN]: (s) => s.replace('"v": 1', '"v": 2') } }],
   ["cite", "a subsection with text that no item cites", { files: { "plan.md": (s) => s.replace("## Components", "### Notes\n\nCancel is open to everyone.\n\n## Components") } }],
@@ -74,6 +78,7 @@ const BREAKS: [Rule, string, Mutation][] = [
 
 /** Changes that check must accept. */
 const PASSES: [string, Mutation][] = [
+  ["a unit that starts after another, with its reason", { json: (m) => { item(m, "U3").startsAfter = { units: ["U2"], reason: "U2 picks the hold shape while it builds." }; } }],
   ["a step that adds go.mod and declares dependency", { json: (m) => { item(m, "U1").files.push("go.mod"); item(m, "U1").touches.push("dependency"); } }],
   ["a step that starts a job acting alone and declares authority", { json: (m) => { item(m, "U1").touches.push("authority"); } }],
   ["a Data block with no sql, so no Postgres runs", { json: (m) => { delete block(m, "erd").sql; } }],

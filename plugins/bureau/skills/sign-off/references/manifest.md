@@ -69,7 +69,7 @@ Act one, in product words. A plan with no product act sets `"product": { "none":
 
 ## Items
 
-An item is one thing the reader sees as a card. Each has `id`, `type`, `section` and `title`, and optionally `why`, `body` (its blocks), `source` (the `plan.md` heading it comes from), `serves` (requirement ids) and `dependsOn` (item ids).
+An item is one thing the reader sees as a card. Each has `id`, `type`, `section` and `title`, and optionally `why` (the plan-specific reason this item needs the reader, 16 words or fewer; omit it when the title and `touches` already say it, so not "What gets built, for whom, and what is left out" on Scope), `body` (its blocks), `source` (the `plan.md` heading it comes from), and `serves` (requirement ids).
 
 The section places the item in an act:
 
@@ -96,7 +96,7 @@ The types:
 
 ```json
 { "id": "U2", "type": "step", "section": "Units", "title": "Holds endpoints", "touches": [], "source": "plan.md#U2 Holds endpoints",
-  "repo": "shelf-api", "files": ["src/holds/routes.ts"], "delivers": ["E1", "E2"], "dependsOn": ["U1"], "tasks": 5, "done": "All behavior tests pass." }
+  "repo": "shelf-api", "files": ["src/holds/routes.ts"], "delivers": ["E1", "E2"], "mergesAfter": ["U1"], "tasks": 5, "done": "All behavior tests pass." }
 ```
 
 ```json
@@ -118,7 +118,7 @@ The types:
 ```
 
 - **part** draws its blocks.
-- **step** is a unit of work. Use the id the plan already gave it, like `U2`. `delivers` names what it builds: an endpoint id, a component id, or `db:<table>`. A step may run when it is approved or FYI in a settled act, the grant is approved, everything in `dependsOn` and `delivers` is approved, and each blocking question that lists it is answered.
+- **step** is a unit of work. Use the id the plan already gave it, like `U2`. `delivers` names what it builds: an endpoint id, a component id, or `db:<table>`. An approved plan fixes the contracts, so every unit starts at once and builds on stubs. `mergesAfter` names the units whose pull requests merge first. It orders merges and never delays a start. `startsAfter` is `{ "units": ["U0"], "reason": "..." }`. Give it only when a contract is not fixed until those units finish, and say why in `reason`. `check` fails a `startsAfter` with no reason, units that wait on each other through either field, and pull requests that wait on each other through `after` or through the order of their units. A step may run when it is approved or FYI in a settled act, the grant is approved, everything in `delivers` and each unit in `startsAfter` is approved, and each blocking question that lists it is answered. The Units part and the Pull requests diagram draw their order from these two fields.
 - **decision** records an option already chosen, with the options it beat. An option takes `detail` and `facts`, a list of `[label, value]` pairs.
 - **question** asks the reader. `default: null` makes it blocking. No step it `blocks` may run until the reader answers it. A non-null `default` is an option id or a sentence, and the plan runs on it. `placeholder` hints a free-text answer. The `title` of a question or a decision asks the reader as "you", per [the voice](../SKILL.md#the-voice).
 - **grant** is what the agent may do without asking (`allow`) and what it asks first (`ask`). Each line keeps the key of the grant line it comes from. A plan has one grant.
@@ -161,7 +161,7 @@ Declare these yourself, because no fact shows them: `money`, `dependency`, `auth
 
 - A region's `sketch` is one of `nav`, `figures`, `tabs`, `filters`, `table`, `pagination`, `message`, `sheet` and `form`, and its `sample` has that sketch's shape in `SAMPLES` in `manifest.ts`. A region's `mark` may also be `copy`. Every screen state needs at least one region that names its `component`.
 - A screen state takes `from` (the state before) and `on` (the event) for the flow strip, and `states` for the page states in code it draws.
-- A component's `role` is `route`, `layout`, `component`, `data` or `wiring`. `parent` and `shows` name other components.
+- A component's `role` is `route`, `layout`, `component`, `data` or `wiring`. `parent` and `shows` name other components. Set `parent` on every part another part mounts, so the list indents as the tree it is. Set `file` on a new or changed part too: the page shows it when the reader hovers the name.
 - An acceptance row takes `says` in place of `given`, `when` and `then`, and needs one or the other. `requirement: null` is a row that checks no requirement. `guards` or `addedFor` names a chart rule as `rule:<name>`.
 - A test's `type` is `unit`, `behavior`, `e2e` or `live`. `unit` names the step that holds it. Every test proves at least one row. Every test but a `live` one names one `file` and the `run` command for it. A `live` test is a check run by hand, in a browser or on a real environment. Its `says` is the instruction, and its evidence goes in the PR.
 - A PR's `merge.by` is `human`, `agent` or `bot`. A PR that merges with no person is part of the grant's rev.

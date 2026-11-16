@@ -1,59 +1,56 @@
 import type { DecisionsInput } from "../../../scripts/views.ts"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { COPY } from "../copy.ts"
 import { IdChip } from "../parts.tsx"
 import type { ViewProps } from "../views.tsx"
 
-type Decision = DecisionsInput["decisions"][number]
-type Option = Decision["options"][number]
+type Option = DecisionsInput["decisions"][number]["options"][number]
+const HEAD = "h-9 px-2 text-xs font-normal text-muted-ink"
+const CELL = "px-2 py-3 align-top whitespace-normal"
 
-/** Choices the plan already made. Each decision is its line, then the option taken with its detail, the ones turned down and
- *  what settled it. */
+/** Choices the plan already made, one row each: the decision, the option taken with what settled it, and the ones turned down. */
 export function DecisionsView({ input }: ViewProps<DecisionsInput>) {
+  const c = COPY.decisions
   return (
-    <ul className="divide-y divide-border/70">
-      {input.decisions.map((d) => (
-        <li key={d.id} data-ref={d.id} className="scroll-mt-28 py-5 first:pt-0 last:pb-0">
-          <DecisionLine decision={d} />
-          <div className="mt-2">
-            <DecisionSides decision={d} />
-          </div>
-        </li>
-      ))}
-    </ul>
+    <Table className="table-fixed">
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead className={`${HEAD} w-[26%]`}>{c.decision}</TableHead>
+          <TableHead className={HEAD}>{c.chosen}</TableHead>
+          <TableHead className={`${HEAD} w-[32%]`}>{c.other}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {input.decisions.map((d) => {
+          const chosen = d.options.find((o) => o.id === d.chosen)
+          return (
+            <TableRow key={d.id} data-ref={d.id} className="scroll-mt-28 hover:bg-transparent">
+              <TableCell className={CELL}>
+                <div className="flex items-start gap-2"><IdChip id={d.id} /><span className="text-base leading-6 font-medium text-balance">{d.title}</span></div>
+                {d.serves?.length ? <div className="mt-2 flex flex-wrap gap-1">{d.serves.map((r) => <IdChip key={r} id={r} />)}</div> : null}
+              </TableCell>
+              <TableCell className={CELL}>
+                {chosen && <Side option={chosen} />}
+                {d.why && <p className="mt-2 text-sm leading-6"><span className="text-muted-ink">{c.settledBy}</span> {d.why}</p>}
+              </TableCell>
+              <TableCell className={`${CELL} text-muted-ink`}>
+                <div className="flex flex-col gap-3">{d.options.filter((o) => o !== chosen).map((o) => <Side key={o.id} option={o} />)}</div>
+              </TableCell>
+            </TableRow>
+          )
+        })}
+      </TableBody>
+    </Table>
   )
 }
 
-function DecisionLine({ decision: d }: { decision: Decision }) {
+function Side({ option: o }: { option: Option }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <IdChip id={d.id} /><span className="font-medium text-balance">{d.title}</span>
-      {d.serves?.map((r) => <IdChip key={r} id={r} />)}
-    </div>
-  )
-}
-
-function DecisionSides({ decision: d }: { decision: Decision }) {
-  const chosen = d.options.find((o) => o.id === d.chosen)
-  const others = d.options.filter((o) => o !== chosen)
-  return (
-    <>
-      <div className="mt-3 grid gap-3 md:grid-cols-2">
-        {chosen && <Side option={chosen} chosen />}
-        {others.map((o) => <Side key={o.id} option={o} chosen={false} />)}
-      </div>
-      {d.why && <p className="mt-2.5 text-sm leading-6"><span className="text-muted-ink">{COPY.decisions.settledBy}</span> {d.why}</p>}
-    </>
-  )
-}
-
-function Side({ option: o, chosen }: { option: Option; chosen: boolean }) {
-  return (
-    <div className={`rounded-2xl p-3.5 ${chosen ? "bg-muted/60 ring-1 ring-foreground/15 dark:bg-muted/40" : "border border-dashed border-foreground/25"}`}>
-      <div className="text-xs font-medium text-muted-ink">{chosen ? COPY.decisions.chosen : COPY.decisions.other}</div>
-      <div className={`mt-1 font-medium ${chosen ? "" : "text-muted-foreground"}`}>{o.label}</div>
-      {o.detail && <p className="mt-1 text-sm leading-6 text-pretty text-muted-foreground">{o.detail}</p>}
+    <div>
+      <div className="text-base leading-6 font-medium">{o.label}</div>
+      {o.detail && <p className="mt-0.5 text-sm leading-6 text-pretty text-muted-foreground">{o.detail}</p>}
       {o.facts?.length ? (
-        <dl className="mt-2 grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-xs leading-5">
+        <dl className="mt-1.5 grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-xs leading-5">
           {o.facts.map(([k, v], i) => <div key={i} className="contents"><dt className="text-muted-ink">{k}</dt><dd>{v}</dd></div>)}
         </dl>
       ) : null}

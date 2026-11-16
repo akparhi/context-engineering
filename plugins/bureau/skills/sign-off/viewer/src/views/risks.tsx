@@ -34,29 +34,23 @@ function RiskRow({ risk: k }: { risk: Risk }) {
     <li data-ref={k.id} className={ROW}>
       <span className="mt-0.5"><IdChip id={k.id} /></span>
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2"><span className="font-medium">{k.title}</span>{!k.serves.length && <LooseEnd>{COPY.risks.servesNone}</LooseEnd>}</div>
-        <div>
-          <RiskBound risk={k} />
+        <div className="flex items-start gap-2">
+          <span className="min-w-0 flex-1 font-medium">{k.title}</span>
+          {k.serves.length ? <span className="flex shrink-0 gap-1">{k.serves.map((r) => <IdChip key={r} id={r} />)}</span> : <LooseEnd>{COPY.risks.servesNone}</LooseEnd>}
         </div>
+        <p className="mt-0.5 text-base leading-7 text-pretty text-muted-foreground">{k.bound}</p>
       </div>
     </li>
   )
 }
 
-const RiskBound = ({ risk: k }: { risk: Risk }) => (
-  <>
-    <p className="mt-0.5 text-sm leading-6 text-pretty text-muted-foreground">{k.bound}</p>
-    {k.serves.length > 0 && <div className="mt-1.5 flex flex-wrap gap-1">{k.serves.map((r) => <IdChip key={r} id={r} />)}</div>}
-  </>
-)
-
 function DefaultRow({ value: d }: { value: Default }) {
   return (
     <li data-ref={d.id} className={ROW}>
       <span className="mt-0.5"><IdChip id={d.id} /></span>
-      <div className="min-w-0">
-        <p className="text-sm leading-6 text-pretty">{d.says}{d.note && <> <span className="text-muted-ink">{d.note}</span></>}</p>
-        <div className="mt-1.5 flex flex-wrap gap-1">{d.serves.map((r) => <IdChip key={r} id={r} />)}</div>
+      <div className="flex min-w-0 items-start gap-2">
+        <p className="min-w-0 flex-1 text-base leading-7 text-pretty">{d.says}{d.note && <> <span className="text-muted-ink">{d.note}</span></>}</p>
+        <span className="mt-1 flex shrink-0 gap-1">{d.serves.map((r) => <IdChip key={r} id={r} />)}</span>
       </div>
     </li>
   )

@@ -69,8 +69,9 @@ function drawnBy(m: Manifest): Map<string, string> {
   return out;
 }
 
-/** design.md's may-run rule: the step is approved or FYI in a settled act, the grant is approved, everything in `dependsOn` and
- *  `delivers` is approved, and each blocking question that lists the step is answered. With no grant, no step may run. */
+/** design.md's may-run rule: the step is approved or FYI in a settled act, the grant is approved, everything in `delivers` and each
+ *  unit in `startsAfter` is approved, and each blocking question that lists the step is answered. `mergesAfter` orders pull requests
+ *  and never holds a start. With no grant, no step may run. */
 function stepStatus(m: Manifest, items: ItemStatus[], acts: ActStatus[]): StepStatus[] {
   const byId = new Map(items.map((i) => [i.id, i]));
   const owner = drawnBy(m);
@@ -78,7 +79,7 @@ function stepStatus(m: Manifest, items: ItemStatus[], acts: ActStatus[]): StepSt
   return m.items.flatMap((step) => {
     if (step.type !== "step") return [];
     const need = [
-      step.id, grant?.id ?? "grant", ...(step.dependsOn ?? []),
+      step.id, grant?.id ?? "grant", ...(step.startsAfter?.units ?? []),
       ...(step.delivers ?? []).flatMap((d) => owner.get(d) ?? []),
       ...(acts.find((a) => a.act === ACT_OF[step.section])?.waiting ?? []),
     ];
