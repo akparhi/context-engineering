@@ -30,7 +30,7 @@
       "name": "bureau",
       "source": "./plugins/bureau",
       "description": "pstack-claude workflows and principles for Claude Code: hotline routing, design, review, PR, and verification skills.",
-      "version": "0.9.3",
+      "version": "0.9.4",
       "author": {
         "name": "Anand Parhi"
       },
