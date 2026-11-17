@@ -274,10 +274,10 @@
     ]
   },
   "alwaysThinkingEnabled": false,
-  "effortLevel": "medium",
+  "effortLevel": "high",
   "modelSettings": {
     "claude-opus-5-5": {
-      "effortLevel": "medium"
+      "effortLevel": "high"
     }
   },
   "promptSuggestionEnabled": false,
@@ -290,7 +290,7 @@
         "terra": true,
         "luna": true,
         "deepseek": false,
-        "fast": false,
+        "fast": true,
         "claudeai_connectors_dirs": "~/Projects/Alaan/none"
       }
     },
