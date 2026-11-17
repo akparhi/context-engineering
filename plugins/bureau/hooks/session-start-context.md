@@ -35,6 +35,7 @@ When the intent is specific, enter that skill directly. Invoke every skill liste
 - **Understanding code.** Use `bureau:how` for how it works, `bureau:why` for why it is built this way, and `bureau:teach` to explain it.
 - **Tests.** Use `bureau:test-audit` when writing, changing, or reviewing tests. Use `bureau:tdd` when the failing test comes first.
 - **Reviewing a change.** Use `bureau:review` for parallel correctness, code-quality, and adversarial reviewers, and for plans and specs. Use `bureau:interrogate` for a multi-model adversarial review.
+- **Writing or editing a skill.** Follow hotline's Authoring or modifying a skill playbook (`playbooks/authoring-a-skill.md`) to bureau's standard, and run `bureau:unslop` on every line you add.
 - **Before every commit or PR.** Run `bureau:deslop` on the diff.
 - **Pull requests.** Use `bureau:pr` to create, update, or tidy one. Use `bureau:babysit` after it opens, `bureau:fix-ci` for failing checks, `bureau:get-pr-comments` for review comments, and `bureau:fix-merge-conflicts` for merge conflicts.
 - **TypeScript.** Use `bureau:typescript-best-practices` when reading or editing `.ts` or `.tsx` files.
