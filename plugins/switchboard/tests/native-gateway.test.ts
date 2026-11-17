@@ -135,7 +135,7 @@ test('native conversion preserves tool IDs, error results, permissions text and 
         },
       ],
     },
-    'gpt-6-astra',
+    'gpt-6.2-astra',
   );
   assert.equal(result.instructions, 'Follow the task');
   assert.equal(callId(result.input[1]), 'call_1');
@@ -586,7 +586,7 @@ test('gateway receipts aggregate provider responses until the owning worker fini
   const receipt = JSON.parse(lines[0]);
   assert.equal(receipt.requests, 2);
   assert.equal(receipt.usage.output_tokens, 30);
-  assert.equal(receipt.entries[0].model, 'gpt-6-astra');
+  assert.equal(receipt.entries[0].model, 'gpt-6.2-astra');
   assert.equal(receipt.entries[0].effort, 'high');
   assert.equal(receipt.entries[0].source, 'provider');
   assert.equal(receipts.snapshot('other').requests, 0);
@@ -709,8 +709,8 @@ test('fast mode puts Sol and Luna on the priority tier and never Astra', async (
     }
     const priority = fast ? 'priority' : undefined;
     assert.deepEqual(tiers, {
-      'gpt-6-astra': undefined,
-      'gpt-6.1-sol': priority,
+      'gpt-6.2-astra': undefined,
+      'gpt-6.2-sol': priority,
       'gpt-6-luna': priority,
     });
   }
@@ -795,7 +795,7 @@ test('external route isolates provider credentials and handles simultaneous work
     return new Response(sse(textEvents), { headers: { 'content-type': 'text/event-stream' } });
   });
   const aliases = ['astra', 'luna'];
-  const slugs = ['gpt-6-astra', 'gpt-6-luna'];
+  const slugs = ['gpt-6.2-astra', 'gpt-6-luna'];
   const responses = await Promise.all(
     aliases.map((alias, i) =>
       call(
@@ -855,8 +855,8 @@ test('all registered model and reasoning choices reach OpenAI without substituti
     return new Response(sse(textEvents));
   });
   for (const [name, slug] of [
-    ['astra', 'gpt-6-astra'],
-    ['sol', 'gpt-6.1-sol'],
+    ['astra', 'gpt-6.2-astra'],
+    ['sol', 'gpt-6.2-sol'],
     ['luna', 'gpt-6-luna'],
   ]) {
     assert.deepEqual(OPENAI_WORKERS[name], { model: name });
@@ -893,7 +893,7 @@ test("Claude Code's session-title request runs at low effort on its own model", 
     assert.equal(response.status, 200);
     await response.text();
   }
-  assert.deepEqual(efforts, ['claude-opus-5-5 low', 'gpt-6-astra low', 'gpt-6-astra high']);
+  assert.deepEqual(efforts, ['claude-opus-5-5 low', 'gpt-6.2-astra low', 'gpt-6.2-astra high']);
 });
 
 test('a dropped downstream connection aborts external inference', async (t) => {

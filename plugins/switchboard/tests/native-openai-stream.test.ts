@@ -68,7 +68,7 @@ test('terminal-only text, reasoning and tool calls are recovered with usage and 
     });
     const next = toResponses(
       { messages: [{ role: 'assistant', content: result.content }] },
-      'gpt-6-astra',
+      'gpt-6.2-astra',
     );
     assert(
       next.input.some((item) => 'encrypted_content' in item && item.encrypted_content === 'opaque'),
@@ -160,7 +160,7 @@ test('reasoning prefers final encrypted state and retains early state only when 
     ]);
     const next = toResponses(
       { messages: [{ role: 'assistant', content: result.content }] },
-      'gpt-6-astra',
+      'gpt-6.2-astra',
     );
     const restored = next.input[0];
     assert('encrypted_content' in restored);
@@ -185,7 +185,7 @@ test('terminal reasoning ciphertext may rotate without changing visible reasonin
   );
   const next = toResponses(
     { messages: [{ role: 'assistant', content: result.content }] },
-    'gpt-6-astra',
+    'gpt-6.2-astra',
   );
   assert('encrypted_content' in next.input[0]);
   assert.equal(next.input[0].encrypted_content, 'opaque');

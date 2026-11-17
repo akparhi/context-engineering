@@ -226,7 +226,7 @@ for (let turn = 0; turn < 3; turn++) {
       assert.equal(url, 'https://chatgpt.com/backend-api/codex/responses');
       assert(samples.length < 6, 'Six-request inference budget exhausted');
       const body: ResponsesRequest = JSON.parse(String(init.body));
-      assert.equal(body.model, 'gpt-6-astra');
+      assert.equal(body.model, 'gpt-6.2-astra');
       assert.equal(body.reasoning.effort, 'low');
       assert(body.prompt_cache_key);
       assert.match(body.prompt_cache_key, /^[a-f0-9]{64}$/);

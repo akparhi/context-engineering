@@ -2,8 +2,8 @@ import { EFFORTS, type Effort } from './responses.ts';
 
 /** Public model ID (the bare alias clients send) -> OpenAI slug. Bumping a model is a one-line edit here. */
 export const MODELS = {
-  'sol': 'gpt-6.1-sol',
-  'astra': 'gpt-6-astra',
+  'sol': 'gpt-6.2-sol',
+  'astra': 'gpt-6.2-astra',
   'terra': 'gpt-6.1-terra',
   'luna': 'gpt-6-luna',
 };

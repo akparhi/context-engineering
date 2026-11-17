@@ -8,7 +8,7 @@ const completion: GatewayEvent = {
   endpoint: 'responses',
   session: 'session-1',
   agentId: 'worker-7',
-  model: 'gpt-6-astra',
+  model: 'gpt-6.2-astra',
   effort: 'high',
   stopReason: 'end_turn',
   tools: ['Read'],
@@ -35,7 +35,7 @@ test('ledger aggregates an invocation and ignores replayed usage', async () => {
   const before = ledger.snapshot();
   assert.equal(before.requests, 1);
   assert.equal(before.totals.output_tokens, 30);
-  assert.equal(before.byModel['gpt-6-astra']?.output_tokens, 30);
+  assert.equal(before.byModel['gpt-6.2-astra']?.output_tokens, 30);
   const receipt = ledger.complete(
     { session: 'session-1', agentId: 'worker-7', invocationId: 'turn-1' },
     'completed',
@@ -81,8 +81,8 @@ test('session totals survive receipt history eviction and returned records are i
   assert.equal(ledger.snapshot('other').requests, 1);
   assert.equal(ledger.recent('session-1').length, 1);
   const recent = ledger.recent('session-1')[0];
-  recent.byModel['gpt-6-astra'].input_tokens = 9000;
-  assert.equal(ledger.recent('session-1')[0].byModel['gpt-6-astra'].input_tokens, 120);
+  recent.byModel['gpt-6.2-astra'].input_tokens = 9000;
+  assert.equal(ledger.recent('session-1')[0].byModel['gpt-6.2-astra'].input_tokens, 120);
 });
 
 test('receipts retain correlated sources and count each request and completion once', async () => {

@@ -163,7 +163,7 @@ async function stagesChild(sizeMb: number, route: string) {
     rows.push(['hypothetical re-serialize (only if body changed)', snapNow()]);
     void resent;
   } else {
-    const request = toResponses(parsed, 'gpt-6-astra');
+    const request = toResponses(parsed, 'gpt-6.2-astra');
     rows.push(['after toResponses', snapNow()]);
     const tokens = estimateInputTokens(request);
     rows.push([`after estimateInputTokens (${tokens})`, snapNow()]);
