@@ -284,13 +284,13 @@
   "pluginConfigs": {
     "switchboard@akparhi": {
       "options": {
+        "fast": true,
         "gpt_effort": "medium",
         "astra": true,
         "sol": true,
         "terra": true,
-        "luna": true,
+        "luna": false,
         "deepseek": false,
-        "fast": true,
         "claudeai_connectors_dirs": "~/Projects/Alaan/none"
       }
     },
