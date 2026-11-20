@@ -23,8 +23,28 @@ const sessionlessCommands = new Set([
   'setup-token',
 ]);
 
+// Hidden helpers the VS Code extension runs as `[--setting-sources <value>] <helper> --json ...`
+// and kills after 30s. Only that exact shape passes: other argument guesses send real sessions
+// past the launcher (`-p rm` is a prompt).
+const extensionHelpers = new Set([
+  'workspace-trust',
+  'design-login',
+  'edit-chrome-settings',
+  'edit-hook',
+  'edit-memory-settings',
+  'edit-permission-rules',
+  'edit-sandbox-settings',
+  'edit-skill-overrides',
+]);
+
+function isSessionless(args: string[]) {
+  if (sessionlessCommands.has(args[0])) return true;
+  const helper = args[0] === '--setting-sources' ? 2 : 0;
+  return extensionHelpers.has(args[helper]) && args[helper + 1] === '--json';
+}
+
 async function dispatch(state: Installation, args: string[], management: boolean) {
-  if (!management && sessionlessCommands.has(args[0])) {
+  if (!management && isSessionless(args)) {
     return run(state.claude, args);
   }
   const { root, providers } = await installedPlugins(state.claude, settingsArguments(args));

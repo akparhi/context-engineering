@@ -257,7 +257,11 @@ test('sessionless commands skip the launcher and reach the real executable', asy
   const root = await core(f.directory, 'core');
   await writeFile(f.listing, JSON.stringify(plugins(root)));
   await f.install();
-  for (const args of [['--version'], ['auth', 'status', '--json']]) {
+  for (const args of [
+    ['--version'],
+    ['auth', 'status', '--json'],
+    ['--setting-sources', 'user', 'workspace-trust', '--json'],
+  ]) {
     assert.deepEqual(JSON.parse((await f.invoke('switchboard', args)).stdout), {
       native: true,
       args,
@@ -269,7 +273,13 @@ test('sessionless commands skip the launcher and reach the real executable', asy
     JSON.parse((await f.invoke('switchboard', [bundled, 'mcp', 'list'])).stdout),
     { native: true, args: ['mcp', 'list'] },
   );
-  assert.equal(JSON.parse((await f.invoke('switchboard', ['-p', 'hi'])).stdout).providers, 'openai,zen');
+  for (const args of [
+    ['-p', 'hi'],
+    ['-p', 'auth'],
+    ['--setting-sources', 'user', 'workspace-trust', '-p', 'hi'],
+  ]) {
+    assert.equal(JSON.parse((await f.invoke('switchboard', args)).stdout).providers, 'openai,zen');
+  }
 });
 
 test('edited shell blocks and project-only executable cores fail explicitly', async (t) => {
