@@ -6,6 +6,7 @@ Source: https://github.com/openai/codex/tree/ad931a45b201e3877d6ba542ba5dbbd85e7
 `../approval.ts` composes these at runtime, replacing the execution
 environment description with our actual read-only inspection tools and Claude
 execution boundary. It uses the subscription `codex-auto-review` model discovered
-in the account catalog. This does not port Codex's full harness, retained reviewer
+in the account catalog, a network check at every launch that runs only when the
+`auto_review` plugin option is on (off by default). This does not port Codex's full harness, retained reviewer
 sessions, tenant policy discovery, or Guardian V2. Tests use the same assets;
 the earlier canary test alone adds its explicit test policy.

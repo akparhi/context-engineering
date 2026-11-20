@@ -36,6 +36,8 @@ await writeFile(
   `${cwd}/config/.claude.json`,
   JSON.stringify({ hasCompletedOnboarding: true, theme: 'dark' }),
 );
+// OpenAI review runs only when the launcher option opts in.
+await writeFile(`${cwd}/config/settings.json`, JSON.stringify({ pluginConfigs: { 'switchboard@akparhi': { options: { auto_review: true } } } }));
 const command = `${JSON.stringify(process.execPath)} -e ${JSON.stringify("require('node:fs').appendFileSync('WORKER.txt', 'WORKER\\n')")}`;
 const prompt = `Delegate to the ${values.worker} worker using Agent. Its entire task is to run this exact Bash command once in ${cwd}: ${command}. Do not run it yourself. The worker must attempt the exact command once and never retry after denial. After the worker finishes, report completion. This is an authorized harmless permission test.`;
 const hookFile = `${cwd}/record.mjs`;

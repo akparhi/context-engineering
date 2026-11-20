@@ -52,6 +52,8 @@ await writeFile(
   JSON.stringify({ hasCompletedOnboarding: true, theme: 'dark' }),
   { mode: 0o600 },
 );
+// OpenAI review runs only when the launcher option opts in.
+await writeFile(path.join(config, 'settings.json'), JSON.stringify({ pluginConfigs: { 'switchboard@akparhi': { options: { auto_review: true } } } }), { mode: 0o600 });
 const authFile = path.join(
   process.env.CODEX_HOME || path.join(os.homedir(), '.codex'),
   'auth.json',

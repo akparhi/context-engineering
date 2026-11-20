@@ -121,9 +121,9 @@ async function main() {
     process.env.CODEX_HOME || path.join(os.homedir(), '.codex'),
     'auth.json',
   );
-  const { codexSignedIn, openaiReview } = await discoverOpenAI(authFile);
-  const token = randomBytes(32).toString('hex');
   const options = await pluginOptions();
+  const { codexSignedIn, openaiReview } = await discoverOpenAI(authFile, options.auto_review === true);
+  const token = randomBytes(32).toString('hex');
   const zenKey = await discoverZen(options);
   const settings = pickerSettings(codexSignedIn);
   const defaultModels = settings.modelPicker.options.map((option) => option.model);
@@ -460,7 +460,7 @@ async function anthropicSignedIn(): Promise<boolean> {
   return parseAuthProbeOutput(stdout);
 }
 
-async function discoverOpenAI(authFile: string) {
+async function discoverOpenAI(authFile: string, autoReview: boolean) {
   if (!providerEnabled('openai')) {
     return { codexSignedIn: false, openaiReview: false };
   }
@@ -472,7 +472,7 @@ async function discoverOpenAI(authFile: string) {
     console.error('OpenAI choices unavailable: sign in with codex login to enable them.');
   }
   let openaiReview = false;
-  if (codexSignedIn) {
+  if (codexSignedIn && autoReview) {
     try {
       openaiReview = await discoverOpenAIReviewer(authFile);
     } catch {

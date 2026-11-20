@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -72,33 +73,38 @@ globalThis.fetch = async (url, init) => {
   const launcher = fileURLToPath(
     new URL('../src/launcher.ts', import.meta.url),
   );
+  const launch = (env: NodeJS.ProcessEnv) =>
+    promisify(execFile)(
+      process.execPath,
+      ['--import', pathToFileURL(preload).href, launcher, '--', '--model', 'astra'],
+      {
+        cwd,
+        timeout: 20000,
+        env: {
+          PATH: `${bin}${path.delimiter}${process.env.PATH}`,
+          HOME: cwd,
+          CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
+          CODEX_HOME: cwd,
+          SWITCHBOARD_ENABLED_PROVIDERS: 'openai',
+          ...env,
+        },
+      },
+    );
+  const offByDefault = JSON.parse((await launch({ TEST_AUTH: 'no', TEST_REVIEW: 'yes' })).stdout);
+  assert.equal(offByDefault.permissions?.disableAutoMode, 'disable');
+  assert.equal(existsSync(calls), false, 'no catalog request unless auto_review is on');
+  await mkdir(path.join(cwd, 'claude'), { recursive: true });
+  await writeFile(
+    path.join(cwd, 'claude', 'settings.json'),
+    JSON.stringify({ pluginConfigs: { 'switchboard@akparhi': { options: { auto_review: true } } } }),
+  );
   for (const auth of ['yes', 'api', 'no']) {
     for (const review of ['yes', 'no']) {
-      const { stdout } = await promisify(execFile)(
-        process.execPath,
-        [
-          '--import',
-          pathToFileURL(preload).href,
-          launcher,
-          '--',
-          '--model',
-          'astra',
-        ],
-        {
-          cwd,
-          timeout: 20000,
-          env: {
-            PATH: `${bin}${path.delimiter}${process.env.PATH}`,
-            HOME: cwd,
-            CLAUDE_CONFIG_DIR: path.join(cwd, 'claude'),
-            CODEX_HOME: cwd,
-            SWITCHBOARD_ENABLED_PROVIDERS: 'openai',
-            TEST_AUTH: auth,
-            TEST_REVIEW: review,
-            ...(auth === 'api' ? { ANTHROPIC_API_KEY: 'anthropic-fixture' } : {}),
-          },
-        },
-      );
+      const { stdout } = await launch({
+        TEST_AUTH: auth,
+        TEST_REVIEW: review,
+        ...(auth === 'api' ? { ANTHROPIC_API_KEY: 'anthropic-fixture' } : {}),
+      });
       const settings = JSON.parse(stdout);
       assert.equal(
         settings.permissions?.disableAutoMode,
