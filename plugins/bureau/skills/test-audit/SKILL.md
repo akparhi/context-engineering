@@ -64,7 +64,13 @@ matches one, and audits hunt for existing tests that do.
 - negative controls that pass for an unrelated reason, such as a denial from a
   different guard or a rejection the production path never reaches;
 - names or fixtures that promise more than the input exercises, such as a
-  "retires the window" test asserting the window was not cleared.
+  "retires the window" test asserting the window was not cleared;
+- fixed sleeps or retries added until the test passes, in place of waiting on
+  the event the code emits;
+- `toThrow()` or `rejects.toThrow()` with no message or error type, which any
+  error passes, including a `TypeError` from broken setup;
+- `try`/`catch` with the `expect` in the `catch`, which passes when the call
+  stops throwing because the `expect` never runs.
 
 ## Value bar
 
