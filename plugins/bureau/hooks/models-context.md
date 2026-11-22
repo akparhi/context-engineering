@@ -1,6 +1,6 @@
 # Bureau models
 
-Bureau skills name a role. Its model ALWAYS comes from the JSON below.
+Bureau skills name a role. Its model and effort ALWAYS come from the JSON below. For every subagent, always pick the role by the work.
 
 1. Find the role in `roles`. If the role is missing, omit `model` so the subagent runs on the parent session's model.
 2. Split off the effort. A role value can end in `@<effort>`, as in `opus @high` or `strongest @high`. Strip it before the next step. A value without one takes `defaultEffort`.
