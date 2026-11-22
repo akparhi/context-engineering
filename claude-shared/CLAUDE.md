@@ -15,7 +15,7 @@
 
 <important if="you are planning, writing a spec, or writing an implementation plan">
 - End every plan with unresolved questions, if any. While planning, ask clarifying questions without hesitation.
-- Use the `bureau:review` skill to review research, specs and implementation plans.
+- Use the `bureau:interrogate` skill to review research, specs and implementation plans.
 </important>
 
 <important if="the task involves a browser: opening pages, clicking, filling forms, screenshots, or web scraping">

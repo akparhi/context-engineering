@@ -79,6 +79,6 @@ End the plan with the rule table: each rule paired with what enforces it today a
 
 ## Review and present
 
-Run `bureau:review` on the plan and fix what it proves. If the user wants to approve the plan before work starts, present it through `bureau:sign-off`. Start no unit until the user asks.
+Run `bureau:interrogate` on the plan and fix what it proves. If the user wants to approve the plan before work starts, present it through `bureau:sign-off`. Start no unit until the user asks.
 
 **Reply:** which gates really run, the ranked table (pattern, spread, cost, fix), the top three in full, what you could not see or run, and the paths to the plan, the census script and its baseline.
