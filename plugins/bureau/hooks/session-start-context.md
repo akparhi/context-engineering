@@ -25,7 +25,6 @@ Always remember, this codebase is yours: how it's built and maintained is your c
 ## Skills Usage
 
 - If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
-- IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT. This is not negotiable. You cannot rationalize your way out of this.
 - **CRITICAL RULE**: load principle skills (`bureau:principle-*`) whenever their "Apply when" trigger matches.
 
 When the intent is specific, enter that skill directly. Invoke every skill listed for the below activities, even when hotline is not in play:
