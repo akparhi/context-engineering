@@ -2,7 +2,7 @@
   "name": "bureau",
   "displayName": "bureau",
   "icon": "./assets/bureau-icon.png",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "description": "Hybrid of superpowers + pstack workflows, for claude-code.",
   "author": {
     "name": "Anand Kumar Parhi"
@@ -28,7 +28,7 @@
     "default_model": {
       "type": "string",
       "title": "Default model",
-      "description": "Model for the default tier, used by: feature, refactoring; bug-fix; perf-issue; judgment and prose; how explainer; why investigators; why synthesizer; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers. With fast mode on: feature, refactoring; perf-issue; judgment and prose; reflect tooling; reflect judgment, divergent, synthesizer; swarm workers. astra and sol need the switchboard plugin.",
+      "description": "Model for the default tier, used by: feature, refactoring; bug-fix; perf-issue; judgment and prose; how explainer; why investigators; why synthesizer; swarm workers. With fast mode on: feature, refactoring; perf-issue; judgment and prose; swarm workers. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: opus",
         "fable",
@@ -317,38 +317,6 @@
       "type": "string",
       "title": "Role: why synthesizer",
       "description": "Model for this why role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
-      "options": [
-        "models.json: default (opus) @medium",
-        "fable",
-        "opus",
-        "sonnet",
-        "haiku",
-        "inherit-parent",
-        "astra",
-        "sol"
-      ],
-      "default": "models.json: default (opus) @medium"
-    },
-    "role_reflect_tooling": {
-      "type": "string",
-      "title": "Role: reflect tooling",
-      "description": "Model for this reflect role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
-      "options": [
-        "models.json: default (opus) @low",
-        "fable",
-        "opus",
-        "sonnet",
-        "haiku",
-        "inherit-parent",
-        "astra",
-        "sol"
-      ],
-      "default": "models.json: default (opus) @low"
-    },
-    "role_reflect_judgment_divergent_synthesizer": {
-      "type": "string",
-      "title": "Role: reflect judgment, divergent, synthesizer",
-      "description": "Model for this reflect role. The models.json value follows the default tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
       "options": [
         "models.json: default (opus) @medium",
         "fable",

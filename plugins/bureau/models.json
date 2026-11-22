@@ -89,18 +89,6 @@
       "skill": "why"
     },
     {
-      "role": "reflect tooling",
-      "models": "default @low",
-      "fast": "default @low",
-      "skill": "reflect"
-    },
-    {
-      "role": "reflect judgment, divergent, synthesizer",
-      "models": "default @medium",
-      "fast": "default @low",
-      "skill": "reflect"
-    },
-    {
       "role": "retro investigator",
       "models": "worker @medium",
       "fast": "worker @low",
