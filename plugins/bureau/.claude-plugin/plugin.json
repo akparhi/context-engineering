@@ -2,7 +2,7 @@
   "name": "bureau",
   "displayName": "bureau",
   "icon": "./assets/bureau-icon.png",
-  "version": "0.9.8",
+  "version": "0.9.9",
   "description": "Hybrid of superpowers + pstack workflows, for claude-code.",
   "author": {
     "name": "Anand Kumar Parhi"

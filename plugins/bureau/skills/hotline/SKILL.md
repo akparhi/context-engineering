@@ -82,6 +82,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 - **Guard the Context Window.** Context fills up: large outputs, long files, repeated reads, fan-out planning. Route bulk to subagents, keep summaries in the main thread.
 - **Never Block on the Human.** Tempted to ask "should I do X?" on reversible work. Proceed, present the result, let the human course-correct.
+- **Use Resources Efficiently.** Before a build, test suite, or fan-out, between iterations of a dev loop, and on a LOW warning. Check free memory and disk, back off when low, clean up what you started.
 
 **Meta**
 

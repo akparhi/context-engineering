@@ -26,6 +26,7 @@ Always remember, this codebase is yours: how it's built and maintained is your c
 
 - If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
 - **CRITICAL RULE**: load principle skills (`bureau:principle-*`) whenever their "Apply when" trigger matches.
+- Load `bureau:principle-use-resources-efficiently` before a build, test suite, or fan-out, between iterations of a dev loop, and on a LOW warning.
 
 When the intent is specific, enter that skill directly. Invoke every skill listed for the below activities, even when hotline is not in play:
 
