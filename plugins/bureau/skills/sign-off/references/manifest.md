@@ -161,6 +161,8 @@ Declare these yourself, because no fact shows them: `money`, `dependency`, `auth
 
 - A region's `sketch` is one of `nav`, `figures`, `tabs`, `filters`, `table`, `pagination`, `message`, `sheet` and `form`, and its `sample` has that sketch's shape in `SAMPLES` in `manifest.ts`. A region's `mark` may also be `copy`. Every screen state needs at least one region that names its `component`.
 - A screen state takes `from` (the state before) and `on` (the event) for the flow strip, and `states` for the page states in code it draws.
+- A screen state takes `image`, the path of its mockup relative to the plan folder, such as `screens/v1/V1-01-company-scope.png`. The file must be inside the plan folder, and a `#` in the path is part of the file name. It must be a `.png`, `.jpg`, `.jpeg`, `.webp` or `.gif` file of 2 MB or less. SVG is refused because it can run script. `build` inlines the bytes in the page, which shows the mockup under the sketch and opens it full size in a new tab. Export the frame from Figma or pen.dev at 1x. The sketch stays, because it marks the new and changed regions.
+- A screen state takes `links`, `{ label, url }[]`, for the design it comes from, such as its Figma frame. The page prints them after the state's caption. Each takes an http or https URL. Never build or guess a URL.
 - A component's `role` is `route`, `layout`, `component`, `data` or `wiring`. `parent` and `shows` name other components. Set `parent` on every part another part mounts, so the list indents as the tree it is. Set `file` on a new or changed part too: the page shows it when the reader hovers the name.
 - An acceptance row takes `says` in place of `given`, `when` and `then`, and needs one or the other. `requirement: null` is a row that checks no requirement. `guards` or `addedFor` names a chart rule as `rule:<name>`.
 - A test's `type` is `unit`, `behavior`, `e2e` or `live`. `unit` names the step that holds it. Every test proves at least one row. Every test but a `live` one names one `file` and the `run` command for it. A `live` test is a check run by hand, in a browser or on a real environment. Its `says` is the instruction, and its evidence goes in the PR.
@@ -205,6 +207,7 @@ A block is `{ "view": "<name>", ...fields }` in an item's `body`. Each view draw
 An `itemRev` hashes what the reader saw: the item, each block's resolved input, the words of each source file a block draws, and the cited section. `planRev` hashes the item revs. So:
 
 - A changed fact, block or cited section gives the item a new rev, and the item reopens.
+- A screen state's `image` counts by its bytes, so a re-exported mockup reopens each item with a `screens` block that shows it. Its `image` and `links` are in no other view's rev.
 - Reflowed lines, blank lines and comments in `.sql`, `.dbml`, `.mmd` and `.md` sources change no rev. JSON counts as data, so key order changes nothing. Any other file counts as written.
 - The order of a chart's states and arrows in `report.json` changes no rev.
 - `title`, `ask` and `note` are in the rev of the item with a `spec` block, or in `planRev` when no item has one.
@@ -297,11 +300,12 @@ It appends one `revise` event to `reviews/events.jsonl`. `from` is the `itemRev`
 
 `check` prints `error <rule>: <message>`. The list below covers every message in `scripts/check.ts`.
 
-**schema.** The file is missing, is not JSON, or breaks `manifest.ts`. The message gives the path of the bad field. Fix that field. An unknown key is usually a removed field (see above). A `ticket` or source URL must be http or https.
+**schema.** The file is missing, is not JSON, or breaks `manifest.ts`. The message gives the path of the bad field. Fix that field. An unknown key is usually a removed field (see above). A `ticket`, source or screen link URL must be http or https. A screen's `image` must end in `.png`, `.jpg`, `.jpeg`, `.webp` or `.gif`.
 
 **id.** `duplicate id X: a <kind> and a <kind>`. Rename one. Ids share one namespace across requirements, items, options and facts.
 
 **ref.** A reference names something that does not exist. The message says where and what. Fix the id or the path, or add the missing thing:
+- `screen S: image P does not exist`: fix the path, which is relative to the plan folder. `is an absolute path` or `is outside the plan folder`: copy the mockup into the plan folder and name it from there. A symlink counts by where it points. `is N MB, over 2 MB`: export the mockup smaller, at 1x or as WebP.
 - `source X has no heading "H"`: use the heading text exactly as `plan.md` writes it.
 - `deliverable X does not exist`: a step's `delivers` takes an endpoint id, a component id or `db:<table>`.
 - `column T.C is not in the applied schema`: fix the name, or add the column to `db.sql`.

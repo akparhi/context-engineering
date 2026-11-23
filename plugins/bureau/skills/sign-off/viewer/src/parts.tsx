@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type KeyboardEvent, type ReactNode } from "react"
-import { CheckIcon, ChevronRightIcon, CircleAlertIcon, MessageSquareIcon, Undo2Icon } from "lucide-react"
+import { CheckIcon, ChevronRightIcon, CircleAlertIcon, ExternalLinkIcon, MessageSquareIcon, Undo2Icon } from "lucide-react"
 import type { Item } from "../../scripts/manifest.ts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -62,6 +62,15 @@ export const Disclosure = ({ label, children }: { label: ReactNode; children: Re
     <CollapsibleContent className="pt-3">{children}</CollapsibleContent>
   </Collapsible>
 )
+
+/** A link out of the page. The plan's schema lets only http and https URLs in. */
+export function SourceLink({ href, className = "", children }: { href: string; className?: string; children: ReactNode }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className={`inline-flex items-center gap-1 rounded-sm underline decoration-foreground/25 underline-offset-2 hover:text-foreground hover:decoration-current ${className}`}>
+      {children}<ExternalLinkIcon aria-hidden className="size-3 shrink-0" /><span className="sr-only">{COPY.head.opensNewTab}</span>
+    </a>
+  )
+}
 
 export const LooseEnd = ({ children }: { children: ReactNode }) => (
   <Badge variant="dashed"><CircleAlertIcon />{children}</Badge>

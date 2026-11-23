@@ -47,6 +47,7 @@
       {
         "id": "book-out", "screen": "Book page", "label": "Every copy is out", "when": "A member opens a book whose copies are all lent.",
         "on": "Opens a book that is out",
+        "image": "design/book-out.png", "links": [{ "label": "Figma frame", "url": "https://design.example.com/file/holds-on-books-that-are-out?node=book-out" }],
         "regions": [
           { "mark": "reused", "name": "Side menu", "component": "C1", "sketch": "nav",
             "sample": { "items": [ { "t": "Catalogue", "open": true }, { "t": "My loans" }, { "t": "Account" } ] } },

@@ -1,10 +1,11 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react"
 import { CircleAlertIcon, LockIcon, SearchIcon } from "lucide-react"
 import type { Screen, ScreensInput } from "../../../scripts/views.ts"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { COPY } from "../copy.ts"
-import { IdChip, LooseEnd, usePage } from "../parts.tsx"
+import { fullSize } from "../full-size.ts"
+import { IdChip, LooseEnd, SourceLink, usePage } from "../parts.tsx"
 import type { ViewProps } from "../views.tsx"
 
 type Region = Screen["regions"][number]
@@ -28,9 +29,26 @@ export function ScreensView({ input, focus }: ViewProps<ScreensInput>) {
         <span className="font-medium text-foreground">{screen.label}.</span> {screen.when}
         <span className="ml-1.5 inline-flex flex-wrap gap-1 align-middle">{screen.serves.map((r) => <IdChip key={r} id={r} />)}</span>
         {screen.on && <span className="ml-2 text-sm text-muted-ink">{COPY.screens.after(screens.find((x) => x.id === screen.from)?.label, screen.on)}</span>}
+        {screen.links && <span className="ml-2 inline-flex flex-wrap gap-x-3 text-sm">{screen.links.map((l) => <SourceLink key={l.url} href={l.url}>{l.label}</SourceLink>)}</span>}
       </p>
       <div className="mt-3"><ScreenPicture screen={screen} foldReused /></div>
+      {screen.image && <Mockup path={screen.image} label={screen.label} />}
     </>
+  )
+}
+
+/** The state's mockup, which `build` inlined as a `data:` URL. Clicking opens it full size in a new tab. Its blob URL lives until the
+ *  mockup unmounts or shows another image. */
+function Mockup({ path, label }: { path: string; label: string }) {
+  const src = usePage().data.images[path]
+  const viewer = useMemo(() => src ? fullSize(src) : null, [src])
+  useEffect(() => () => viewer?.close(), [viewer])
+  if (!src || !viewer) return null
+  return (
+    <button type="button" onClick={viewer.open} title={COPY.screens.fullSize}
+      className="mt-3 block w-full cursor-zoom-in overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/10 outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+      <img src={src} alt={COPY.screens.mockup(label)} className="block h-auto w-full" /><span className="sr-only">{COPY.head.opensNewTab}</span>
+    </button>
   )
 }
 

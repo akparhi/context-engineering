@@ -3,7 +3,7 @@ import { CheckIcon, CopyIcon, DownloadIcon, Undo2Icon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ACT_COPY, COPY } from "./copy.ts"
-import { readName, saveName, saveShown } from "./changed.ts"
+import { readerAtSubmit, saveShown } from "./changed.ts"
 import { usePage } from "./parts.tsx"
 import { actOf, type PageData } from "./plan.ts"
 import { buildReviewText, resultOf, tally } from "./review.ts"
@@ -67,8 +67,6 @@ type Stage = { kind: "confirm" } | { kind: "sending" } | { kind: "text"; text: s
 export function SubmitDialog({ acts, onClose }: { acts: Act[]; onClose: () => void }) {
   const { data, review } = usePage()
   const ref = useRef<HTMLDialogElement>(null)
-  const [name, setName] = useState(readName)
-  const [empty, setEmpty] = useState(false)
   const [stage, setStage] = useState<Stage>({ kind: "confirm" })
   const [said, setSaid] = useState("")
   const m = data.manifest, revision = m.revision ?? ""
@@ -77,9 +75,7 @@ export function SubmitDialog({ acts, onClose }: { acts: Act[]; onClose: () => vo
   useEffect(() => { ref.current?.showModal() }, [])
 
   const submit = async () => {
-    const by = name.trim()
-    if (!by) { setEmpty(true); document.getElementById("review-name")?.focus(); return }
-    saveName(by)
+    const by = readerAtSubmit()
     saveShown(m.id, data.revs.items)
     const text = buildReviewText(review, data, by, new Date().toISOString(), VIEW)
     setStage({ kind: "sending" })
@@ -96,7 +92,7 @@ export function SubmitDialog({ acts, onClose }: { acts: Act[]; onClose: () => vo
       <div className="mx-auto h-fit w-full max-w-2xl rounded-4xl bg-card text-sm text-card-foreground shadow-2xl ring-1 ring-foreground/10">
         <div className="border-b px-5 py-4 sm:px-6">
           <h2 id="dialog-title" className="font-heading text-lg font-medium">{title}</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">{COPY.submit.sub(revision, stage.kind === "confirm" ? "" : name.trim())}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">{COPY.submit.sub(revision)}</p>
         </div>
         <div className="px-5 py-5 sm:px-6">
           <Covers data={data} acts={acts} />
@@ -106,16 +102,6 @@ export function SubmitDialog({ acts, onClose }: { acts: Act[]; onClose: () => vo
               : <Badge variant="revise"><Undo2Icon />{COPY.submit.result.changes}</Badge>}
             <p className="min-w-0 flex-1 basis-64 leading-6">{COPY.submit.says[result]}{all.waiting ? ` ${COPY.submit.stillOpen(all.waiting)}` : ""}</p>
           </div>
-          {(stage.kind === "confirm" || stage.kind === "sending") && (
-            <>
-              <label className="mt-5 block text-xs font-medium text-muted-ink" htmlFor="review-name">{COPY.submit.nameLabel}</label>
-              <input id="review-name" type="text" value={name} autoComplete="name" placeholder={COPY.submit.namePlaceholder}
-                onChange={(e) => { setName(e.target.value); setEmpty(false) }} onKeyDown={(e) => { if (e.key === "Enter") void submit() }}
-                aria-invalid={empty || undefined} aria-describedby={empty ? "review-name-need" : undefined}
-                className="mt-1.5 h-9 w-full rounded-2xl border border-transparent bg-input/50 px-3 text-sm placeholder:text-muted-foreground aria-invalid:border-revise-line" />
-              {empty && <p id="review-name-need" role="alert" className="mt-1.5 text-xs font-medium text-revise-ink">{COPY.submit.nameEmpty}</p>}
-            </>
-          )}
           {stage.kind === "text" && (
             <div className="mt-5">
               <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">

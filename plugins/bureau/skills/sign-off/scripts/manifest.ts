@@ -1,13 +1,18 @@
 /** The `sign-off.json` contract and the review log's event shape, as zod schemas. The types are inferred from
  *  them, so `check`, `build` and the viewer cannot drift from the validator. */
 import { z } from "zod";
-import { ACTS, MARKS, SECTIONS, SKETCHES, TOUCHES } from "./model.ts";
+import { ACTS, IMAGE_TYPES, MARKS, SECTIONS, SKETCHES, TOUCHES } from "./model.ts";
 
 const id = z.string().min(1);
 const ids = z.array(id);
 const Section = z.enum(SECTIONS);
 const Mark = z.enum(MARKS);
 const Touch = z.enum(TOUCHES);
+/** A link the page prints, so only web schemes: a `javascript:` or `data:` URL never gets in. */
+const webUrl = z.url({ protocol: /^https?$/, error: "must be an http or https URL" });
+const Link = z.strictObject({ label: z.string().min(1), url: webUrl });
+const IMAGE_EXTS = Object.keys(IMAGE_TYPES);
+const IMAGE = new RegExp(`\\.(?:${IMAGE_EXTS.join("|")})$`, "i");
 
 const Product = z.strictObject({
   problem: z.string(),
@@ -45,6 +50,8 @@ const ScreenState = z.strictObject({
   chart: z.string().optional(), subtitle: z.string().optional(),
   from: id.optional(), on: z.string().optional(),                                  // the flow strip: the state before, and the event
   states: z.array(z.strictObject({ id: z.string(), says: z.string() })).optional(), // the page states in code this picture draws
+  image: z.string().regex(IMAGE, `must be a .${IMAGE_EXTS.slice(0, -1).join(", .")} or .${IMAGE_EXTS.at(-1)} file`).optional(), // the mockup, relative to the plan folder; `build` inlines it
+  links: z.array(Link).optional(),                                                 // the design this state comes from
 });
 const Component = z.strictObject({
   id, name: z.string(), role: z.enum(["route", "layout", "component", "data", "wiring"]), does: z.string(), mark: Mark,
@@ -160,15 +167,12 @@ const Item = z.discriminatedUnion("type", [
     clearance: z.string().optional() }),                                           // when a pull request may merge with no person
 ]);
 
-/** A link the page prints in its header, so only web schemes: a `javascript:` or `data:` URL never gets in. */
-const webUrl = z.url({ protocol: /^https?$/, error: "must be an http or https URL" });
-
 export const Manifest = z.strictObject({
   format: z.literal(1),
   id, kind: z.enum(["change", "design", "questions"]), title: z.string(), ask: z.string(),
   revision: z.string().optional(),                                                 // the label people use for this revision, like r8
   ticket: webUrl.optional(),                                                       // the ticket `id` names; the header links the id to it. Presentation: no rev hashes it
-  sources: z.array(z.strictObject({ label: z.string().min(1), url: webUrl })).optional(), // designs and documents the plan came from, linked after the revision. Presentation only
+  sources: z.array(Link).optional(),                                               // designs and documents the plan came from, linked after the revision. Presentation only
   note: z.string().optional(),
   repos: z.record(z.string(), z.string()).optional(),                              // repo name -> its checkout, relative to the plan folder
   product: z.union([Product, z.strictObject({ none: z.string() })]),

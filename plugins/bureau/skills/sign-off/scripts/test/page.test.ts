@@ -96,6 +96,24 @@ const ENDPOINT_AGAIN = `(async () => {
     shown: [...document.querySelectorAll(\`[data-ref="\${id}"]\`)].some((el) => el.checkVisibility()) };
 })()`;
 
+/** On the Screens stop: the first state's mockup and design link, whether the mockup takes focus, and what pressing it opens. */
+const MOCKUP = `(async () => {
+  const tick = () => new Promise((ok) => setTimeout(ok, 100));
+  location.hash = "#product/screens";
+  await tick(); await tick();
+  const img = document.querySelector('img[alt="The Every copy is out mockup"]');
+  const link = [...document.querySelectorAll("a")].find((a) => a.textContent.startsWith("Figma frame"));
+  let opened = null;
+  window.open = (url) => { opened = url; return null; };
+  const button = img?.closest("button");
+  button?.focus();
+  const focused = document.activeElement === button;
+  button?.click();
+  const blob = opened ? await (await fetch(opened)).blob() : null;
+  return { width: img?.naturalWidth ?? 0, data: !!img?.src.startsWith("data:image/png;base64,"), href: link?.href ?? null,
+    target: link?.target ?? null, focused, opened: blob ? blob.type + " " + blob.size : null };
+})()`;
+
 /** The root container's box and the height of what it holds. */
 const ROOT_BOX = `(() => { const root = document.getElementById("root"); return { height: root.getBoundingClientRect().height, content: root.scrollHeight, shown: root.clientHeight }; })()`;
 const RootBox = z.object({ height: z.number(), content: z.number(), shown: z.number() });
@@ -138,6 +156,16 @@ describe.skipIf(chromium === null)("the built page", () => {
     expect(value.picked).not.toBe(value.last);
     expect(value.again).toBe(value.last);
     expect(value.shown).toBe(true);
+  }, 60_000);
+
+  test("a screen state shows its inlined mockup and design link, and the mockup is a focusable button that opens it full size", async () => {
+    const dir = join(scratch, "mockup");
+    cpSync(FIXTURE, dir, { recursive: true });
+    const { errors, value } = await inChromium(chromium ?? "", pathToFileURL(await build(dir)).href, MOCKUP, z.object({
+      width: z.number(), data: z.boolean(), href: z.string().nullable(), target: z.string().nullable(), focused: z.boolean(), opened: z.string().nullable() }));
+    expect(errors).toEqual([]);
+    expect(value).toEqual({ width: 320, data: true, href: "https://design.example.com/file/holds-on-books-that-are-out?node=book-out", target: "_blank",
+      focused: true, opened: `image/png ${readFileSync(join(FIXTURE, "design/book-out.png")).length}` });
   }, 60_000);
 
   test("no stop scrolls the page sideways in a 1024 by 768 window", async () => {

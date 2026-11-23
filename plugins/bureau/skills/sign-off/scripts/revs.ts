@@ -2,15 +2,15 @@
  *  files it draws from, and never changes for layout: reflowed lines, blank lines, comments in a source file, key order in JSON,
  *  the order of a chart's states and arrows.
  *  `planRev` hashes the item revs. */
-import { existsSync, readFileSync } from "node:fs";
-import { extname, resolve as resolvePath } from "node:path";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { extname, isAbsolute, relative, resolve as resolvePath, sep } from "node:path";
 import { Manifest } from "./manifest.ts";
 import { section } from "./markdown.ts";
 import { type Inputs, type Read, resolve, type View } from "./views.ts";
 
 export type Revs = { planRev: string; items: Record<string, string> };
 
-export const hash = (text: string) => new Bun.CryptoHasher("sha256").update(text).digest("hex").slice(0, 12);
+export const hash = (text: string | Uint8Array) => new Bun.CryptoHasher("sha256").update(text).digest("hex").slice(0, 12);
 
 /** JSON with object keys sorted and undefined fields dropped, so a reordered field changes no hash. */
 export const canon = (value: unknown): string => {
@@ -54,6 +54,20 @@ function wordsOf(read: Read, ref: string): string {
   return words(shown, extname(file));
 }
 
+/** The file a screen's `image` names, with symlinks resolved. `check`, `build` and `revsOf` all read the mockup through this, so none
+ *  reads a file outside the plan folder. The path is literal: a `#` is part of the name, not a section. */
+export function imageFile(planDir: string, path: string): string {
+  if (isAbsolute(path)) throw new Error(`image ${path} is an absolute path. Give it relative to the plan folder`);
+  const file = resolvePath(planDir, path);
+  if (!existsSync(file) || !statSync(file).isFile()) throw new Error(`image ${path} does not exist`);
+  const real = realpathSync(file), inside = relative(realpathSync(planDir), real);
+  if (inside === ".." || inside.startsWith(`..${sep}`) || isAbsolute(inside)) throw new Error(`image ${path} is outside the plan folder`);
+  return real;
+}
+
+/** An image's bytes, hashed, so a re-exported mockup changes the rev. */
+const bytesHash = (planDir: string, path: string) => hash(readFileSync(imageFile(planDir, path)));
+
 const byCanon = (values: unknown[]) => values.map(canon).sort();
 
 /** A chart's states and arrows as sets. Their order in `report.json` only moves the drawing, which is layout. */
@@ -78,8 +92,10 @@ export function revsOf(m: Manifest, planDir: string): Revs {
     const shown = [
       item,
       (item.body ?? []).map((block) => {
-        const { input, sources } = resolve(block, item, m, read);
-        return [orderFree(input), sources.map((ref) => wordsOf(read, ref))];
+        const { input, sources, images = [] } = resolve(block, item, m, read);
+        // A block with no image hashes as it did before mockups existed, so adding the field reopens no approved item.
+        const pictures = images.length ? [images.map((path) => bytesHash(planDir, path))] : [];
+        return [orderFree(input), sources.map((ref) => wordsOf(read, ref)), ...pictures];
       }),
       item.source ? wordsOf(read, item.source) : null,
       item.type === "grant" ? grantInput(m) : null,

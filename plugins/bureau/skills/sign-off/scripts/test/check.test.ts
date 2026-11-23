@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import type { ReportJson } from "../../../statechart/scripts/backends/report.ts";
@@ -38,6 +38,8 @@ const item = (m: Json, id: string) => m.items.find((i: Json) => i.id === id);
 const block = (m: Json, view: string) => m.items.flatMap((i: Json) => i.body ?? []).find((b: Json) => b.view === view);
 const component = (m: Json, id: string) => m.facts.components.find((c: Json) => c.id === id);
 const testEntry = (m: Json, id: string) => m.facts.tests.find((t: Json) => t.id === id);
+const screen = (m: Json, id: string) => m.facts.screens.find((s: Json) => s.id === id);
+const OVER_2MB = () => "x".repeat(2 * 1024 * 1024 + 1);
 const PLAN_RUN = "statechart/out-plan/report.json";
 
 const BREAKS: [Rule, string, Mutation][] = [
@@ -68,6 +70,10 @@ const BREAKS: [Rule, string, Mutation][] = [
   ["trigger", "a chart step with no trigger", { json: (m) => { delete block(m, "statechart").triggers["three days pass"]; } }],
   ["write", "a write endpoint no chart step names", { json: (m) => { block(m, "statechart").triggers["a member places a hold"] = { event: "a kiosk message" }; } }],
   ["stored", "a stored state whose column is missing", { json: (m) => { block(m, "statechart").stored["On the hold shelf"] = "book_holds.shelf_id"; } }],
+  ["ref", "a screen's mockup that does not exist", { json: (m) => { screen(m, "book-out").image = "design/gone.png"; } }],
+  ["ref", "a screen's mockup over 2 MB", { files: { "design/book-out.png": OVER_2MB } }],
+  ["schema", "a screen's mockup that is an SVG", { json: (m) => { screen(m, "book-out").image = "design/book-out.svg"; } }],
+  ["schema", "a screen's design link that is not http or https", { json: (m) => { screen(m, "book-out").links[0].url = "javascript:alert(1)"; } }],
   ["render", "a screen state no component renders", { json: (m) => { for (const r of m.facts.screens[1].regions) delete r.component; } }],
   ["reuse", "a reused component whose file is gone", { json: (m) => { component(m, "C6").file = "src/components/filters.tsx"; } }],
   ["test", "a test with no run command", { json: (m) => { delete testEntry(m, "T3").run; } }],
@@ -132,6 +138,40 @@ describe("check", () => {
       "ticket: must be an http or https URL",
       "sources[0].url: must be an http or https URL",
     ]);
+  });
+
+  test("a missing or oversized mockup names its screen, and a bad mockup type or design link names its field", async () => {
+    const gone = await check(mutated({ json: (m) => { screen(m, "book-out").image = "design/gone.png"; } }));
+    expect(gone.errors.map((e) => e.message)).toEqual(["screen book-out: image design/gone.png does not exist"]);
+    const big = await check(mutated({ files: { "design/book-out.png": OVER_2MB } }));
+    expect(big.errors.map((e) => e.message)).toEqual(["screen book-out: image design/book-out.png is 2.0 MB, over 2 MB. Export it smaller, or as WebP"]);
+    const bad = await check(mutated({ json: (m) => { screen(m, "book-out").image = "design/book-out.svg"; screen(m, "book-out").links[0].url = "data:text/html,x"; } }));
+    expect(bad.errors.map((e) => e.message)).toEqual([
+      "facts.screens[0].image: must be a .png, .jpg, .jpeg, .webp or .gif file",
+      "facts.screens[0].links[0].url: must be an http or https URL",
+    ]);
+  });
+
+  test("a mockup outside the plan folder, by an absolute path, by ../ or through a symlink, is an error that names its screen", async () => {
+    const outside = mkdtempSync(join(tmpdir(), "sign-off-outside-"));
+    copies.push(outside);
+    writeFileSync(join(outside, "secret.png"), "not the plan's");
+    const errorsOf = async (image: string, link?: string) => {
+      const dir = mutated({ json: (m) => { screen(m, "book-out").image = image; } });
+      if (link) symlinkSync(join(outside, "secret.png"), join(dir, link));
+      return (await check(dir)).errors.map((e) => `${e.rule} ${e.message}`);
+    };
+    const absolute = join(outside, "secret.png");
+    expect(await errorsOf(absolute)).toEqual([`ref screen book-out: image ${absolute} is an absolute path. Give it relative to the plan folder`]);
+    const up = join("..", outside.split("/").at(-1)!, "secret.png");
+    expect(await errorsOf(up)).toEqual([`ref screen book-out: image ${up} is outside the plan folder`]);
+    expect(await errorsOf("design/linked.png", "design/linked.png")).toEqual(["ref screen book-out: image design/linked.png is outside the plan folder"]);
+  });
+
+  test("a mockup path is literal, so a # in its name is part of the file name", async () => {
+    const dir = mutated({ json: (m) => { screen(m, "book-out").image = "design/book#out.png"; } });
+    renameSync(join(dir, "design/book-out.png"), join(dir, "design/book#out.png"));
+    expect((await check(dir)).errors).toEqual([]);
   });
 
   test("a test that is not full names each part it lacks, and a live check needs neither", async () => {

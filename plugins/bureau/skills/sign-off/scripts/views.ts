@@ -9,7 +9,8 @@ import { section } from "./markdown.ts";
 
 /** A file in the plan folder, as text, or null when it does not exist. Paths are relative to the plan folder. */
 export type Read = (path: string) => string | null;
-export type Resolved<I> = { input: I; sources: string[] };
+/** `images` are the mockup files the input names, which `build` inlines and `revsOf` hashes byte for byte. */
+export type Resolved<I> = { input: I; sources: string[]; images?: string[] };
 
 type Facts = Manifest["facts"];
 type Fact<K extends keyof Facts> = NonNullable<Facts[K]>[number];
@@ -57,8 +58,10 @@ export type ErdInput = Omit<BlockOf<"erd">, "view"> & { steps: Record<string, st
 export type EndpointsInput = Omit<BlockOf<"endpoints">, "view" | "ids" | "src"> & {
   endpoints: (Endpoint & { readBy: Pick<Component, "id" | "name">[]; builtIn: Build[] })[]
 };
-/** `screens` are every page state, for the picture and the "Drawn in" labels. `builtIn` lists the units that deliver any part. */
-export type ComponentsInput = { components: Component[]; screens: Screen[]; builtIn: Build[]; note?: string };
+/** `screens` are every page state, for the picture and the "Drawn in" labels, without the mockup and design links this view does
+ *  not draw, so they never reopen it. `builtIn` lists the units that deliver any part. */
+export type ComponentsInput = { components: Component[]; screens: Sketched[]; builtIn: Build[]; note?: string };
+export type Sketched = Omit<Screen, "image" | "links">;
 /** One row per requirement, and a `requirement: null` row for acceptance that checks none. `prsOf` maps a unit to the pull
  *  requests that ship it; `rules` holds each rule a row guards or was added for, by name. */
 export type TraceInput = {
@@ -153,7 +156,10 @@ export const VIEWS: { [V in View]: Resolver<V> } = {
       figures: served(figures, reqs), defaults: served(f.defaults ?? [], reqs),
     });
   },
-  screens: (block, _item, m) => plain({ screens: (m.facts.screens ?? []).filter((s) => !block.ids || block.ids.includes(s.id)) }),
+  screens: (block, _item, m) => {
+    const screens = (m.facts.screens ?? []).filter((s) => !block.ids || block.ids.includes(s.id));
+    return { input: { screens }, sources: [], images: screens.flatMap((s) => s.image ?? []) };
+  },
   figures: (block) => plain({ facts: block.facts }),
   decisions: (_block, _item, m) => plain({ decisions: itemsOf(m, "decision") }),
   units: (block, _item, m) => {
@@ -180,7 +186,8 @@ export const VIEWS: { [V in View]: Resolver<V> } = {
   },
   components: (block, _item, m) => {
     const components = m.facts.components ?? [];
-    return plain({ components, screens: m.facts.screens ?? [], builtIn: builtIn(m, components.map((c) => c.id)), note: block.note });
+    const screens = (m.facts.screens ?? []).map(({ image: _, links: __, ...sketch }) => sketch);
+    return plain({ components, screens, builtIn: builtIn(m, components.map((c) => c.id)), note: block.note });
   },
   trace: (block, _item, m, read) => {
     const f = m.facts;

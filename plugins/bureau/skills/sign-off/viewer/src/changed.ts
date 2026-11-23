@@ -1,15 +1,24 @@
 /** What changed since this browser's reader last saw the plan: the items `RevisedStrip` marks, and the "Before review" pair it
- *  draws. Pure apart from the name and shown revs this browser saved at Submit. */
+ *  draws. Pure apart from the reader id and shown revs this browser saved at Submit. */
 import type { Event, Item, Manifest } from "../../scripts/manifest.ts"
 import type { Revs } from "../../scripts/revs.ts"
 import { hostOf, ownsCard } from "./plan.ts"
 import type { Review } from "./review.ts"
 
-const NAME_KEY = "sign-off:name"
-/** The name this browser saved at Submit. The shell also reads it at boot, to tell what changed since this reader decided. */
-export const readName = () => { try { return localStorage.getItem(NAME_KEY) ?? "" } catch { return "" } }
-export const saveName = (name: string) => { try { localStorage.setItem(NAME_KEY, name) } catch { /* the name only labels this review */ } }
-// yagni: per browser, like the name; a field on the submit event if a reader moving browsers must see what changed.
+// The key once held a typed name, so a reader who typed one keeps it as their id.
+const READER_KEY = "sign-off:name"
+/** The id this browser's reviews are recorded under, or "" before its first Submit. The shell reads it at boot, to tell what
+ *  changed since this reader decided. */
+export const readReader = () => { try { return localStorage.getItem(READER_KEY) ?? "" } catch { return "" } }
+let pageReader = ""
+/** This browser's reader id, made at its first Submit, so each browser's send-back holds until that browser approves. With
+ *  storage blocked it lasts as long as the page. */
+export function readerAtSubmit(): string {
+  pageReader ||= readReader() || `reader-${crypto.randomUUID().slice(0, 8)}`
+  try { localStorage.setItem(READER_KEY, pageReader) } catch { /* the id lasts as long as the page */ }
+  return pageReader
+}
+// yagni: per browser, like the reader id; a field on the submit event if a reader moving browsers must see what changed.
 const shownKey = (plan: string) => `sign-off:${plan}:shown`
 /** The item revs this browser showed at the reader's last Submit of the plan, so the next revision marks what changed since. */
 export function readShown(plan: string): Record<string, string> | null {

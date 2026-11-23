@@ -9,6 +9,8 @@ export const ACT_OF: Record<Section, Act> = {
 export const MARKS = ["new", "changed", "reused"] as const;
 export const IRREVERSIBLE = ["data-migration", "delete", "deploy", "external-message", "force-push"] as const;
 export const TOUCHES = ["scope", "user-visible", "schema", "api", "permission", "money", "dependency", "open-rule", "acceptance", "authority", ...IRREVERSIBLE] as const;
+/** The mockup files a screen state may show, by extension, and the type `build` inlines each as. No SVG: it is a document that can run script. */
+export const IMAGE_TYPES = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif" } as const;
 export const SKETCHES = ["nav", "figures", "tabs", "filters", "table", "pagination", "message", "sheet", "form"] as const;
 
 export type Section = (typeof SECTIONS)[number];

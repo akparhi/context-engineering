@@ -18,7 +18,7 @@ The first run installs the pinned dependencies with bun. Run a command with no a
 
 ## The voice
 
-The page is always the agent asking the reader. Write the `ask`, the `note`, each `why` and each question as the agent, with the reader as "you": "Approve the plan for holds, and answer the question that blocks the endpoints." The page has no author view, and nothing on it or in `status` depends on who reads it. The reader's name labels the review and nothing else.
+The page is always the agent asking the reader. Write the `ask`, the `note`, each `why` and each question as the agent, with the reader as "you": "Approve the plan for holds, and answer the question that blocks the endpoints." The page has no author view, and nothing on it or in `status` depends on who reads it. Submit asks for no name. Each browser records its reviews under an id it makes at its first Submit, such as `reader-1a2b3c4d`, so a send-back from one browser holds until that browser approves it or you revise it.
 
 The reader is an engineer. Do not define standard terms, say how to use the page, or restate a title. `check` warns (`budget`) when a `why`, a component's `does`, a note or a test's `says` runs long.
 
@@ -35,7 +35,7 @@ The reader is an engineer. Do not define standard terms, say how to use the page
 
 ## Verdicts given in chat
 
-Record them with `record`. Pass `--by "<name>"` with the reader's name.
+Record them with `record`. Pass `--by` with the id `status` shows for that reader's page review, such as `reader-1a2b3c4d`, so their approval clears their own send-back. Pass their name when they never used the page.
 
 - `sign-off record <plan-dir> <item> approve|changes [--note <text>]` records one verdict. Put the reader's reason for `changes` in `--note`.
 - `sign-off record <plan-dir> <question> --answer <option id, option label or text>` answers a question. A question takes no verdict, and an item that is not a question takes no answer.

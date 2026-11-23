@@ -25,6 +25,7 @@ const FLUFF = "user asked: cut the fluff, engineers know these, explainers live 
 const LAYOUT = "user asked: pages are messy, one screen per stop, shadcn components only"
 const PARALLEL = "user asked: units start together, and a dependency orders merges only"
 const COMPONENTS = "user asked: Components keeps its structure with a better UI"
+const MOCKUPS = "user asked: each screen state shows its real mockup and its design links"
 const NO_SIDEWAYS = "user asked: no page-level sideways scroll, a wide table fits or scrolls in its own box"
 
 /** The slim `*Row` views BASE exported and the step page no longer draws. */
@@ -59,6 +60,8 @@ const ADDED: Row[] = [
   ...rows("src/views/components.tsx", ["atSlashes", "QUIET_ID", "RAIL", "ROLE_ORDER"], `${COMPONENTS}: the path in a HoverCard, a quiet id, a rail for the mark, and the route first`),
   ...rows("src/views/decisions.tsx", ["HEAD", "CELL"], `${LAYOUT}: the Table's head and cell classes`),
   ...rows("src/views/spec.tsx", ["HEAD", "CELL"], `${LAYOUT}: the requirements Table's head and cell classes`),
+  ...rows("src/views/screens.tsx", ["Mockup"], `${MOCKUPS}: the state's inlined mockup under the sketch, opening full size in a new tab`),
+  ...rows("src/parts.tsx", ["SourceLink"], `${MOCKUPS}: the header's outbound link, moved here so a screen state's design links share it`),
 ]
 /** Declarations whose JSX differs from BASE's after the rewrites, or whose code gained tokens. `pin` is `pin()` of the code now:
  *  an edit to the declaration fails until someone reviews it and sets the new pin. */
@@ -96,7 +99,7 @@ const CHANGED: (Row & { what: string; pin: string })[] = [
   { file: "src/views/prs.tsx", name: "PrCard", what: "no Units row, Promotion only when the plan promotes, the Branch row names the base once, Merge reads who and why; Merges after in place of Waits for", pin: "21b8a9b85272", why: `${FLUFF}; ${PARALLEL}` },
   { file: "src/views/risks.tsx", name: "RiskRow", what: "the requirement chips sit at the right end of the title line", pin: "1cd38ef38224", why: LAYOUT },
   { file: "src/views/risks.tsx", name: "DefaultRow", what: "the default's sentence at text-base leading-7, its chips at the right end of the line", pin: "9cd92285fcfa", why: `${TYPE}; ${LAYOUT}` },
-  { file: "src/views/screens.tsx", name: "ScreensView", what: "one frame round the wireframe, not two; the lead at text-base leading-7. Round 3: the caption carries what led to the state", pin: "6b3b11cbfdcf", why: `${SCREENS}; ${LAYOUT}` },
+  { file: "src/views/screens.tsx", name: "ScreensView", what: "one frame round the wireframe, not two; the lead at text-base leading-7. Round 3: the caption carries what led to the state. The caption ends with the state's design links, and the mockup sits under the sketch", pin: "38b04a5e6e2c", why: `${SCREENS}; ${LAYOUT}; ${MOCKUPS}` },
   { file: "src/views/screens.tsx", name: "RegionBox", what: "a left rule marks each region in place of a frame; the head is the name, the mark as a word and quiet requirement ids. Round 3: in the components view the head shows the part id and no requirement ids", pin: "bf2863769a10", why: `${SCREENS}; ${COMPONENTS}` },
   { file: "src/views/screens.tsx", name: "FlowStrip", what: "one row of shadcn Tabs, with no thumbnails and no lane titles", pin: "7ea938f0bf28", why: LAYOUT },
   { file: "src/views/spec.tsx", name: "SpecView", what: "users' needs and goals at text-base leading-7. Round 3: Not for is the third entry of Who it is for, and the requirements are a four-column shadcn Table", pin: "f8c0cc7168d5", why: `${TYPE}; ${LAYOUT}` },

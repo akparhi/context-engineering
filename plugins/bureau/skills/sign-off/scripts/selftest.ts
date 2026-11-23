@@ -134,10 +134,8 @@ export const DECIDE = `(async () => {
   }
   const submit = await until(() => { const b = document.querySelector('[data-focus="submit:foot"]'); return b && !b.disabled && b; }, "enabled Submit");
   submit.click();
-  const name = await until(() => document.getElementById("review-name"), "name field");
-  type(name, "selftest decide");
-  await new Promise((r) => setTimeout(r, 20));
-  name.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  const confirm = await until(() => [...document.querySelectorAll("dialog button")].find((b) => b.textContent === "Submit review"), "confirm Submit");
+  confirm.click();
   const text = await until(() => document.getElementById("review-text")?.textContent, "review text");
   return { text };
 })()`;

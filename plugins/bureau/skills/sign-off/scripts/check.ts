@@ -1,6 +1,6 @@
 /** `sign-off check <plan-dir>` checks a plan's `sign-off.json` before anything draws it. Each rule in `RULES` is one function in
  *  `CHECKS` over a shared `Context`, and every error names its rule. Warnings are trace holes, a gate count above `MAX_GATES` and prose over its `BUDGET`. */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { uuid_ossp } from "@electric-sql/pglite/contrib/uuid_ossp";
@@ -10,6 +10,7 @@ import { type Block, Event, type Item, Manifest } from "./manifest.ts";
 import { headings, section } from "./markdown.ts";
 import { ACT_OF, IRREVERSIBLE, type Section } from "./model.ts";
 import { prCycle, unitCycle } from "./order.ts";
+import { imageFile } from "./revs.ts";
 
 export const RULES = [
   "schema", "id", "ref", "cite", "section", "touch", "jargon", "log",
@@ -21,6 +22,8 @@ export type Finding = { rule: Rule; message: string };
 export type Report = { errors: Finding[]; warnings: string[]; summary: string };
 
 const MAX_GATES = 7;
+/** The page inlines every mockup, so one image over this makes the page slow to open. A 1440-wide PNG export is well under it. */
+const MAX_IMAGE_MB = 2;
 /** Words a prose field may run to before `budget` warns. The reader is an engineer, and the page is one screen per stop. */
 const BUDGET = { why: 16, does: 14, review: 12, prNote: 16, note: 24, says: 24 } as const;
 const words = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
@@ -29,7 +32,7 @@ const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 // patterns, and `dependency` for each ecosystem's manifest files. `authority` is not derived from auto-merge pull requests,
 // because the grant already gates those, and a second gate on the same merge would only cost the reader a verdict.
 const DECLARED_ONLY = new Set<string>([...IRREVERSIBLE, "money", "dependency", "authority"]);
-const ACT_ONE_SKIP = new Set(["id", "serves", "component", "sketch", "mark", "states", "from", "chart"]);
+const ACT_ONE_SKIP = new Set(["id", "serves", "component", "sketch", "mark", "states", "from", "chart", "image", "url"]);
 
 type Facts = Manifest["facts"];
 type View<V extends Block["view"]> = Extract<Block, { view: V }>;
@@ -285,6 +288,12 @@ function* refs(c: Context) {
   if (prs) yield `pull requests ${prs.join(", ")} wait on each other through \`after\` and the order of their units. Drop one of the links`;
   for (const s of f.screens ?? []) {
     yield* want(`screen ${s.id}`, s.from, screens, "screen");
+    if (s.image) {
+      let file: string | null = null;
+      try { file = imageFile(c.dir, s.image); } catch (e) { yield `screen ${s.id}: ${(e as Error).message}`; }
+      const mb = file && statSync(file).size / 1024 / 1024;
+      if (mb && mb > MAX_IMAGE_MB) yield `screen ${s.id}: image ${s.image} is ${mb.toFixed(1)} MB, over ${MAX_IMAGE_MB} MB. Export it smaller, or as WebP`;
+    }
     yield* wantAll(`screen ${s.id}`, s.serves, reqs, "requirement");
     for (const r of s.regions) {
       yield* want(`screen ${s.id} region ${r.name}`, r.component, comps, "component");

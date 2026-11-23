@@ -20,8 +20,6 @@ const SENTENCES: Record<string, string> = {
   "COPY.submit.says.approved": DIALOG,
   "COPY.submit.says.partial": DIALOG,
   "COPY.submit.says.changes": DIALOG,
-  "COPY.submit.nameLabel": "a field's label",
-  "COPY.submit.nameEmpty": ERROR,
   "COPY.submit.howToSend": DIALOG,
   "COPY.submit.sent": DIALOG,
   "COPY.submit.staleWhy": ERROR,

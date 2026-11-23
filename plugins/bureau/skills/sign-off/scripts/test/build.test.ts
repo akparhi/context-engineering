@@ -1,8 +1,9 @@
 import { afterAll, describe, expect, test } from "bun:test";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, unlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { build, BuildError, DATA_BLOCK, embed, networkLoads, type PageData, type PartData, RENDER_USAGE, viewportUnits } from "../build.ts";
+import { build, BuildError, DATA_BLOCK, embed, isStale, networkLoads, type PageData, pageData, type PartData, RENDER_USAGE, viewportUnits } from "../build.ts";
+import { computeRevs } from "../revs.ts";
 import type { ErdLayout } from "../layout/erd.ts";
 
 const FIXTURE = resolve(import.meta.dir, "../../fixtures/plan");
@@ -100,6 +101,47 @@ describe("build", () => {
     const page = readFileSync(await build(dir), "utf8");
     expect(page).toContain('<style id="sign-off-theme">:root{--brand:oklch(0.6 0.2 260 / 90%);--radius:0.5rem;--ink:var(--foreground)}</style></head>');
     expect(page.lastIndexOf("</style>")).toBe(page.indexOf("</style></head>"));
+  }, SLOW);
+
+  test("inlines a screen's mockup as a data: URL of its bytes, and a re-exported mockup makes the page stale", async () => {
+    const { dir } = plan();
+    const page = readFileSync(await build(dir), "utf8");
+    const bytes = readFileSync(join(dir, "design/book-out.png"));
+    expect(dataOf(page).images).toEqual({ "design/book-out.png": `data:image/png;base64,${bytes.toString("base64")}` });
+    expect(networkLoads(page)).toEqual([]);
+    expect(await isStale(dir)).toBe(false);
+    const later = new Date(Date.now() + 5_000);
+    writeFileSync(join(dir, "design/book-out.png"), Buffer.concat([bytes, Buffer.from([0])]));
+    utimesSync(join(dir, "design/book-out.png"), later, later);
+    expect(await isStale(dir)).toBe(true);
+  }, SLOW);
+
+  test("a deleted mockup makes the page stale, and the rebuild names the missing file", async () => {
+    const { dir } = plan();
+    await build(dir);
+    expect(await isStale(dir)).toBe(false);
+    unlinkSync(join(dir, "design/book-out.png"));
+    expect(await isStale(dir)).toBe(true);
+    await expect(build(dir)).rejects.toThrow("screen book-out: image design/book-out.png does not exist");
+  }, SLOW);
+
+  test("never reads a mockup outside the plan folder, even when check is skipped", async () => {
+    const { root, dir } = plan();
+    writeFileSync(join(root, "secret.png"), "not the plan's");
+    unlinkSync(join(dir, "design/book-out.png"));
+    symlinkSync(join(root, "secret.png"), join(dir, "design/book-out.png"));
+    await expect(pageData(dir)).rejects.toThrow("image design/book-out.png is outside the plan folder");
+    await expect(computeRevs(dir)).rejects.toThrow("image design/book-out.png is outside the plan folder");
+    const up = plan({ json: (m) => { m.facts.screens.find((s: Json) => s.id === "book-out").image = "../secret.png"; } });
+    writeFileSync(join(up.root, "secret.png"), "not the plan's");
+    await expect(pageData(up.dir)).rejects.toThrow("image ../secret.png is outside the plan folder");
+  }, SLOW);
+
+  test("inlines a mockup whose name has a #, read as a literal path", async () => {
+    const { dir } = plan({ json: (m) => { m.facts.screens.find((s: Json) => s.id === "book-out").image = "design/book#out.png"; } });
+    renameSync(join(dir, "design/book-out.png"), join(dir, "design/book#out.png"));
+    const bytes = readFileSync(join(dir, "design/book#out.png"));
+    expect(dataOf(readFileSync(await build(dir), "utf8")).images).toEqual({ "design/book#out.png": `data:image/png;base64,${bytes.toString("base64")}` });
   }, SLOW);
 
   test("refuses a page that loads from the network, and ignores URLs inside the plan's data", () => {

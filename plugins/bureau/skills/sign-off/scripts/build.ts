@@ -3,7 +3,7 @@
  *  that `check` fails, a theme that is anything but CSS variable declarations, and a page that would load from the network.
  *  `sign-off render <plan-dir> --part <view>` writes one view of the same data alone, on the part page. */
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, extname, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { z } from "zod";
 import { linksOf } from "../viewer/links.ts";
@@ -12,9 +12,10 @@ import { check } from "./check.ts";
 import { type ChartLayout, layoutChart } from "./layout/chart.ts";
 import { type ErdLayout, layoutErd } from "./layout/erd.ts";
 import type { Event, Manifest } from "./manifest.ts";
+import { IMAGE_TYPES } from "./model.ts";
 import { section } from "./markdown.ts";
 import { guarded, readEvents } from "./review.ts";
-import { planReader, readManifest, type Revs, revsOf } from "./revs.ts";
+import { imageFile, planReader, readManifest, type Revs, revsOf } from "./revs.ts";
 import { type Inputs, type Read, resolve as resolveBlock, type View } from "./views.ts";
 
 export const USAGE = "usage: sign-off build <plan-dir>";
@@ -28,10 +29,11 @@ const CONFIG = ".claude/sign-off.config.json";
 type Layouts = { statechart: ChartLayout; erd: ErdLayout };
 /** One block, keyed `<item id>:<index in its body>`. Statechart and erd blocks carry their layout; nothing else is laid out. */
 export type BlockData = { [V in View]: { view: V; input: Inputs[V] } & (V extends keyof Layouts ? { layout: Layouts[V] } : unknown) }[View];
-/** What the page reads from its data block. `sources` maps each `file` or `file#Heading` ref a block shows to the text shown. */
+/** What the page reads from its data block. `sources` maps each `file` or `file#Heading` ref a block shows to the text shown, and
+ *  `images` maps each mockup path a block shows to a `data:` URL of its bytes, so the page never fetches one. */
 export type PageData = {
   manifest: Manifest; revs: Revs; links: Links; events: Event[];
-  blocks: Record<string, BlockData>; sources: Record<string, string>;
+  blocks: Record<string, BlockData>; sources: Record<string, string>; images: Record<string, string>;
 };
 
 /** What the part page reads: the page's data with only the blocks of `part`. */
@@ -95,13 +97,20 @@ function shown(read: Read, ref: string): string {
   return out;
 }
 
+/** The image as a `data:` URL. `check` has already refused a type outside `IMAGE_TYPES`. */
+function dataUrl(planDir: string, path: string): string {
+  const type = IMAGE_TYPES[extname(path).slice(1).toLowerCase() as keyof typeof IMAGE_TYPES];
+  return `data:${type};base64,${readFileSync(imageFile(planDir, path)).toString("base64")}`;
+}
+
 export async function pageData(planDir: string): Promise<PageData> {
   const manifest = await readManifest(planDir), read = planReader(planDir);
-  const blocks: PageData["blocks"] = {}, sources: PageData["sources"] = {};
+  const blocks: PageData["blocks"] = {}, sources: PageData["sources"] = {}, images: PageData["images"] = {};
   for (const item of manifest.items) {
     for (const [index, block] of (item.body ?? []).entries()) {
       const resolved = resolveBlock(block, item, manifest, read);
       for (const ref of [...resolved.sources, ...(block.view === "erd" ? [block.src] : [])]) sources[ref] ??= shown(read, ref);
+      for (const path of resolved.images ?? []) images[path] ??= dataUrl(planDir, path);
       const key = `${item.id}:${index}`;
       if (block.view === "statechart") {
         const input = resolved.input as Inputs["statechart"];
@@ -112,7 +121,7 @@ export async function pageData(planDir: string): Promise<PageData> {
       } else blocks[key] = { view: block.view, input: resolved.input } as BlockData;
     }
   }
-  return { manifest, revs: revsOf(manifest, planDir), links: linksOf(manifest), events: await readEvents(planDir), blocks, sources };
+  return { manifest, revs: revsOf(manifest, planDir), links: linksOf(manifest), events: await readEvents(planDir), blocks, sources, images };
 }
 
 /** The page with `data` in its one empty data block and the theme, if any, after its own styles. */
@@ -148,9 +157,10 @@ export async function build(planDir: string): Promise<string> {
 }
 
 /** Every file the page is built from: the viewer template, the config and its theme, the manifest, the review log, each item's
- *  cited source, and each file a block's view reads or shows. A file that does not exist is left out. */
+ *  cited source, and each file a block's view reads or shows. A file that does not exist is left out, except a mockup, which a
+ *  page cannot show without, so `isStale` sees it gone. */
 export async function inputsOf(planDir: string): Promise<string[]> {
-  const files = new Set([TEMPLATE, join(planDir, "sign-off.json"), join(planDir, "reviews", "events.jsonl")]);
+  const files = new Set([TEMPLATE, join(planDir, "sign-off.json"), join(planDir, "reviews", "events.jsonl")]), mockups = new Set<string>();
   const base = planReader(planDir);
   const read: Read = (path) => { files.add(resolve(planDir, path)); return base(path); };
   const fileOf = (ref: string) => ref.split("#", 1)[0] ?? ref;
@@ -158,21 +168,22 @@ export async function inputsOf(planDir: string): Promise<string[]> {
   for (const item of manifest.items) {
     if (item.source) read(fileOf(item.source));
     for (const block of item.body ?? []) {
-      const { sources } = resolveBlock(block, item, manifest, read);
+      const { sources, images = [] } = resolveBlock(block, item, manifest, read);
       for (const ref of [...sources, ...(block.view === "erd" ? [block.src] : [])]) read(fileOf(ref));
+      for (const path of images) mockups.add(resolve(planDir, path));
     }
   }
   const config = configPath(planDir), theme = themePath(planDir);
   for (const extra of [config, theme]) if (extra !== null) files.add(extra);
-  return [...files].filter((f) => existsSync(f));
+  return [...[...files].filter((f) => existsSync(f)), ...mockups];
 }
 
-/** True when `<plan>/sign-off.html` is missing or older than any of its inputs. */
+/** True when `<plan>/sign-off.html` is missing, older than any of its inputs, or shows a mockup that is gone. */
 export async function isStale(planDir: string): Promise<boolean> {
   const page = join(planDir, PAGE);
   if (!existsSync(page)) return true;
   const built = statSync(page).mtimeMs;
-  return (await inputsOf(planDir)).some((f) => statSync(f).mtimeMs > built);
+  return (await inputsOf(planDir)).some((f) => !existsSync(f) || statSync(f).mtimeMs > built);
 }
 
 /** Rebuilds the page with the log as it stands and copies it to `out`, `reviews/<planRev>.html`: the record of what the reader saw

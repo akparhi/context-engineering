@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type MouseEvent, type ReactNode } from "react"
-import { ArrowLeftIcon, ArrowRightIcon, CheckCheckIcon, CheckIcon, CircleCheckIcon, CircleDashedIcon, DownloadIcon, ExternalLinkIcon, InfoIcon, MessageSquareIcon, MoonIcon, SunIcon, Undo2Icon } from "lucide-react"
+import { ArrowLeftIcon, ArrowRightIcon, CheckCheckIcon, CheckIcon, CircleCheckIcon, CircleDashedIcon, DownloadIcon, InfoIcon, MessageSquareIcon, MoonIcon, SunIcon, Undo2Icon } from "lucide-react"
 import type { Item, Manifest } from "../../scripts/manifest.ts"
 import type { Act } from "../../scripts/model.ts"
 import { Badge } from "@/components/ui/badge"
@@ -12,10 +12,10 @@ import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuBadge,
   SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarProvider, SidebarTrigger, useSidebar,
 } from "@/components/ui/sidebar"
-import { changedFor, readName, readShown } from "./changed.ts"
+import { changedFor, readReader, readShown } from "./changed.ts"
 import { ACT_COPY, actEyebrow, COPY, holdLine, TOUCH_WHY } from "./copy.ts"
 import { LinkedDrawer } from "./linked.tsx"
-import { BackStrip, Card, Disclosure, IdChip, PageContext, QuestionCard, StatusPill, Subhead, usePage, VerdictButtons, type Page } from "./parts.tsx"
+import { BackStrip, Card, Disclosure, IdChip, PageContext, QuestionCard, SourceLink, StatusPill, Subhead, usePage, VerdictButtons, type Page } from "./parts.tsx"
 import { PLACED } from "./placed.tsx"
 import { ACTS, actOf, holds, hostOf, isGate, isQuestion, refIndex, type PageData, type Question, type Ref } from "./plan.ts"
 import {
@@ -50,7 +50,7 @@ export function App({ data, builtPage }: { data: PageData; builtPage: string }) 
   const homes = useMemo(() => homesOf(walk), [walk])
   const key = draftKey(data)
   const [boot] = useState(() => {
-    const draft = loadDraft(key), reader = readName()
+    const draft = loadDraft(key), reader = readReader()
     return { ...draft, reader, changed: changedFor(m, data.revs, data.events, reader, draft.review, readShown(m.id)) }
   })
   const [review, dispatch] = useReducer(reduceReview, boot.review)
@@ -331,14 +331,6 @@ function StepFooter({ walk, at, onMove, onSubmit }: { walk: Stop[]; at: number; 
 }
 
 /** An outside link in the header's meta row. The global `:focus-visible` outline shows focus. */
-function SourceLink({ href, className = "", children }: { href: string; className?: string; children: ReactNode }) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer" className={`inline-flex items-center gap-1 rounded-sm underline decoration-foreground/25 underline-offset-2 hover:text-foreground hover:decoration-current ${className}`}>
-      {children}<ExternalLinkIcon aria-hidden className="size-3 shrink-0" /><span className="sr-only">{COPY.head.opensNewTab}</span>
-    </a>
-  )
-}
-
 function Header({ manifest, onSkip }: { manifest: Manifest; onSkip: () => void }) {
   return (
     <header className="mx-auto max-w-6xl px-1 pt-2 pb-6">
