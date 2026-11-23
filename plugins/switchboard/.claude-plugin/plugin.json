@@ -28,12 +28,6 @@
       ],
       "default": "session"
     },
-    "auto_review": {
-      "type": "boolean",
-      "title": "OpenAI auto-mode reviewer (checks Codex over the network at every start)",
-      "description": "Off skips the check: auto mode then denies actions on OpenAI models and workers, and needs a Claude login.",
-      "default": false
-    },
     "sol": {
       "type": "boolean",
       "title": "Show Sol subagent",
