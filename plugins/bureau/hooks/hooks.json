@@ -12,10 +12,6 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/reminders.sh\" SessionStart"
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/skills/principle-use-resources-efficiently/scripts/resources.sh\" SessionStart"
           }
         ]
       }
@@ -26,10 +22,6 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/reminders.sh\" SubagentStart"
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/skills/principle-use-resources-efficiently/scripts/resources.sh\" SubagentStart"
           }
         ]
       }
@@ -40,10 +32,6 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/reminders.sh\" UserPromptSubmit"
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/skills/principle-use-resources-efficiently/scripts/resources.sh\" UserPromptSubmit"
           }
         ]
       }
