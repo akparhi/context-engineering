@@ -2,7 +2,7 @@
   "name": "bureau",
   "displayName": "bureau",
   "icon": "./assets/bureau-icon.png",
-  "version": "0.9.15",
+  "version": "0.9.16",
   "description": "Hybrid of superpowers + pstack workflows, for claude-code.",
   "author": {
     "name": "Anand Kumar Parhi"
@@ -88,6 +88,22 @@
         "sol"
       ],
       "default": "models.json: sonnet"
+    },
+    "skillprose_model": {
+      "type": "string",
+      "title": "Skillprose model",
+      "description": "Model for the skillprose tier, used by: skill writer; skill reviewer. With fast mode on: skill writer; skill reviewer. astra and sol need the switchboard plugin.",
+      "options": [
+        "models.json: fable",
+        "fable",
+        "opus",
+        "sonnet",
+        "haiku",
+        "inherit-parent",
+        "astra",
+        "sol"
+      ],
+      "default": "models.json: fable"
     },
     "panel_model_1": {
       "type": "string",
@@ -232,6 +248,38 @@
         "sol"
       ],
       "default": "models.json: default (opus) @medium"
+    },
+    "role_skill_writer": {
+      "type": "string",
+      "title": "Role: skill writer",
+      "description": "Model for this hotline role. The models.json value follows the skillprose tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
+      "options": [
+        "models.json: skillprose (fable) @medium",
+        "fable",
+        "opus",
+        "sonnet",
+        "haiku",
+        "inherit-parent",
+        "astra",
+        "sol"
+      ],
+      "default": "models.json: skillprose (fable) @medium"
+    },
+    "role_skill_reviewer": {
+      "type": "string",
+      "title": "Role: skill reviewer",
+      "description": "Model for this hotline role. The models.json value follows the skillprose tier, including its /config value. A /config model keeps the models.json effort. astra and sol need the switchboard plugin.",
+      "options": [
+        "models.json: skillprose (fable) @low",
+        "fable",
+        "opus",
+        "sonnet",
+        "haiku",
+        "inherit-parent",
+        "astra",
+        "sol"
+      ],
+      "default": "models.json: skillprose (fable) @low"
     },
     "role_strongest_judgment": {
       "type": "string",

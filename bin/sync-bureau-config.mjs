@@ -42,7 +42,7 @@ userConfig.fast_mode = {
   description: 'Trade depth for speed and cost: every role switches to its "fast" value in models.json, a lighter tier or a lower effort. Any model or role you pick below still wins.',
   default: false,
 };
-for (const tier of ['default', 'strongest', 'fast', 'worker']) {
+for (const tier of ['default', 'strongest', 'fast', 'worker', 'skillprose']) {
   userConfig[`${tier}_model`] = picker(
     `${tier[0].toUpperCase()}${tier.slice(1)} model`,
     `Model for the ${tier} tier, used by: ${tierUsers(tier)}. ${SWITCHBOARD_NOTE}`,

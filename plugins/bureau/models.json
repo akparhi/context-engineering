@@ -4,6 +4,7 @@
     "default": "opus",
     "worker": "sonnet",
     "fast": "haiku",
+    "skillprose": "fable",
     "panel": [
       "opus",
       "sonnet"
@@ -50,6 +51,18 @@
       "role": "judgment and prose",
       "models": "default @medium",
       "fast": "default @medium",
+      "skill": "hotline"
+    },
+    {
+      "role": "skill writer",
+      "models": "skillprose @medium",
+      "fast": "skillprose @medium",
+      "skill": "hotline"
+    },
+    {
+      "role": "skill reviewer",
+      "models": "skillprose @low",
+      "fast": "skillprose @low",
       "skill": "hotline"
     },
     {
