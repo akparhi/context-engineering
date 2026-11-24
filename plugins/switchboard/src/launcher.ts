@@ -241,10 +241,10 @@ async function main() {
     throw error;
   }
   const ready = awaitModSessionStart();
+  // Not detached: Claude must stay in the terminal's foreground group to receive SIGWINCH.
   const child = spawn(childInvocation.command, childInvocation.args, {
     stdio: 'inherit',
     env: childEnvironment,
-    detached: process.platform !== 'win32',
     ...childInvocation.options,
   });
   const shutdown = async () => {

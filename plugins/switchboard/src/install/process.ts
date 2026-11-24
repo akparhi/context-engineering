@@ -16,10 +16,10 @@ export async function run(
   const platform = options.platform ?? process.platform;
   const environment = options.env ?? process.env;
   const invocation = executableInvocation(command, args, platform, environment);
+  // Not detached: the child must stay in the terminal's foreground group to receive SIGWINCH.
   const child = spawn(invocation.command, invocation.args, {
     stdio: 'inherit',
     env: environment,
-    detached: platform !== 'win32',
     ...invocation.options,
   });
   const terminate = () => {
