@@ -170,6 +170,7 @@
     ]
   },
   "disableRemoteControl": true,
+  "disableClaudeAiConnectors": true,
   "disableWorkflows": true,
   "disableArtifact": true,
   "bashEditDiffEnabled": true,
