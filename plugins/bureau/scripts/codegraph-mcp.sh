@@ -35,7 +35,7 @@ if [ "$indexed" = false ] && [ "$will_index" = false ]; then
     });'
 fi
 
-version=1.6.2
+version=1.6.4
 data="${CLAUDE_PLUGIN_DATA:?}"
 marker="$data/codegraph-$version.installed"
 lock="$data/codegraph-install.lock"
