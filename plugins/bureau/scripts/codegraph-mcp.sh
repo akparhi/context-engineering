@@ -40,27 +40,26 @@ data="${CLAUDE_PLUGIN_DATA:?}"
 marker="$data/codegraph-$version.installed"
 lock="$data/codegraph-install.lock"
 
-if ! command -v codegraph >/dev/null 2>&1; then
-  PATH="$data/node_modules/.bin:$PATH"
+# Always the pinned CLI, even over one on PATH, so every developer gets the same engine.
+PATH="$data/node_modules/.bin:$PATH"
+if [ ! -f "$marker" ]; then
+  mkdir -p "$data"
+  if [ -n "$(find "$lock" -prune -mmin +10 2>/dev/null)" ] && ! kill -0 "$(cat "$lock/pid" 2>/dev/null)" 2>/dev/null; then
+    rm -rf "$lock"
+  fi
+  if mkdir "$lock" 2>/dev/null; then
+    # Detached so a session that times out on startup cannot kill a half-done install.
+    # From $HOME so a repo .npmrc cannot redirect the registry.
+    (cd ~ && nohup sh -c 'echo $$ > "$4/pid"; npm i --prefix "$1" --ignore-scripts --no-audit --no-fund --silent \
+      --@colbymchenry:registry=https://registry.npmjs.org/ "@colbymchenry/codegraph@$2" && touch "$3"; rm -rf "$4"' \
+      sh "$data" "$version" "$marker" "$lock" </dev/null >/dev/null 2>&1 &)
+  fi
+  # 25 s keeps the wait under Claude Code's default 30 s MCP startup timeout.
+  waited=0
+  while [ -d "$lock" ] && [ "$waited" -lt 25 ]; do sleep 1; waited=$((waited + 1)); done
   if [ ! -f "$marker" ]; then
-    mkdir -p "$data"
-    if [ -n "$(find "$lock" -prune -mmin +10 2>/dev/null)" ] && ! kill -0 "$(cat "$lock/pid" 2>/dev/null)" 2>/dev/null; then
-      rm -rf "$lock"
-    fi
-    if mkdir "$lock" 2>/dev/null; then
-      # Detached so a session that times out on startup cannot kill a half-done install.
-      # From $HOME so a repo .npmrc cannot redirect the registry.
-      (cd ~ && nohup sh -c 'echo $$ > "$4/pid"; npm i --prefix "$1" --ignore-scripts --no-audit --no-fund --silent \
-        --@colbymchenry:registry=https://registry.npmjs.org/ "@colbymchenry/codegraph@$2" && touch "$3"; rm -rf "$4"' \
-        sh "$data" "$version" "$marker" "$lock" </dev/null >/dev/null 2>&1 &)
-    fi
-    # 25 s keeps the wait under Claude Code's default 30 s MCP startup timeout.
-    waited=0
-    while [ -d "$lock" ] && [ "$waited" -lt 25 ]; do sleep 1; waited=$((waited + 1)); done
-    if [ ! -f "$marker" ]; then
-      echo 'codegraph is still installing or failed to install; run /mcp to reconnect in a minute.' >&2
-      exit 1
-    fi
+    echo 'codegraph is still installing or failed to install; run /mcp to reconnect in a minute.' >&2
+    exit 1
   fi
 fi
 
