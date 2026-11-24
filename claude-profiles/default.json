@@ -125,6 +125,7 @@
     ],
     "defaultMode": "bypassPermissions"
   },
+  "disableClaudeAiConnectors": true,
   "skillOverrides": {
     "security-review": "off",
     "fewer-permission-prompts": "off",
@@ -171,7 +172,6 @@
     ]
   },
   "disableRemoteControl": true,
-  "disableClaudeAiConnectors": true,
   "disableWorkflows": true,
   "disableArtifact": true,
   "bashEditDiffEnabled": true,
