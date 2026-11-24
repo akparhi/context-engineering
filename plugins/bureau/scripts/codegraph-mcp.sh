@@ -64,9 +64,21 @@ if ! command -v codegraph >/dev/null 2>&1; then
   fi
 fi
 
-# init is a no-op on a built index and repairs a partial one.
+# init is a no-op on a built index and repairs a partial one. An index from an older extraction
+# engine needs a full rebuild; the lock keeps sessions that start together from rebuilding twice.
 if [ -n "$root" ] && [ -d "$root/.git" ] && { [ -f "$root/.codegraph/codegraph.db" ] || [ "$will_index" = true ]; }; then
-  nohup nice codegraph init "$root" </dev/null >/dev/null 2>&1 &
+  nohup nice sh -c '
+    if ! codegraph status --json "$1" 2>/dev/null | grep -q "\"reindexRecommended\":true"; then
+      exec codegraph init "$1"
+    fi
+    lock="$1/.codegraph/reindex.lock"
+    if [ -n "$(find "$lock" -prune -mmin +10 2>/dev/null)" ] && ! kill -0 "$(cat "$lock/pid" 2>/dev/null)" 2>/dev/null; then
+      rm -rf "$lock"
+    fi
+    mkdir "$lock" 2>/dev/null || exit 0
+    echo $$ > "$lock/pid"
+    codegraph index --quiet "$1"
+    rm -rf "$lock"' sh "$root" </dev/null >/dev/null 2>&1 &
 fi
 
 exec codegraph serve --mcp
