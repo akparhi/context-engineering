@@ -112,6 +112,7 @@ test('discovers scoped plugin workers, manifest replacement paths and inherited 
     { id: 'switchboard@akparhi', enabled: true, installPath: root, projectPath: root },
     { id: 'fixture@inline', enabled: true, installPath: root, projectPath: root },
     { id: 'disabled@test', enabled: false, installPath: '/does-not-exist' },
+    { id: 'cc-plugin-privacy@builtin', enabled: true, installPath: null, projectPath: null },
     {
       id: 'elsewhere@test',
       enabled: true,

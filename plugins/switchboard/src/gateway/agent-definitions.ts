@@ -226,6 +226,10 @@ export async function pluginPermissions(
     if (!plugin.enabled || (plugin.projectPath && !withinProject(cwd, plugin.projectPath))) {
       continue;
     }
+    // Built-in plugins ship inside the Claude binary: no install path, no agent files.
+    if (plugin.installPath === null && String(plugin.id).endsWith('@builtin')) {
+      continue;
+    }
     if (typeof plugin.id !== 'string' || typeof plugin.installPath !== 'string') {
       throw new Error('Invalid enabled Claude plugin');
     }
