@@ -28,6 +28,7 @@ const palette = {
   text: [205, 214, 244],
   subtext: [166, 173, 200],
   overlay: [108, 112, 134],
+  surface: [69, 71, 90],
   green: [166, 227, 161],
   yellow: [249, 226, 175],
   red: [243, 139, 168],
@@ -343,6 +344,12 @@ function usageFromCache(): UsageCache | undefined {
 
 // ---------- render ----------
 
+/** Thin track, one weight for fill and rest so the line stays even. */
+function lineBar(fraction: number, colour: Colour, cells = 10): string {
+  const filled = Math.min(cells, Math.round(fraction * cells));
+  return paint(colour, "━".repeat(filled)) + paint("surface", "━".repeat(cells - filled));
+}
+
 function renderSessionLine(s: Session, git: GitState | undefined): string {
   const parts: string[] = [];
 
@@ -352,11 +359,9 @@ function renderSessionLine(s: Session, git: GitState | undefined): string {
     parts.push(paint("overlay", `${ICON.context} —`));
   } else {
     const fraction = s.contextTokens / s.contextWindow;
-    const cells = 8;
-    const filled = Math.min(cells, Math.round(fraction * cells));
     const colour = levelColour(fraction);
     parts.push(
-      `${paint(colour, `${ICON.context} `)}${paint(colour, "█".repeat(filled))}${paint("overlay", "░".repeat(cells - filled))} ${pct(fraction)} ` +
+      `${paint(colour, `${ICON.context} `)}${lineBar(fraction, colour)} ${pct(fraction)} ` +
         paint("overlay", `${compactCount(s.contextTokens)}/${compactCount(s.contextWindow)}`),
     );
   }
