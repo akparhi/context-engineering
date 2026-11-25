@@ -1,0 +1,8 @@
+[
+  {
+    "name": "breathe",
+    "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/breathe.sh watch",
+    "description": "breathe: Mac low on memory or disk",
+    "when": "always"
+  }
+]

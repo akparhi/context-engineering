@@ -43,6 +43,23 @@
         "pstack",
         "superpowers"
       ]
+    },
+    {
+      "name": "breathe",
+      "source": "./plugins/breathe",
+      "description": "Keeps a Mac usable while agents run: tells them what to stop when free memory or disk runs low.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Anand Parhi"
+      },
+      "license": "MIT",
+      "category": "development",
+      "keywords": [
+        "macos",
+        "memory",
+        "disk",
+        "subagents"
+      ]
     }
   ]
 }

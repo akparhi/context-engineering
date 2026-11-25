@@ -13,6 +13,7 @@
     "test": "cd plugins/switchboard && bun run test",
     "setup:codex": "node bin/setup-codex.mjs",
     "test:config": "node --test tests/config.test.mjs",
-    "reinstall": "sh bin/reinstall-plugin.sh"
+    "reinstall": "sh bin/reinstall-plugin.sh",
+    "test:breathe": "node --test tests/breathe.test.mjs"
   }
 }

@@ -1,0 +1,13 @@
+{
+  "hooks": {
+    "SubagentStart": [
+      { "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/breathe.sh\" SubagentStart" }] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/breathe.sh\" UserPromptSubmit" }] }
+    ],
+    "PostToolUse": [
+      { "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/breathe.sh\" PostToolUse" }] }
+    ]
+  }
+}

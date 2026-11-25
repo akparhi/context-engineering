@@ -1,0 +1,35 @@
+{
+  "name": "breathe",
+  "version": "0.1.0",
+  "description": "Keeps a Mac usable while agents run: tells them what to stop when free memory or disk runs low.",
+  "author": {
+    "name": "Anand Parhi"
+  },
+  "license": "MIT",
+  "userConfig": {
+    "breathe": {
+      "type": "boolean",
+      "title": "Warn when the Mac runs low",
+      "description": "While free memory or disk is under its floor, tell the agent which of its commands use the most memory and to hold off heavy work until it recovers.",
+      "default": true
+    },
+    "breathe_memory_floor_pct": {
+      "type": "number",
+      "title": "Memory floor (%)",
+      "description": "Warn when free memory drops under this percent. Whole number, below the recover percent.",
+      "default": 15
+    },
+    "breathe_recover_pct": {
+      "type": "number",
+      "title": "Recover at (%)",
+      "description": "Stop warning once free memory is back to this percent. Whole number, up to 100.",
+      "default": 30
+    },
+    "breathe_disk_floor_gib": {
+      "type": "number",
+      "title": "Disk floor (GiB)",
+      "description": "Warn when free disk drops under this many GiB. Whole number.",
+      "default": 15
+    }
+  }
+}
