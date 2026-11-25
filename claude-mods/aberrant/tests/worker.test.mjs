@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { ghosttyColors } from '../bin/mermaid/terminal-colors.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -63,4 +64,16 @@ test('JPEG and WebP previews work without an external compiler',async()=>{
     const r=await work({...common,kind:'image',base64:bytes.toString('base64')});
     assert.ok(pngHeader(fs.readFileSync(r.pages[0].file)));
   }
+});
+test('inside cmux, its theme override wins over the Ghostty config',()=>{
+  const files={
+    '/h/.config/ghostty/config':'theme = Gruvbox Material Dark\n',
+    '/h/Library/Application Support/com.cmuxterm.app/config.ghostty':'theme = light:Nord,dark:Nord\n',
+    '/t/Nord':'background = #2e3440\nforeground = #d8dee9\n',
+    '/t/Gruvbox Material Dark':'background = #282828\nforeground = #d4be98\n'};
+  const read=file=>files[file]??'';
+  const colors=cmux=>ghosttyColors({home:'/h',platform:'darwin',resourcesDir:'/x',prefersDark:true,cmux,readFile:file=>read(file.replace('/x/themes','/t'))});
+  assert.equal(colors(true).theme,'Nord');
+  assert.equal(colors(true).background,'#2e3440');
+  assert.equal(colors(false).theme,'Gruvbox Material Dark');
 });

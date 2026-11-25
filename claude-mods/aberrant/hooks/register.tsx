@@ -5,6 +5,8 @@ import { renderBlocks } from './vendor/prismantis/render';
 import { drawDiagrams } from './vendor/prismantis/mermaid';
 import { register as registerCompactTools, compactToolsCommand } from './compact-tools.mjs';
 
+// Terminal themes with a matching preset; ~/.config/cmux/cycle-theme.ts cycles through these.
+const TERMINAL_PRESETS:Record<string,string>={'Gruvbox Material Dark':'gruvbox-dark','Catppuccin Mocha':'catppuccin-mocha',Dracula:'dracula',Nord:'nord',TokyoNight:'tokyo-night','Rose Pine':'rose-pine','Everforest Dark Hard':'everforest','GitHub Dark':'github-dark','Atom One Dark':'one-dark','iTerm2 Solarized Dark':'solarized-dark'};
 const PANE={id:'aberrant-settings',title:'Aberrant',columns:58,rows:22};
 const HELP='Usage: /render [on|off|mode native|text|theme NAME|images on|off|mermaid on|off|preview on|off|boxes on|off|tools inherit|cards|copy|doctor|demo]';
 const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n\n| Feature | State |\n| --- | --- |\n| Images | Ready |\n| Diagrams | Ready |\n\n> [!NOTE]\n> One renderer, one theme.\n\n```mermaid\nflowchart LR\n  Prompt --> Parse\n  Parse --> Render\n  Render --> Read\n```\n\n```rust\nlet price = 42;\nprintln!("{price}");\n```';
@@ -29,7 +31,7 @@ const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n
       const terminal=env.TERM_PROGRAM==='ghostty'||env.TERM_PROGRAM==='cmux'?'ghostty':env.KITTY_WINDOW_ID?'kitty':env.TERM==='xterm-kitty'?'kitty':null;
       s.probe={cell:{},colors:{}};
       if(terminal) try {
-        const r=await $.process.run(['bun',`${$.plugin.root}/bin/worker.mjs`],{stdin:JSON.stringify({kind:'probe',terminal}),timeoutMs:10000});
+        const r=await $.process.run(['bun',`${$.plugin.root}/bin/worker.mjs`],{stdin:JSON.stringify({kind:'probe',terminal,cmux:!!env.CMUX_WORKSPACE_ID}),timeoutMs:10000});
         s.probe=JSON.parse(r.stdout);
       } catch(error) {s.lastError=`Renderer probe: ${String(error)}`;}
     })();
@@ -37,12 +39,12 @@ const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n
   }
   function look(s:any,) {
     const p=s.prefs,probe=s.probe||{},cell=probe.cell||{},colors=probe.colors||{};
-    const theme=p.theme==='terminal'?(colors.background&&/^#f|^#e/i.test(colors.background)?'github-light':'github-dark'):p.theme;
+    const theme=p.theme==='terminal'?TERMINAL_PRESETS[colors.theme]||(colors.background&&/^#f|^#e/i.test(colors.background)?'github-light':'github-dark'):p.theme;
     const resolved=resolveStyle({theme,headingStyle:'bold',tableStyle:'rules',copyButtons:false,mermaid:p.mermaid});
     const bg=p.theme==='terminal'&&colors.background?colors.background:resolved.background||'#ffffff';
     const fg=p.theme==='terminal'&&colors.foreground?colors.foreground:resolved.theme.codeText||'#24292f';
     const style={...resolved,copyButtons:false,images:false,httpLinks:true,fileLinks:null,cwd:'',home:s.env?.HOME||'',mermaid:p.mermaid};
-    return {style,bg,fg,accent:resolved.theme.accent||'#0969da',font:cell.family||'Menlo',size:100,cellRatio:cell.cell_aspect||2,dark:theme.includes('dark')||theme==='catppuccin-mocha'};
+    return {style,bg,fg,accent:resolved.theme.accent||'#0969da',font:cell.family||'Menlo',size:100,cellRatio:cell.cell_aspect||2,dark:!/^#[ef]/i.test(bg)};
   }
   function remember(s:any,key:string,value:any) {
     s.cache.delete(key);s.cache.set(key,value);

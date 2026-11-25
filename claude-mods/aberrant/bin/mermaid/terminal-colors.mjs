@@ -92,18 +92,20 @@ function macPrefersDark() {
   }
 }
 
-export function ghosttyColors({ home, xdgConfigHome, platform, resourcesDir, prefersDark, readFile = readIfExists }) {
+export function ghosttyColors({ home, xdgConfigHome, platform, resourcesDir, prefersDark, cmux = false, readFile = readIfExists }) {
   const xdg = xdgConfigHome || path.join(home, '.config')
   const files = [path.join(xdg, 'ghostty/config'), path.join(xdg, 'ghostty/config.ghostty')]
   if (platform === 'darwin') {
     const support = path.join(home, 'Library/Application Support/com.mitchellh.ghostty')
     files.push(path.join(support, 'config'), path.join(support, 'config.ghostty'))
+    // cmux writes its theme override here, after the Ghostty config it loads.
+    if (cmux) files.push(path.join(home, 'Library/Application Support/com.cmuxterm.app/config.ghostty'))
   }
   const config = {}
   for (const file of files) Object.assign(config, parseGhosttyColors(readFile(file), path.dirname(file), readFile))
 
   let colors = { ...GHOSTTY_DEFAULT }
-  let source = 'Ghostty default'
+  let source = 'Ghostty default', themeTitle
   if (config.theme) {
     const dark = platform === 'darwin' && config.theme.includes(':') ? macPrefersDark() : prefersDark
     const name = themeName(config.theme, dark)
@@ -113,12 +115,14 @@ export function ghosttyColors({ home, xdgConfigHome, platform, resourcesDir, pre
     const theme = parseGhosttyColors(readFile(found), path.dirname(found), readFile)
     colors = { background: theme.background ?? colors.background, foreground: theme.foreground ?? colors.foreground }
     source = `Ghostty theme ${name}`
+    themeTitle = name
   }
   if (config.background) source = 'Ghostty config'
   return {
     ok: true,
     background: config.background ?? colors.background,
     foreground: config.foreground ?? colors.foreground,
+    theme: themeTitle,
     source,
   }
 }
@@ -175,8 +179,9 @@ export function terminalColors({
   xdgConfigHome = process.env.XDG_CONFIG_HOME,
   platform = process.platform,
   resourcesDir = process.env.GHOSTTY_RESOURCES_DIR,
+  cmux = false,
 }) {
-  if (terminal === 'ghostty') return ghosttyColors({ home, xdgConfigHome, platform, resourcesDir, prefersDark })
+  if (terminal === 'ghostty') return ghosttyColors({ home, xdgConfigHome, platform, resourcesDir, prefersDark, cmux })
   if (terminal === 'kitty') return kittyColors({ home, xdgConfigHome })
   return { ok: false, reason: `no color rules for terminal "${terminal}"` }
 }

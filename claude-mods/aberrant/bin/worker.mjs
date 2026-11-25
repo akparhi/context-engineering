@@ -63,7 +63,7 @@ async function fitAndSplit(file, dir, req, density = 1) {
 function probe(req) {
   let cell={},colors={};
   try {cell=terminalCell({terminal:req.terminal||'ghostty'});} catch {}
-  try {colors=terminalColors({terminal:req.terminal||'ghostty',prefersDark:req.dark!==false});} catch {}
+  try {colors=terminalColors({terminal:req.terminal||'ghostty',prefersDark:req.dark!==false,cmux:req.cmux===true});} catch {}
   return {cell,colors,bun:Bun.version};
 }
 const diagramRequest=(req,outDir)=>({outDir,rowPx:24*DIAGRAM_DENSITY,cellRatio:req.cellRatio||2,lineEm:1.3,textScale:req.size/100||1,
