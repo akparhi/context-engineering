@@ -11,7 +11,6 @@
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5-5[1m]",
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "250000",
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "0",
-    "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
     "ENABLE_LSP_TOOL": "0",
     "ENABLE_TOOL_SEARCH": "true",
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
@@ -181,10 +180,11 @@
     "plugin-authoring@builtin": false,
     "sec-default@builtin": false,
     "telemetry@builtin": false,
+    "cc-plugin-privacy@builtin": false,
     "context7@claude-plugins-official": false,
     "skill-creator@claude-plugins-official": true,
-    "switchboard@akparhi": true,
-    "bureau@akparhi": true
+    "bureau@akparhi": true,
+    "switchboard@akparhi": true
   },
   "extraKnownMarketplaces": {
     "akparhi": {
@@ -195,6 +195,7 @@
     }
   },
   "outputStyle": "bureau:terse",
+  "statusLine": { "type": "command", "command": "bun ~/Projects/Home/context-engineering/claude-shared/statusline.ts", "padding": 0, "refreshInterval": 10 },
   "spinnerTipsEnabled": false,
   "spinnerVerbs": {
     "mode": "replace",
