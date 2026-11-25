@@ -175,6 +175,12 @@
   "disableArtifact": true,
   "bashEditDiffEnabled": true,
   "bashOutputMaxChars": 16000,
+  "statusLine": {
+    "type": "command",
+    "command": "bun ~/Projects/Home/context-engineering/claude-shared/statusline.ts",
+    "padding": 0,
+    "refreshInterval": 10
+  },
   "enabledPlugins": {
     "agents-md@builtin": false,
     "plugin-authoring@builtin": false,
@@ -183,8 +189,9 @@
     "cc-plugin-privacy@builtin": false,
     "context7@claude-plugins-official": false,
     "skill-creator@claude-plugins-official": true,
+    "switchboard@akparhi": true,
     "bureau@akparhi": true,
-    "switchboard@akparhi": true
+    "aberrant@akparhi": true
   },
   "extraKnownMarketplaces": {
     "akparhi": {
@@ -195,7 +202,6 @@
     }
   },
   "outputStyle": "bureau:terse",
-  "statusLine": { "type": "command", "command": "bun ~/Projects/Home/context-engineering/claude-shared/statusline.ts", "padding": 0, "refreshInterval": 10 },
   "spinnerTipsEnabled": false,
   "spinnerVerbs": {
     "mode": "replace",
@@ -284,6 +290,8 @@
     }
   },
   "promptSuggestionEnabled": false,
+  "awaySummaryEnabled": false,
+  "askUserQuestionTimeout": "never",
   "pluginConfigs": {
     "switchboard@akparhi": {
       "options": {
@@ -308,9 +316,11 @@
   "autoMemoryEnabled": false,
   "skipDangerousModePermissionPrompt": true,
   "theme": "auto",
+  "editorMode": "normal",
   "verbose": true,
   "switchModelsOnFlag": false,
-  "fileCheckpointingEnabled": true,
+  "autoContinueAtUsageLimit": true,
+  "fileCheckpointingEnabled": false,
   "terminalProgressBarEnabled": false,
   "crossSessionInbound": "refuse",
   "tipsEnabled": false
