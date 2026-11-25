@@ -1,0 +1,11 @@
+{
+  "name": "aberrant",
+  "version": "0.1.0",
+  "description": "Native Claude text, Mermaid diagrams, inline images, paste previews and optional Markdown themes.",
+  "author": {
+    "name": "Anand Parhi"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/akparhi/context-engineering",
+  "types": "./types/index.d.ts"
+}
