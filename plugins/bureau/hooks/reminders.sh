@@ -3,7 +3,7 @@
 #
 #   SessionStart      main agent   CodeGraph usage block (codegraph-instructions.md)
 #   UserPromptSubmit  main agent   terse-reminder.md, codegraph-reminder.md
-#   SubagentStart     subagent     subagent-start-context.md, hotline's principle index, bureau models, CodeGraph usage block, as JSON
+#   SubagentStart     subagent     subagent-start.md (with the principle index), bureau models, CodeGraph usage block, as JSON
 #
 # Terse rules repeat each prompt so the style survives long sessions and compaction; turn them
 # off with /config terse_reminder. The usage block stands in for the CLAUDE.md section that
@@ -13,6 +13,7 @@
 set -eu
 event=$1
 hooks="${CLAUDE_PLUGIN_ROOT}/hooks"
+context_dir="${CLAUDE_PLUGIN_ROOT}/context"
 
 indexed() {
   PATH="$PATH:${CLAUDE_PLUGIN_DATA:-}/node_modules/.bin"
@@ -26,24 +27,22 @@ indexed() {
 case "$event" in
   # Main agent: the full usage block.
   SessionStart)
-    if indexed; then cat "$hooks/codegraph-instructions.md"; fi
+    if indexed; then cat "$context_dir/codegraph-instructions.md"; fi
     ;;
 
   # Main agent: terse rules in any repo, plus one line naming the question types that belong to the graph.
   UserPromptSubmit)
-    if [ "${CLAUDE_PLUGIN_OPTION_TERSE_REMINDER:-}" != false ]; then cat "$hooks/terse-reminder.md"; fi
-    if indexed; then cat "$hooks/codegraph-reminder.md"; fi
+    if [ "${CLAUDE_PLUGIN_OPTION_TERSE_REMINDER:-}" != false ]; then cat "$context_dir/terse-reminder.md"; fi
+    if indexed; then cat "$context_dir/codegraph-reminder.md"; fi
     ;;
 
-  # Subagent: skill rules, principle index, model routing, and the usage block. JSON, because SubagentStart ignores plain stdout.
+  # Subagent: skill rules with the principle index, model routing, and the usage block. JSON, because SubagentStart ignores plain stdout.
   SubagentStart)
-    skills=$(cat "$hooks/subagent-start-context.md")
-    # Hotline's SKILL.md owns the principle index: its "## Principles" section, up to "## Autonomy".
-    principles=$(sed -n '/^## Principles$/,/^## Autonomy$/p' "${CLAUDE_PLUGIN_ROOT}/skills/hotline/SKILL.md" | sed '$d')
+    skills=$("$hooks/expand-imports.sh" "$context_dir/subagent-start.md")
     # Subagents spawn subagents too, so they get the same model routing as the main agent.
     models=$("$hooks/session-start.sh" models)
-    codegraph=$(if indexed; then cat "$hooks/codegraph-instructions.md"; fi)
-    context=$(printf '%s\n\n%s\n\n%s\n\n%s' "$skills" "$principles" "$models" "$codegraph")
+    codegraph=$(if indexed; then cat "$context_dir/codegraph-instructions.md"; fi)
+    context=$(printf '%s\n\n%s\n\n%s' "$skills" "$models" "$codegraph")
     node -e 'process.stdout.write(JSON.stringify({hookSpecificOutput: {
       hookEventName: "SubagentStart", additionalContext: process.argv[1]}}))' "$context"
     ;;

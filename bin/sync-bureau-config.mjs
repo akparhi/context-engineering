@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Regenerates bureau's /config options (plugin.json userConfig) from models.json,
 // so each row's default shows the file's current value as "models.json: <value>".
-import { readFileSync, writeFileSync } from 'node:fs';
+// Also regenerates the principle index in context/subagent-start.md from each principle skill's description.
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 
 const root = new URL('../plugins/bureau/', import.meta.url);
 const manifestPath = new URL('.claude-plugin/plugin.json', root);
@@ -94,3 +95,50 @@ userConfig.terse_reminder = {
 manifest.userConfig = userConfig;
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 console.log(`bureau userConfig: ${Object.keys(userConfig).length} options`);
+
+// Subagents need this index: sol's budget-trimmed skill listing drops the principle descriptions.
+// Hotline's index owns the groups and their priority order; each skill's description owns its trigger.
+const PRINCIPLES_HEADING = '## Principles';
+const MAIN_SESSION_ONLY = new Set(['principle-guard-the-context-window']);
+
+const hotline = readFileSync(new URL('skills/hotline/SKILL.md', root), 'utf8');
+const hotlineIndex = hotline.slice(hotline.indexOf(`${PRINCIPLES_HEADING}\n`), hotline.indexOf('\n## Autonomy\n'));
+const groups = [];
+for (const line of hotlineIndex.split('\n')) {
+  const group = line.match(/^\*\*(\w+)\*\*$/);
+  if (group) groups.push({ title: group[1], names: [] });
+  // "- **Title.**" or "- **Title** (**principle-name**)."; the title becomes kebab case unless a name is given.
+  const entry = line.match(/^- \*\*([^*]+?)\.?\*\*(?: \(\*\*(principle-[a-z-]+)\*\*\))?/);
+  if (entry) {
+    const slug = entry[1].toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ +/g, '-');
+    groups.at(-1).names.push(entry[2] ?? `principle-${slug}`);
+  }
+}
+
+const skillDirs = readdirSync(new URL('skills/', root)).filter((name) => name.startsWith('principle-'));
+const indexed = groups.flatMap((g) => g.names);
+const missing = skillDirs.filter((name) => !indexed.includes(name));
+const unknown = indexed.filter((name) => !skillDirs.includes(name));
+if (missing.length || unknown.length) {
+  throw new Error(`hotline's principle index and skills/ disagree. Not in hotline: ${missing.join(', ') || 'none'}. No skill dir: ${unknown.join(', ') || 'none'}.`);
+}
+
+const trigger = (name) => {
+  const skill = readFileSync(new URL(`skills/${name}/SKILL.md`, root), 'utf8');
+  const [, doubleQuoted, singleQuoted, plain] = skill.match(/^description:\s*(?:"(.*)"|'(.*)'|(.*?))\s*$/m);
+  // A sentence ends at a period followed by a capital, so "e.g. the" doesn't split.
+  return (doubleQuoted ?? singleQuoted ?? plain).split(/(?<=\.)\s+(?=[A-Z])/)[0];
+};
+const indexGroups = groups
+  .map(({ title, names }) => ({ title, names: names.filter((name) => !MAIN_SESSION_ONLY.has(name)) }))
+  .filter(({ names }) => names.length)
+  .map(({ title, names }) => `**${title}**\n\n${names.map((name) => `- \`bureau:${name}\`: ${trigger(name)}`).join('\n')}`);
+
+const subagentContextPath = new URL('context/subagent-start.md', root);
+// The index goes last, after the rules that point to it.
+const otherSections = readFileSync(subagentContextPath, 'utf8')
+  .split(/^(?=## )/m)
+  .filter((section) => !section.startsWith(`${PRINCIPLES_HEADING}\n`))
+  .map((section) => section.trimEnd());
+writeFileSync(subagentContextPath, [...otherSections, PRINCIPLES_HEADING, ...indexGroups].join('\n\n') + '\n');
+console.log(`bureau principle index: ${indexGroups.length} groups, ${indexed.length - MAIN_SESSION_ONLY.size} principles`);

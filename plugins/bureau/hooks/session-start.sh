@@ -3,8 +3,8 @@ set -eu
 # Prints the routing rules, then the models section: models.json with /config values merged in.
 # With "models", prints only the models section, for subagents.
 # Literal plugin paths, so a static reader of hooks.json can follow them.
-[ "${1:-}" = models ] || cat "${CLAUDE_PLUGIN_ROOT}/hooks/session-start-context.md"
-cat "${CLAUDE_PLUGIN_ROOT}/hooks/models-context.md"
+[ "${1:-}" = models ] || "${CLAUDE_PLUGIN_ROOT}/hooks/expand-imports.sh" "${CLAUDE_PLUGIN_ROOT}/context/session-start.md"
+cat "${CLAUDE_PLUGIN_ROOT}/context/models.md"
 
 # Lays models.json out one tier, setting, and role per line, for the line edits below and a compact
 # context. Each role has a normal "models" value and a "fast" one; the mode picks which stays as "models".

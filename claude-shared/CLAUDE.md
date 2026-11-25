@@ -9,8 +9,6 @@
 # Working Principles
 
 - Load cited `bureau:principle-*` skills before acting on their rule.
-- Always kill processes you started (dev servers etc.) once no longer needed.
-- Research docs, reports and scratch output go in `.tmp/` at repo root; if missing, create it with a `.gitignore` containing `*`.
 - Utility scripts: bun + TypeScript, never Python.
 
 <important if="you are planning, writing a spec, or writing an implementation plan">
@@ -18,16 +16,8 @@
 - Use the `bureau:interrogate` skill to review research, specs and implementation plans.
 </important>
 
-<important if="the task involves a browser: opening pages, clicking, filling forms, screenshots, or web scraping">
-- If available, use t3-code browser tools for all browser tasks.
-</important>
-
 <important if="you are executing a phased implementation plan">
 - **Checkpoint commits**: commit at checkpoints with task ID from the plan — `<phase>-<task-id>: <description>`.
-</important>
-
-<important if="you are running the same test or check more than once">
-- Write a reusable script and reuse it. (`bureau:principle-build-the-lever`)
 </important>
 
 <important if="the goal is large or multi-phase, or the task produces noisy output with a small conclusion (multi-search research, browser exploration, log-heavy debugging, QA, verification)">
@@ -44,9 +34,8 @@
   - **opus**: implementation, integration, architecture, final review.
   - **sol** (agent type): independent and adversarial review. Verify its findings before acting on them; never accept blindly.
 - **Subagent effort:** ALWAYS take it from the bureau models.
-- Switchboard agent types (astra, sol, terra, deepseek) carry their own model and effort; NEVER pass `model` or `effort` for them.
-  - Dispatch as `subagent_type: "<name>"`. Its prompt is only "Complete the delegated task.", not `bureau:field-agent`'s; when a bureau role uses one, tell it in the brief to read the `bureau:hotline` skill and name the playbook step.
-  - Agent type missing from the Agent tool's list → use `opus` and say so.
+- Switchboard agent types (astra, sol) carry their own model and effort; NEVER pass `model` or `effort` for them.
+  - Dispatch as `subagent_type: "<name>"`. When a bureau role uses one, tell it in the brief to read the `bureau:hotline` skill and name the playbook step.
 - Hand artifacts as files (briefs, report paths, diffs), not pasted into prompts.
 - **DO NOT fan out** for small targeted tasks or one-off debugging asks.
 </important>
