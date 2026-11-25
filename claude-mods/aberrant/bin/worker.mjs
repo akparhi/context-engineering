@@ -3,14 +3,16 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import sharp from 'sharp';
 import { PNG } from 'pngjs';
-import { renderPicture, renderText } from './mermaid/diagram.mjs';
+import { renderPicture, renderText, writePage } from './mermaid/diagram.mjs';
 import { terminalCell } from './mermaid/font-metrics.mjs';
 import { terminalColors } from './mermaid/terminal-colors.mjs';
+import plugin from '../.claude-plugin/plugin.json' with { type: 'json' };
 
-const VERSION = '0.1.3';
+const VERSION = plugin.version;
 const MAX_FILE = 24 * 1024 * 1024;
+// Terminal cells on Retina screens are about twice the 12x24 px a cell is drawn at.
+const DIAGRAM_DENSITY = 2;
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v) || lo));
 function cacheRoot() {
@@ -33,23 +35,17 @@ export function pngHeader(bytes) {
   if (!width || !height || width > 32768 || height > 32768 || width*height > 40000000) return null;
   return { width,height };
 }
-function fitAndSplit(file, dir, req) {
-  const bytes=fs.readFileSync(file);
-  if (!pngHeader(bytes)) throw new Error('Invalid or oversized PNG');
-  let png=PNG.sync.read(bytes);
+async function fitAndSplit(file, dir, req, density = 1) {
+  let bytes=fs.readFileSync(file);
+  const size=pngHeader(bytes);
+  if (!size) throw new Error('Invalid or oversized PNG');
   const columns=clamp(req.columns,1,200), cell=clamp(req.cellRatio,1,4);
   // Fit previews to the available terminal geometry.
-  const maxWidth=columns*12, maxRows=clamp(req.maxRows||32,1,32);
-  const scale=Math.min(1,maxWidth/png.width, maxRows*12*cell/png.height);
-  if (scale<1) {
-    const resized=new PNG({width:Math.max(1,Math.round(png.width*scale)),height:Math.max(1,Math.round(png.height*scale))});
-    for(let y=0;y<resized.height;y++) for(let x=0;x<resized.width;x++) {
-      const from=(Math.min(png.height-1,Math.floor(y/scale))*png.width+Math.min(png.width-1,Math.floor(x/scale)))*4;
-      png.data.copy(resized.data,(y*resized.width+x)*4,from,from+4);
-    }
-    png=resized;
-  }
-  const shownColumns=Math.min(columns,Math.max(1,Math.ceil(png.width/12)));
+  const cellPx=12*density, maxWidth=columns*cellPx, maxRows=clamp(req.maxRows||32,1,255);
+  const scale=Math.min(1,maxWidth/size.width, maxRows*cellPx*cell/size.height);
+  if (scale<1) bytes=await new Bun.Image(bytes).resize(Math.max(1,Math.round(size.width*scale)),Math.max(1,Math.round(size.height*scale)),{fit:'fill'}).png().bytes();
+  const png=PNG.sync.read(Buffer.from(bytes));
+  const shownColumns=Math.min(columns,Math.max(1,Math.ceil(png.width/cellPx)));
   const pxRow=png.width/shownColumns*cell;
   const sliceRows=Math.max(1,Math.floor(pxRow*180));
   const pages=[];
@@ -68,10 +64,20 @@ function probe(req) {
   let cell={},colors={};
   try {cell=terminalCell({terminal:req.terminal||'ghostty'});} catch {}
   try {colors=terminalColors({terminal:req.terminal||'ghostty',prefersDark:req.dark!==false});} catch {}
-  return {cell,colors,node:process.version};
+  return {cell,colors,bun:Bun.version};
 }
+const diagramRequest=(req,outDir)=>({outDir,rowPx:24*DIAGRAM_DENSITY,cellRatio:req.cellRatio||2,lineEm:1.3,textScale:req.size/100||1,
+  theme:'auto',overrides:{bg:req.bg||'#ffffff',fg:req.fg||'#24292f',accent:req.accent||'#0969da'},
+  font:req.font||'auto',terminal:{background:req.bg,foreground:req.fg},prefersDark:req.dark!==false});
+
 export async function work(req) {
   if(req.kind==='probe') return probe(req);
+  if(req.kind==='mermaid-page') {
+    // Written only on request, to a private dir the OS clears on reboot.
+    const file=path.join(fs.mkdtempSync('/tmp/aberrant-'),'diagram.html');
+    writePage({key:'diagram',source:req.source,math:[]},diagramRequest(req),file);
+    return {html:file};
+  }
   if(!['mermaid','image'].includes(req.kind)) throw new Error('Unknown render kind');
   if(typeof req.source==='string'&&req.source.length>120000) throw new Error('Block too large; showing source');
   let input;
@@ -99,10 +105,9 @@ export async function work(req) {
     const item={key:'diagram',source:req.source,math:[],maxColumns:clamp(req.columns,1,200),maxRows:50};
     if(req.textOnly) result={text:renderText(item).text};
     else {
-      const drawn=renderPicture(item,{outDir:dir,rowPx:24,cellRatio:req.cellRatio||2,lineEm:1.3,textScale:req.size/100||1,
-        theme:'auto',overrides:{bg:req.bg||'#ffffff',fg:req.fg||'#24292f',accent:req.accent||'#0969da'},
-        font:req.font||'auto',terminal:{background:req.bg,foreground:req.fg},prefersDark:req.dark!==false});
-      result={pages:fitAndSplit(drawn.file,dir,req)};
+      const drawn=renderPicture(item,diagramRequest(req,dir));
+      // Already sized to its cells; another shrink would only blur it.
+      result={pages:await fitAndSplit(drawn.file,dir,{...req,maxRows:drawn.rows},DIAGRAM_DENSITY)};
     }
   } else {
     if(input.length>MAX_FILE) throw new Error('Image too large');
@@ -110,12 +115,11 @@ export async function work(req) {
     if(pngHeader(input)) fs.writeFileSync(file,input,{mode:0o600});
     else {
       if(input.subarray(0,4).equals(Buffer.from([137,80,78,71]))) throw new Error('Invalid PNG header');
-      const decoder=sharp(input,{limitInputPixels:40000000});
-      const metadata=await decoder.metadata();
-      if(!['jpeg','webp'].includes(metadata.format)) throw new Error('Unsupported image format');
-      await decoder.rotate().resize({width:1600,height:1600,fit:'inside',withoutEnlargement:true}).png().toFile(file);
+      const image=new Bun.Image(input,{maxPixels:40000000});
+      if(!['jpeg','webp'].includes((await image.metadata()).format)) throw new Error('Unsupported image format');
+      fs.writeFileSync(file,await image.resize(1600,1600,{fit:'inside',withoutEnlargement:true}).png().bytes(),{mode:0o600});
     }
-    result={pages:fitAndSplit(file,dir,req)};
+    result={pages:await fitAndSplit(file,dir,req)};
   }
   const tmp=resultFile+`.${process.pid}.tmp`;fs.writeFileSync(tmp,JSON.stringify(result),{mode:0o600});fs.renameSync(tmp,resultFile);
   trimCache(cache);

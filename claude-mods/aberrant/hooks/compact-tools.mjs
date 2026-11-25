@@ -21,31 +21,6 @@ export function register(on) {
     return { text: `Compact tools ${enabled ? "on" : "off"}. Thinking display is unchanged.` };
   });
 
-  on("ui.render", { component: ["AbovePrompt", "Pane"] }, async ($, e, next) => {
-    const inSidebar = e.component === "Pane" && e.requestId === "sidebar-controls";
-    if (!inSidebar && e.component !== "AbovePrompt") return next(e);
-    const original = await next(e);
-    if (e.surface !== "terminal" || e.props.hasSurvey) return original;
-    if (!inSidebar) {
-      const { value: sidebarVisible } = await $.state.get({ plugin: "sidebar-controls", key: "visible" });
-      if (sidebarVisible) return original;
-    }
-    const { value = true } = await $.state.get(enabledState);
-    const { Box, Button } = $.ui.resolve(e);
-    return Box({
-      flexDirection: "column",
-      children: [original, Button({
-        key: "toggle-compact-tools",
-        label: `Compact tools: ${value ? "ON" : "OFF"}`,
-        color: value ? "green" : "gray",
-        onPress: async () => {
-          const { value = true } = await $.state.get(enabledState);
-          await $.state.set(enabledState, !value);
-        },
-      })],
-    });
-  });
-
   on("ui.render", { component: "ToolUse" }, async ($, e, next) => {
     const p = e.props;
     if (e.surface === "terminal" && isMcp(p.tool) && !p.isInterrupted) {

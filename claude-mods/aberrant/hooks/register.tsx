@@ -6,7 +6,7 @@ import { drawDiagrams } from './vendor/prismantis/mermaid';
 import { register as registerCompactTools, compactToolsCommand } from './compact-tools.mjs';
 
 const PANE={id:'aberrant-settings',title:'Aberrant',columns:58,rows:22};
-const HELP='Usage: /render [on|off|mode native|text|theme NAME|images on|off|mermaid on|off|preview on|off|tools inherit|cards|copy|doctor|demo]';
+const HELP='Usage: /render [on|off|mode native|text|theme NAME|images on|off|mermaid on|off|preview on|off|boxes on|off|tools inherit|cards|copy|doctor|demo]';
 const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n\n| Feature | State |\n| --- | --- |\n| Images | Ready |\n| Diagrams | Ready |\n\n> [!NOTE]\n> One renderer, one theme.\n\n```mermaid\nflowchart LR\n  Prompt --> Parse\n  Parse --> Render\n  Render --> Read\n```\n\n```rust\nlet price = 42;\nprintln!("{price}");\n```';
 
   async function init(s:any,$:any) {
@@ -22,13 +22,14 @@ const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n
         HOME:await $.env.get('HOME'),
         CLAUDE_CODE_TMPDIR:await $.env.get('CLAUDE_CODE_TMPDIR'),
         NO_COLOR:await $.env.get('NO_COLOR'),
+        CMUX_WORKSPACE_ID:await $.env.get('CMUX_WORKSPACE_ID'),
       };
       s.env={...capabilities(env),...env};
       s.session=await $.session.id();
       const terminal=env.TERM_PROGRAM==='ghostty'||env.TERM_PROGRAM==='cmux'?'ghostty':env.KITTY_WINDOW_ID?'kitty':env.TERM==='xterm-kitty'?'kitty':null;
       s.probe={cell:{},colors:{}};
       if(terminal) try {
-        const r=await $.process.run(['node',`${$.plugin.root}/bin/worker.mjs`],{stdin:JSON.stringify({kind:'probe',terminal}),timeoutMs:10000});
+        const r=await $.process.run(['bun',`${$.plugin.root}/bin/worker.mjs`],{stdin:JSON.stringify({kind:'probe',terminal}),timeoutMs:10000});
         s.probe=JSON.parse(r.stdout);
       } catch(error) {s.lastError=`Renderer probe: ${String(error)}`;}
     })();
@@ -73,7 +74,7 @@ const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n
       void (async()=>{
         let answer:any;
         try {
-          const r=await $.process.run(['node',`${$.plugin.root}/bin/worker.mjs`],{stdin:JSON.stringify(job.req),timeoutMs:20000});
+          const r=await $.process.run(['bun',`${$.plugin.root}/bin/worker.mjs`],{stdin:JSON.stringify(job.req),timeoutMs:20000});
           if(r.isStdoutTruncated) throw new Error('Renderer response was truncated');
           answer=JSON.parse(r.stdout);
           if(answer.error) throw new Error(answer.error);
@@ -91,11 +92,37 @@ const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n
       })();
     }
   }
-  function copyButton(s:any,$:any,ui:any,key:string,text:string,label='Copy source') {
-    return ui.Button({key,label,plain:true,dimColor:true,onPress:()=>$.ui.copy({text,surface:'terminal'})});
+  /** A Button drawn as link text: link colour, underlined under the pointer. */
+  function link(ui:any,bg:string,key:string,label:string,onPress:()=>unknown,icon='') {
+    // The host inverts a Button under the pointer; pre-swapping the colours makes it read as plain link text.
+    const unInvert={color:bg,backgroundColor:'suggestion'};
+    const children=[ui.Text({color:'suggestion',hover:{...unInvert,underline:true},children:label})];
+    if(icon)children.push(ui.Text({color:'suggestion',hover:unInvert,children:` ${icon}`}));
+    return ui.Box({key:`link:${key}`,children:[ui.Button({key,plain:true,children,onPress})]});
+  }
+  function copyButton($:any,ui:any,bg:string,key:string,text:string,label='Copy source') {
+    return link(ui,bg,key,label,()=>$.ui.copy({text,surface:'terminal'}));
   }
   function pages(s:any,ui:any,result:any,key:string,alt:string) {
     return (result?.pages||[]).map((page:any,i:number)=>ui.Image({key:`${key}-${i}`,source:{png:page.png},columns:page.columns,rows:page.rows,alt}));
+  }
+  function openButton(s:any,$:any,ui:any,key:string,req:any) {
+    return link(ui,req.bg,`open:${key}`,'Open in browser',async()=>{
+      let html=s.pageFiles.get(key);
+      if(!html||!(await $.fs.exists(html))) {
+        const r=await $.process.run(['bun',`${$.plugin.root}/bin/worker.mjs`],{stdin:JSON.stringify({...req,kind:'mermaid-page'}),timeoutMs:20000});
+        html=JSON.parse(r.stdout).html;if(!html)return;
+        s.pageFiles.set(key,html);
+      }
+      // Inside cmux, open in its own browser pane like other terminal links.
+      await $.process.run(s.env?.CMUX_WORKSPACE_ID?['cmux','browser','open',`file://${html}`]:['open',html]);
+    },'\u{F03CC}');
+  }
+  // From Readable Layout before 0.2.2: a rounded box with its title over the top border.
+  function framed(ui:any,title:string,color:string,body:any) {
+    return ui.Box({flexDirection:'column',marginTop:1,children:[
+      ui.Box({flexDirection:'column',borderStyle:'round',borderColor:color,paddingX:1,children:[body]}),
+      ui.Box({position:'absolute',top:0,left:2,children:[ui.Text({color,bold:true,children:` ${title} `})]})]});
   }
   function textBlock(s:any,ui:any,style:any,block:any,columns:number) {
     const blocks=[block];
@@ -105,7 +132,7 @@ const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n
   async function drawReply(s:any,$:any,e:any,text:string,scope:string) {
     const ui=$.ui.resolve(e),l=look(s,),columns=Math.max(1,Math.min(180,(e.viewport?.columns||80)-4));
     const allKey=`${scope}:all`,allSource=s.expanded.get(allKey)===fingerprint(text);
-    const toolbar=()=>ui.Box({flexDirection:'row',gap:2,children:[copyButton(s,$,ui,`copy:${scope}:all`,text,'Copy reply'),ui.Button({key:`source:${scope}:all`,label:allSource?'Rendered view':'Source view',plain:true,dimColor:true,onPress:()=>{if(allSource)s.expanded.delete(allKey);else s.expanded.set(allKey,fingerprint(text));$.ui.invalidate('ui.render');}})]});
+    const toolbar=()=>ui.Box({flexDirection:'row',gap:2,children:[copyButton($,ui,l.bg,`copy:${scope}:all`,text,'Copy reply'),link(ui,l.bg,`source:${scope}:all`,allSource?'Rendered view':'Source view',()=>{if(allSource)s.expanded.delete(allKey);else s.expanded.set(allKey,fingerprint(text));$.ui.invalidate('ui.render');})]});
     if(allSource)return ui.Box({flexDirection:'column',children:[ui.Text({children:text}),toolbar()]});
     const blocks=blocksOf(text),rows:any[]=[];
     // Extremely long blocks retain the host renderer rather than exceeding tree limits.
@@ -113,21 +140,23 @@ const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n
     for(const [i,b] of blocks.entries()) {
       const id=`${scope}:${i}`,isCode=b.kind==='code',isDiagram=isCode&&b.lang.toLowerCase()==='mermaid';
       const sourceKey=fingerprint(b.raw),showSource=s.expanded.get(id)===sourceKey;
-      let result:any=null;
+      let result:any=null,diagramReq:any=null;
       const graphical=s.env?.pictures&&!showSource;
       const image=b.kind==='paragraph'?/^!\[([^\]]*)\]\(([^\s]+)\)\s*$/.exec(b.raw):null;
       if(graphical&&image&&s.prefs.images&&image[2].startsWith('/')) {
         let stamp='';try {const stat=await $.fs.stat(image[2]);stamp=JSON.stringify([stat.size,stat.mtimeMs]);} catch {}
         result=request(s,$,id,{kind:'image',path:image[2],stamp,columns,...l,style:undefined});
       } else if(graphical&&isDiagram&&s.prefs.mermaid&&!b.isOpen) {
-        result=request(s,$,id,{kind:'mermaid',source:b.lines.join('\n'),columns,...l,style:undefined});
+        diagramReq={kind:'mermaid',source:b.lines.join('\n'),columns,...l,style:undefined};
+        result=request(s,$,id,diagramReq);
       }
       const content=result?.pages?pages(s,ui,result,id,b.raw):textBlock(s,ui,l.style,b,columns);
       const actions:any[]=[];
-      if(isCode||b.kind==='table') actions.push(copyButton(s,$,ui,`copy:${id}`,b.raw));
-      if((result?.pages&&(isCode||b.kind==='table'))||showSource) actions.push(ui.Button({key:`source:${id}`,label:showSource?'Rendered view':'Source view',plain:true,dimColor:true,onPress:()=>{
+      if(isCode||b.kind==='table') actions.push(copyButton($,ui,l.bg,`copy:${id}`,b.raw));
+      if((result?.pages&&(isCode||b.kind==='table'))||showSource) actions.push(link(ui,l.bg,`source:${id}`,showSource?'Rendered view':'Source view',()=>{
         if(showSource)s.expanded.delete(id);else s.expanded.set(id,sourceKey);$.ui.invalidate('ui.render');
-      }}));
+      }));
+      if(result?.pages&&diagramReq) actions.push(openButton(s,$,ui,id,diagramReq));
       rows.push(ui.Box({key:id,flexDirection:'column',children:[...content,...(actions.length?[ui.Box({flexDirection:'row',gap:2,children:actions})]:[])]}));
     }
     rows.push(toolbar());
@@ -136,13 +165,14 @@ const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n
   async function nativeAdditions(s:any,$:any,e:any,original:any) {
     // The native reply remains opaque and untouched, including other mods' additions.
     if(!s.env?.pictures||e.props.text.length>90000)return original;
-    const ui=$.ui.resolve(e),l=look(s,),columns=Math.max(1,Math.min(120,(e.viewport?.columns||80)-4)),extra=[];
+    const ui=$.ui.resolve(e),l=look(s,),columns=Math.max(1,Math.min(180,(e.viewport?.columns||80)-4)),extra=[];
     for(const [i,b] of blocksOf(e.props.text).entries()) {
       if(i>=120)break;
       if(b.kind!=='code'||b.lang.toLowerCase()!=='mermaid'||b.isOpen||!s.prefs.mermaid)continue;
       const id=`${e.requestId}:native-diagram:${i}`;
-      const result=request(s,$,id,{kind:'mermaid',source:b.lines.join('\n'),columns,...l,style:undefined});
-      if(result?.pages)extra.push(...pages(s,ui,result,id,b.raw));
+      const req={kind:'mermaid',source:b.lines.join('\n'),columns,...l,style:undefined};
+      const result=request(s,$,id,req);
+      if(result?.pages)extra.push(...pages(s,ui,result,id,b.raw),openButton(s,$,ui,id,req));
     }
     return extra.length?ui.Box({flexDirection:'column',children:[original,...extra]}):original;
   }
@@ -197,11 +227,11 @@ export function register(on:any) {
   registerCompactTools(on);
   const s:any={prefs:{...DEFAULTS},loaded:null,env:null,probe:null,generation:0,cache:new Map(),wanted:new Map(),queue:new Map(),inflight:new Map(),
     active:0,scheduled:null,poll:null,polling:false,session:'',draft:[],imageDir:null,last:'',shown:new Set(),grouped:new Map(),paths:new Map(),
-    expanded:new Map(),lastError:'',stopped:false,demo:false};
+    expanded:new Map(),pageFiles:new Map(),lastError:'',stopped:false,demo:false};
 
   on('session.start',async($:any,e:any,next:any)=>{
     const original=await next(e);await init(s,$);
-    for(const name of ['render','aberrant']) await $.command.register({name,description:'Aberrant: diagrams, image previews and optional Markdown themes',argumentHint:'[on|off|mode|theme|images|mermaid|preview|tools|copy|doctor|demo]',immediate:true});
+    for(const name of ['render','aberrant']) await $.command.register({name,description:'Aberrant: diagrams, image previews and optional Markdown themes',argumentHint:'[on|off|mode|theme|images|mermaid|preview|boxes|tools|copy|doctor|demo]',immediate:true});
     await $.command.register(compactToolsCommand);
     if((await $.session.surfaces()).includes('terminal')) startPoll(s,$);
     return original;
@@ -212,22 +242,31 @@ export function register(on:any) {
   on('command.run',{command:['render','aberrant']},async($:any,e:any)=>{
     await init(s,$);const args=e.args.trim(),[cmd='',...rest]=args.split(/\s+/),value=rest.join(' ');
     if(!cmd||cmd==='demo') {s.demo=cmd==='demo';await $.ui.open(PANE);return {};}
-    if(cmd==='doctor') {const l=look(s,);return {text:`Aberrant 0.1.0 · ${s.prefs.enabled?'on':'off'} · ${s.prefs.mode}\n${s.env.reason}\nNode: ${s.probe?.node||'not probed'}\nQueue: ${s.queue.size} · active: ${s.active}${s.lastError?`\nLast fallback: ${s.lastError}`:''}`};}
+    if(cmd==='doctor') {const l=look(s,);return {text:`Aberrant 0.2.0 · ${s.prefs.enabled?'on':'off'} · ${s.prefs.mode}\n${s.env.reason}\nBun: ${s.probe?.bun||'not probed'}\nQueue: ${s.queue.size} · active: ${s.active}${s.lastError?`\nLast fallback: ${s.lastError}`:''}`};}
     if(cmd==='copy') {if(!s.last)return {text:'No reply has been rendered yet.'};await $.ui.copy({text:s.last,surface:'terminal'});return {text:'Reply source copied.'};}
     if((cmd==='on'||cmd==='off')&&!value) {await save(s,$,{enabled:cmd==='on'});return {text:`Aberrant ${cmd}.`};}
-    if(['images','mermaid','preview'].includes(cmd)&&['on','off'].includes(value)) {await save(s,$,{[cmd]:value==='on'});return {text:`${cmd}: ${value}`};}
+    if(['images','mermaid','preview','boxes'].includes(cmd)&&['on','off'].includes(value)) {await save(s,$,{[cmd]:value==='on'});return {text:`${cmd}: ${value}`};}
     if(cmd==='mode'&&['native','text'].includes(value)||cmd==='tools'&&['inherit','cards'].includes(value)||cmd==='theme'&&['terminal',...PRESET_NAMES].includes(value)) {await save(s,$,{[cmd]:value});return {text:`${cmd}: ${value}`};}
     return {text:HELP};
+  });
+  on('ui.render',{component:'UserMessage'},async($:any,e:any,next:any)=>{
+    if(e.surface!=='terminal'||e.props.origin.kind!=='composer'||!e.props.text.trim()) return next(e);
+    await init(s,$);if(!s.prefs.enabled||!s.prefs.boxes)return next(e);
+    const ui=$.ui.resolve(e);
+    return framed(ui,'You','suggestion',ui.Text({children:e.props.text.trim()}));
   });
   on('ui.render',{component:'AssistantMessage'},async($:any,e:any,next:any)=>{
     const original=await next(e);if(e.surface!=='terminal'||e.props.isSummary||!e.props.text?.trim()) return original;
     await init(s,$);if(!s.prefs.enabled)return original;
     if(s.stopped) startPoll(s,$);
     s.last=e.props.text;
-    if(s.prefs.mode==='native')return nativeAdditions(s,$,e,original);
-    const body=await drawReply(s,$,e,e.props.text,e.requestId);if(!body)return original;
+    const text=e.props.text.trim();
+    // One-line notes between steps stay unboxed so the answer stands out.
+    const box=(node:any)=>!s.prefs.boxes||!text.includes('\n')&&text.length<=160?node:framed($.ui.resolve(e),'Claude','#5769F7',node);
+    if(s.prefs.mode==='native')return box(await nativeAdditions(s,$,e,original));
+    const body=await drawReply(s,$,e,e.props.text,e.requestId);if(!body)return box(original);
     // Keep outer additions such as live-thinking; replace only native content.
-    const replaced=replaceNative(original,body);return replaced.replaced?replaced.node:original;
+    const replaced=replaceNative(original,body);return box(replaced.replaced?replaced.node:original);
   });
   on('ui.render',{component:'ToolGroup'},async($:any,e:any,next:any)=>{
     if(e.surface!=='terminal')return next(e);
@@ -285,7 +324,7 @@ export function register(on:any) {
     children.push(ui.Text({bold:true,children:'Aberrant'}),ui.Text({dimColor:true,children:`Theme: ${p.theme}`}));
     children.push(button('enabled',p.enabled?'Rendering: ON':'Rendering: OFF',{enabled:!p.enabled}));
     children.push(ui.Box({flexDirection:'row',gap:1,children:['native','text'].map(mode=>button(`mode:${mode}`,`${mode===p.mode?'● ':''}${mode}`,{mode}))}));
-    for(const feature of ['images','mermaid','preview'])children.push(button(feature,`${feature}: ${p[feature]?'ON':'OFF'}`,{[feature]:!p[feature]}));
+    for(const feature of ['images','mermaid','preview','boxes'])children.push(button(feature,`${feature}: ${p[feature]?'ON':'OFF'}`,{[feature]:!p[feature]}));
     children.push(ui.Select({key:'theme',value:p.theme,options:['terminal',...PRESET_NAMES].map(value=>({value,label:value})),onSelect:(value:string)=>save(s,$,{theme:value})}));
     children.push(button('tools',`Tool style: ${p.tools}`,{tools:p.tools==='inherit'?'cards':'inherit'}));
     children.push(ui.Text({dimColor:true,children:'Inspired by Intelligent UI, Prismantis, Mermaid Inline, Inline Images and Claude Image View. See README for credits.'}));

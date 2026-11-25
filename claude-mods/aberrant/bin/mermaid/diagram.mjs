@@ -183,7 +183,7 @@ export function withMath(source, math = []) {
   return out
 }
 
-export function renderPicture(item, request) {
+function drawSvg(item, request) {
   const { colors, card } = diagramColors(request)
   const source = withMath(item.source, item.math)
   const raw = renderMermaidSVG(source, {
@@ -198,6 +198,17 @@ export function renderPicture(item, request) {
   const fonts = pickFonts({ font: request.font })
   if (!WIDE_SCRIPT.test(source)) fonts.files = [fonts.sans?.file, fonts.mono?.file].filter(Boolean)
   const svg = prepareSvg(raw, colors, fonts)
+  return { raw, svg, width, height, colors, card, fonts }
+}
+
+/** Writes the diagram as a standalone HTML page, for viewing at any zoom in a browser. */
+export function writePage(item, request, file) {
+  const { svg, colors } = drawSvg(item, request)
+  fs.writeFileSync(file, `<!doctype html><meta charset="utf-8"><title>Diagram</title><body style="margin:0;padding:24px;background:${colors.bg}">${svg}</body>`)
+}
+
+export function renderPicture(item, request) {
+  const { raw, svg, width, height, colors, card, fonts } = drawSvg(item, request)
   const fit = fitToCells({ width, height }, request, item.maxColumns, item.maxRows)
   const drawnWidth = width * fit.scale
   const drawnHeight = height * fit.scale

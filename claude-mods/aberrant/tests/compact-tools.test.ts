@@ -20,30 +20,6 @@ function stubAberrantHost(on: any) {
 }
 
 describe("compact-tools", () => {
-  test("sidebar controls replace the prompt button and keep toggling the same state", async ($, on) => {
-    stubAberrantHost(on);
-    let visible = true;
-    on("state.get", { plugin: "sidebar-controls", key: "visible" }, () => ({ value: { value: visible, version: 0 } }));
-    on("ui.render", ($, e) => $.ui.resolve(e).Box({}));
-    const pane = await $.ui.mount({
-      plugin: "aberrant", surface: "terminal", component: "Pane", requestId: "sidebar-controls",
-      props: { title: "Mod controls", isFocused: false, bodyColumns: 28, placement: "dock", scroll: { offset: 0, bodyRows: 40 }, view: {} },
-    });
-    const band = await $.ui.mount({
-      plugin: "aberrant", surface: "terminal", component: "AbovePrompt",
-      props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 120, scroll: { offset: 0, bodyRows: 10 }, view: {} },
-    });
-    expect((await pane.find({ key: "toggle-compact-tools" }))?.text).toBe("Compact tools: ON");
-    expect(await band.find({ key: "toggle-compact-tools" })).toBeUndefined();
-    await pane.press({ key: "toggle-compact-tools" });
-    expect((await pane.find({ key: "toggle-compact-tools" }))?.text).toBe("Compact tools: OFF");
-    visible = false;
-    await band.redraw();
-    expect((await band.find({ key: "toggle-compact-tools" }))?.text).toBe("Compact tools: OFF");
-    await pane.unmount();
-    await band.unmount();
-  });
-
   test("MCP calls hide nested arguments and summarize results without changing either", async ($, on) => {
     stubAberrantHost(on);
     const input = { ref: { id: "private-ref" }, payload: { ops: [{ content: "PRIVATE_DOCUMENT_BODY".repeat(1000) }] } };
@@ -268,18 +244,14 @@ describe("compact-tools", () => {
     await ui.unmount();
   });
 
-  test("the status button toggles the mod and follows slash-command changes", async ($, on) => {
+  test("no toggle is drawn above the prompt", async ($, on) => {
     stubAberrantHost(on);
     on("ui.render", { component: "AbovePrompt" }, ($, e) => $.ui.resolve(e).Box({}));
     const ui = await $.ui.mount({
       plugin: "aberrant", surface: "terminal", component: "AbovePrompt",
       props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 120 },
     });
-    expect((await ui.find({ key: "toggle-compact-tools" }))?.text).toBe("Compact tools: ON");
-    await ui.press({ key: "toggle-compact-tools" });
-    expect((await ui.find({ key: "toggle-compact-tools" }))?.text).toBe("Compact tools: OFF");
-    await $.command.run({ command: "compact-tools", args: "on" });
-    expect((await ui.find({ key: "toggle-compact-tools" }))?.text).toBe("Compact tools: ON");
+    expect(await ui.find({ key: "toggle-compact-tools" })).toBeUndefined();
     await ui.unmount();
   });
 

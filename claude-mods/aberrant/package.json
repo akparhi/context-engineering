@@ -1,16 +1,15 @@
 {
   "name": "aberrant-runtime",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "MIT",
   "type": "module",
   "dependencies": {
     "@resvg/resvg-js": "2.6.2",
     "beautiful-mermaid": "1.1.3",
-    "pngjs": "7.0.0",
-    "sharp": "0.35.5"
+    "pngjs": "7.0.0"
   },
   "scripts": {
-    "test:worker": "node --test tests/worker.test.mjs"
+    "test:worker": "bun test tests/worker.test.mjs"
   }
 }

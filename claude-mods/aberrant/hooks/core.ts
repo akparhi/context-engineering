@@ -1,10 +1,10 @@
 import { parse } from './vendor/prismantis/markdown';
 
 export const DEFAULTS = { enabled: true, mode: 'native', textModeVersion: 1, theme: 'terminal',
-  images: true, mermaid: true, preview: true, tools: 'inherit' };
+  images: true, mermaid: true, preview: true, boxes: true, tools: 'inherit' };
 export function preferences(value: any) {
   const v=value && typeof value==='object'?value:{};
-  return {...DEFAULTS,enabled:v.enabled!==false,images:v.images!==false,mermaid:v.mermaid!==false,preview:v.preview!==false,
+  return {...DEFAULTS,enabled:v.enabled!==false,images:v.images!==false,mermaid:v.mermaid!==false,preview:v.preview!==false,boxes:v.boxes!==false,
     textModeVersion:1,mode:v.textModeVersion===1&&['native','text'].includes(v.mode)?v.mode:'native',tools:v.tools==='cards'?'cards':'inherit',
     theme:typeof v.theme==='string'?v.theme:'terminal'};
 }

@@ -238,3 +238,24 @@ test('sidebar toggle persists enabled state and stays in sync with commands',asy
   expect(await desktop.find({key:'toggle-aberrant'})).toBeUndefined();
   await desktop.unmount();
 });
+describe('message boxes',()=>{
+  test('frame your message and Claude\'s answer, leaving one-line notes bare',async($,on)=>{
+    host(on);
+    const you=await $.ui.mount({...MSG,component:'UserMessage',props:{text:'hello there',origin:{kind:'composer'}}} as any);
+    expect(await you.find({type:'Text',text:' You '})).toBeDefined();
+    await you.unmount();
+    const answer=await $.ui.mount(MSG);
+    expect(await answer.find({type:'Text',text:' Claude '})).toBeDefined();
+    await answer.unmount();
+    const note=await $.ui.mount({...MSG,props:{...MSG.props,text:'Checking the config first.'}});
+    expect(await note.find({type:'Text',text:' Claude '})).toBeUndefined();
+    await note.unmount();
+  });
+  test('boxes off draws messages without frames',async($,on)=>{
+    host(on);
+    await $.command.run({command:'render',args:'boxes off'});
+    const answer=await $.ui.mount(MSG);
+    expect(await answer.find({type:'Text',text:' Claude '})).toBeUndefined();
+    await answer.unmount();
+  });
+});

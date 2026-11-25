@@ -113,7 +113,7 @@ try:
  wait_for('REPLAY_COMPLETE');pump(3);
  command('/render mode text');wait_for('Copy reply');pump(2);(ROOT/'rendered.txt').write_text(pump())
  command('/render doctor');wait_for('Better Render 0.1.4');(ROOT/'doctor.txt').write_text(pump())
- assert 'Node: v' in pump(),pump()
+ assert 'Bun: ' in pump(),pump()
  assert 'Last fallback:' not in pump(),pump()
  command('/render mode native')
  wait_for('mode: native');(ROOT/'text-mode.txt').write_text(pump())

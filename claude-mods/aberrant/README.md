@@ -8,21 +8,22 @@ these features, so several plugins do not compete to redraw the same reply.
 
 ## Install
 
-Install Node.js 20.9+ for image and diagram rendering. On macOS:
+Install Bun for image and diagram rendering. On macOS:
 
 ```sh
-brew install node
+brew install oven-sh/bun/bun
 ```
 
 Then in Claude Code:
 
 ```text
+/plugin marketplace add akparhi/context-engineering
 /plugin install aberrant@akparhi
 /reload-plugins
 ```
 
-The npm dependencies are pinned in `package-lock.json`; the plugin installer
-installs them. Start a new session if the new command is not listed after reload.
+The npm dependencies are pinned in `bun.lock`. Install them with
+`bun install --frozen-lockfile` in the plugin directory if diagrams fall back to text. Start a new session if the new command is not listed after reload.
 It does not draw in Desktop, regular Chat, or IDE surfaces.
 
 ## Use
@@ -57,9 +58,13 @@ Typesetting, graphical paragraphs, font controls, and size controls were removed
 in 0.1.3. Old `auto` and `typeset` preferences migrate to native mode. Mermaid
 previews appear after the unchanged native reply, preserving its source.
 
+## Message boxes
+
+In the terminal, your messages sit in a rounded box labeled **You** and Claude's answers in one labeled **Claude**. One-line notes between steps stay unboxed. Text selected across the box's sides picks up border characters; the Copy buttons copy clean source. `/render boxes off` removes them.
+
 ## Compact tools
 
-Compact Bash, Read, Edit, Write, Fetch, and MCP output for Claude Code's terminal, with a visible ON/OFF toggle above the prompt. Run `/compact-tools` to toggle, or `/compact-tools on` and `/compact-tools off`.
+Compact Bash, Read, Edit, Write, Fetch, and MCP output for Claude Code's terminal. Run `/compact-tools` to toggle, or `/compact-tools on` and `/compact-tools off`.
 
 Fetch calls show the URL without the extraction prompt, then the first result line and a hidden-line count. Failed or interrupted fetches keep their native details. Full prompts and results still reach Claude and remain in the transcript.
 
@@ -76,9 +81,9 @@ has explicitly been enabled through Claude's supported environment setting.
 default; explicitly enabled image passthrough depends on the terminal and host.
 SSH sessions cannot assume that a remote font configuration matches the viewer.
 
-Node runs the local rendering worker. Mermaid renders diagrams; sharp converts
-JPEG and WebP images to bounded PNG previews. No external document compiler is
-used. Dependencies are installed with the plugin, and rendering makes no extra
+Bun runs the local rendering worker. Mermaid renders diagrams; Bun's built-in
+image API converts JPEG and WebP images to bounded PNG previews. No external document compiler is
+used, and rendering makes no extra
 model requests. Use Claude's normal plugin update flow.
 
 PNG, JPEG and WebP previews are supported. Images are content-keyed, fitted to the
@@ -105,6 +110,7 @@ This mod builds on and takes inspiration from excellent community projects:
 - **[Prismantis](https://github.com/NahumLitvin/prismantis)** by Nahum Litvin — adapted Markdown parser, themed text/table/code renderers, palettes and Unicode diagrams.
 - **[Mermaid Inline](https://github.com/dazebug/mermaid-inline)** by dazebug — adapted diagram rendering and terminal font/color measurement.
 - **[Inline Images](https://github.com/kbrianps/claude-inline-images)** by Brian Pravato — tool-image preview design and result formats.
+- **[Readable Layout](https://github.com/GarvitNangru/claude-code-mods/tree/main/mods/readable-layout)** by Garvit Nangru — the You and Claude message boxes.
 - **[Claude Image View](https://github.com/jarrodwatts/claude-image-view)** by Jarrod Watts — pasted-image preview design and cache discovery.
 
 AJ maintains the integration and its fixes. This is not an official release from
@@ -114,10 +120,10 @@ are recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `licenses/`
 ## Development
 
 ```sh
-npm ci --ignore-scripts
+bun install --frozen-lockfile
 claude plugin validate . --strict
 claude plugin test .
-npm run test:worker
+bun run test:worker
 uv run --with pyte python tests/terminal_check.py
 ```
 

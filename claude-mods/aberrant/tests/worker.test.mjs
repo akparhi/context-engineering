@@ -5,7 +5,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import sharp from 'sharp';
 import { PNG } from 'pngjs';
 import { work, pngHeader } from '../bin/worker.mjs';
 
@@ -60,7 +59,7 @@ test('document typesetting is unavailable',async()=>{
 });
 test('JPEG and WebP previews work without an external compiler',async()=>{
   for(const format of ['jpeg','webp']) {
-    const bytes=await sharp(image()).toFormat(format).toBuffer();
+    const bytes=Buffer.from(await new Bun.Image(image())[format]().bytes());
     const r=await work({...common,kind:'image',base64:bytes.toString('base64')});
     assert.ok(pngHeader(fs.readFileSync(r.pages[0].file)));
   }

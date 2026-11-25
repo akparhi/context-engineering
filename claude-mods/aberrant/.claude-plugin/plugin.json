@@ -1,6 +1,6 @@
 {
   "name": "aberrant",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Native Claude text, Mermaid diagrams, inline images, paste previews and optional Markdown themes.",
   "author": {
     "name": "Anand Parhi"

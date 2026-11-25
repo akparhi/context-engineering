@@ -8,6 +8,12 @@ Claude Better Render is assembled and maintained by AJclemendor. It is an indepe
 
 Historical inspiration for the original integration. The document renderer, image conversion template and Typst packages were removed in 0.1.3.
 
+## Readable Layout
+
+[GarvitNangru/claude-code-mods](https://github.com/GarvitNangru/claude-code-mods/tree/main/mods/readable-layout), commit `5138c4141c5e8c95bd60d9e4cbf99fe750d9275c`. MIT licensed.
+
+The framed message boxes in `hooks/register.tsx` are adapted from its `framed` layout.
+
 ## Prismantis
 
 [NahumLitvin/prismantis](https://github.com/NahumLitvin/prismantis), version 0.36.0, commit `ed085d7c7d649241025a739d398f00c2d3b0c9a9`. MIT licensed.
@@ -36,6 +42,4 @@ Original MIT notices are retained in `licenses/`. Prismantis dependency and pale
 
 No Typst packages or fonts are distributed with this version.
 
-Node dependencies are pinned in package-lock.json. Their notices accompany the installed packages: beautiful-mermaid (MIT), @resvg/resvg-js (MPL-2.0), and pngjs (MIT); platform-specific resvg binaries retain their upstream licenses.
-
-Image conversion uses sharp 0.35.5 (Apache-2.0) and its unmodified prebuilt libvips distribution (LGPL-2.1-or-later plus bundled library notices). Upstream sources and build instructions: https://github.com/lovell/sharp and https://github.com/lovell/sharp-libvips. Licenses and dependency notices accompany their npm packages.
+Dependencies are pinned in bun.lock. Their notices accompany the installed packages: beautiful-mermaid (MIT), @resvg/resvg-js (MPL-2.0), and pngjs (MIT); platform-specific resvg binaries retain their upstream licenses.
