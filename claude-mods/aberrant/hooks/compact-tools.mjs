@@ -28,14 +28,10 @@ export function register(on) {
       if (!value || isInterruption(p.output)) return next(e);
       const failed = p.isErrored || p.output?.isError === true;
       const name = p.tool.slice(5).split("__").map(part => part.replace(/_/g, " ")).join(" · ");
-      const label = `${failed ? "✗" : "●"} ${oneLine(name)} (MCP)${p.isRunning ? " · Running…" : ""}`;
-      return $.ui.resolve(e).Box({
-        flexDirection: "column",
-        marginTop: 1,
-        children: [row($, e, label, false, failed), ...(p.isRunning ? [] : [
+      const label = `${mark(failed, p.isRunning)} ${oneLine(name)} (MCP)${p.isRunning ? " · Running…" : ""}`;
+      return card($, e, [row($, e, label, false, failed), ...(p.isRunning ? [] : [
           row($, e, `  ⎿ ${failed ? "Error · " : ""}${mcpResultLabel(p.output, failed)}`, true, failed),
-        ])],
-      });
+        ])]);
     }
     if (e.surface !== "terminal" || !supported.has(p.tool) || (p.isErrored && p.tool !== "Bash") || p.isInterrupted) {
       return next(e);
@@ -46,12 +42,7 @@ export function register(on) {
     if (label === null) return next(e);
     const result = p.isErrored ? bashErrorLabel(p.output) : resultLabel(p.tool, p.output);
     if ((p.isErrored || p.output !== undefined) && result === null) return next(e);
-    const { Box } = $.ui.resolve(e);
-    return Box({
-      flexDirection: "column",
-      marginTop: 1,
-      children: [row($, e, label, false, p.isErrored), ...(result === null ? [] : [row($, e, `  ⎿ ${result}`, true, p.isErrored)])],
-    });
+    return card($, e, [row($, e, label, false, p.isErrored), ...(result === null ? [] : [row($, e, `  ⎿ ${result}`, true, p.isErrored)])]);
   });
 
   on("ui.render", { component: "ToolResult" }, async ($, e, next) => {
@@ -97,7 +88,7 @@ function toolLabel(p) {
     : p.tool === "WebFetch" ? input.url : input.file_path;
   if (typeof label !== "string") return null;
   const name = p.tool === "WebFetch" ? "Fetch" : p.tool;
-  return `${p.isErrored ? "✗" : "●"} ${name}(${oneLine(label)})${p.isRunning ? " · Running…" : ""}`;
+  return `${mark(p.isErrored, p.isRunning)} ${name}(${oneLine(label)})${p.isRunning ? " · Running…" : ""}`;
 }
 
 function oneLine(value) {
@@ -107,6 +98,14 @@ function oneLine(value) {
     .replace(/[\x00-\x1f\x7f-\x9f]/g, "")
     .trim()
     .slice(0, 2000);
+}
+
+function mark(failed, running) {
+  return failed ? "✗" : running ? "●" : "✓";
+}
+
+function card($, e, children) {
+  return $.ui.resolve(e).Box({ flexDirection: "column", children });
 }
 
 function row($, e, label, dimColor, isError = false) {

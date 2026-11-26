@@ -6,7 +6,7 @@ const MSG={plugin:'aberrant',surface:'terminal',component:'AssistantMessage',req
 const PANE={plugin:'aberrant',surface:'terminal',component:'Pane',requestId:'aberrant-settings',viewport:{columns:70,rows:40,isFullscreen:true},
   props:{title:'Aberrant',isFocused:true,bodyColumns:60,placement:'dock',scroll:{offset:0,bodyRows:30},view:{}}} as const;
 function host(on:any,prefs:any={}, custom:any={}) {
-  if(!custom.store)mock.store(on,{preferences:custom.raw?prefs:{textModeVersion:1,mode:'text',...prefs}});mock.env(on,{TERM_PROGRAM:custom.graphical?'ghostty':'Apple_Terminal',HOME:'/fixture'});
+  if(!custom.store)mock.store(on,{preferences:custom.raw?prefs:{textModeVersion:1,mode:'text',...prefs}});mock.env(on,{TERM_PROGRAM:custom.graphical?'ghostty':'Apple_Terminal',HOME:'/fixture',...custom.env});
   const clock=mock.clock(on),copies:any[]=[],requests:any[]=[];
   if(!custom.session)on('session.id',()=>({value:'fixture-session'}));
   on('session.surfaces',()=>({value:['terminal']}));
@@ -251,11 +251,86 @@ describe('message boxes',()=>{
     expect(await note.find({type:'Text',text:' Claude '})).toBeUndefined();
     await note.unmount();
   });
+  test('a boxed reply keeps its copy and source actions on the top border',async($,on)=>{
+    host(on);
+    await $.command.run({command:'render',args:'mode text'});
+    const answer=await $.ui.mount({...MSG,props:{...MSG.props,text:'First line.\nSecond line.'}});
+    const border=(await answer.find({type:'Box'} as any))?.children?.find((c:any)=>c.props?.position==='absolute'&&c.props?.right===2);
+    expect(JSON.stringify(border)).toContain('"Copy"');
+    expect(JSON.stringify(border)).toContain('"Source"');
+    await answer.unmount();
+  });
+  test('a diagram\'s actions show at its top right only while hovered',async($,on)=>{
+    const h=host(on,{mode:'text'},{graphical:true,process:true,render:true});
+    on('process.run',(_,e)=>{
+      const r=JSON.parse(e.init?.stdin||'{}');
+      return {value:{exitCode:0,stdout:JSON.stringify(r.kind==='probe'?{cell:{},colors:{}}:{pages:[{file:'/fixture/diagram.png',columns:20,rows:4}]}),stderr:''}};
+    });
+    on('fs.read',()=>({value:{base64:'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aJ1sAAAAASUVORK5CYII='}}));
+    const answer=await $.ui.mount({...MSG,props:{...MSG.props,text:'A flow:\n\n```mermaid\nflowchart LR\n A --> B\n```'}});
+    await h.clock.advance(500);await answer.redraw();
+    expect(await answer.find({type:'Image'})).toBeDefined();
+    const hidden=(await answer.findAll({type:'Box'} as any)).find((b:any)=>b.props?.display==='none'&&b.props?.position==='absolute');
+    expect(hidden?.props?.top).toBe(0);
+    expect(JSON.stringify(hidden)).toContain('"Open"');
+    await answer.unmount();
+  });
   test('boxes off draws messages without frames',async($,on)=>{
     host(on);
     await $.command.run({command:'render',args:'boxes off'});
     const answer=await $.ui.mount(MSG);
     expect(await answer.find({type:'Text',text:' Claude '})).toBeUndefined();
     await answer.unmount();
+  });
+});
+describe('cmux theme',()=>{
+  test('a theme change inside cmux is picked up without a reload',async($,on)=>{
+    const h=host(on,{}, {graphical:true,process:true,env:{CMUX_WORKSPACE_ID:'workspace:1'}});
+    let mtime=1,probes=0;
+    on('fs.stat',()=>({value:{size:1,mtimeMs:mtime,isFile:true,isDirectory:false}}));
+    on('process.run',(_:any,e:any)=>{
+      if(JSON.parse(e.init?.stdin||'{}').kind==='probe')probes++;
+      return {value:{exitCode:0,stdout:'{}',stderr:'',isStdoutTruncated:false,isStderrTruncated:false}};
+    });
+    await $.ui.render(MSG);
+    expect(probes).toBe(1);
+    await h.clock.advance(2000);
+    expect(probes).toBe(1);
+    mtime=2;await h.clock.advance(2000);
+    expect(probes).toBe(2);
+  });
+});
+describe('cmux theme after a session ends',()=>{
+  test('the theme watch restarts with the next reply',async($,on)=>{
+    const h=host(on,{}, {graphical:true,process:true,env:{CMUX_WORKSPACE_ID:'workspace:1'}});
+    let mtime=1,probes=0;
+    on('session.end',()=>({sessionId:'fixture-session'}));
+    on('fs.stat',()=>({value:{size:1,mtimeMs:mtime,isFile:true,isDirectory:false}}));
+    on('process.run',(_:any,e:any)=>{
+      if(JSON.parse(e.init?.stdin||'{}').kind==='probe')probes++;
+      return {value:{exitCode:0,stdout:'{}',stderr:'',isStdoutTruncated:false,isStderrTruncated:false}};
+    });
+    await $.ui.render(MSG);
+    await $.session.end({reason:'clear'});
+    await $.ui.render(MSG);
+    mtime=2;await h.clock.advance(2000);
+    expect(probes).toBe(2);
+  });
+});
+describe('terminal theme presets',()=>{
+  test('a theme matches its family preset by name and background',async($,on)=>{
+    host(on,{}, {graphical:true,process:true});
+    const colors={theme:'Gruvbox Dark Hard',background:'#1d2021'};
+    on('process.run',()=>({value:{exitCode:0,stdout:JSON.stringify({colors}),stderr:'',isStdoutTruncated:false,isStderrTruncated:false}}));
+    await $.ui.render(MSG);
+    const doctor=async()=>(await $.command.run({command:'render',args:'doctor'})).text;
+    expect(await doctor()).toContain('Gruvbox Dark Hard → gruvbox-dark');
+  });
+  test('a theme without a preset is coloured from its own palette',async($,on)=>{
+    host(on,{}, {graphical:true,process:true});
+    const colors={theme:'Hurtado',background:'#000000',foreground:'#cccccc',palette:Array(16).fill('#aabbcc')};
+    on('process.run',()=>({value:{exitCode:0,stdout:JSON.stringify({colors}),stderr:'',isStdoutTruncated:false,isStderrTruncated:false}}));
+    await $.ui.render(MSG);
+    expect((await $.command.run({command:'render',args:'doctor'})).text).toContain('Hurtado → terminal palette');
   });
 });

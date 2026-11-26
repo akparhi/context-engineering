@@ -315,7 +315,7 @@
   "tui": "fullscreen",
   "autoMemoryEnabled": false,
   "skipDangerousModePermissionPrompt": true,
-  "theme": "auto",
+  "theme": "custom:aberrant:noctis",
   "editorMode": "normal",
   "verbose": true,
   "switchModelsOnFlag": false,

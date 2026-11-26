@@ -40,7 +40,7 @@ toggle the whole mod; it shares the saved state used by `/render on` and
 | `/render on` / `/render off` | Enable or restore the previous/native rendering. |
 | `/render mode native` | Default: keep Claude’s original text rendering; append Mermaid previews and keep tool images. |
 | `/render mode text` | Themed text, code and tables, plus graphical diagrams when supported and Unicode fallback otherwise. |
-| `/render theme terminal` | Follow terminal colors where they can be detected. |
+| `/render theme terminal` | Follow the terminal theme: its matching palette (Gruvbox, Catppuccin, Rose Pine, GitHub, Solarized, Nord, Dracula, TokyoNight, Everforest, One Dark, Oldest House, Gruvbox Dark Hard, Gruvbox Material Dark Hard, One Dark Modern Pro, Horizon, Sweet Dracula Monokai, Noctis), otherwise its own 16 colors. |
 | `/render theme github-light` | Choose one of the bundled Prismantis palettes. |
 | `/render images on` / `off` | Show/hide pictures returned by tools or sent as attachments. |
 | `/render mermaid on` / `off` | Draw diagrams or keep their source. |
@@ -60,7 +60,11 @@ previews appear after the unchanged native reply, preserving its source.
 
 ## Message boxes
 
-In the terminal, your messages sit in a rounded box labeled **You** and Claude's answers in one labeled **Claude**. One-line notes between steps stay unboxed. Text selected across the box's sides picks up border characters; the Copy buttons copy clean source. `/render boxes off` removes them.
+In the terminal, your messages sit in a rounded box labeled **You** and Claude's answers in one labeled **Claude**. One-line notes between steps stay unboxed. Text selected across the box's sides picks up border characters; the Copy buttons copy clean source. `/render boxes off` removes them. The box colors come from the Claude Code theme's `briefLabelYou` and `briefLabelClaude`, so each theme picks its own.
+
+## Claude Code themes
+
+The plugin adds eight themes to `/theme`: Oldest House, Gruvbox Dark Medium, Gruvbox Dark Hard, Gruvbox Material Dark Hard, One Dark Modern Pro, Horizon, Sweet Dracula Monokai and Noctis.
 
 ## Compact tools
 
@@ -112,6 +116,7 @@ This mod builds on and takes inspiration from excellent community projects:
 - **[Inline Images](https://github.com/kbrianps/claude-inline-images)** by Brian Pravato — tool-image preview design and result formats.
 - **[Readable Layout](https://github.com/GarvitNangru/claude-code-mods/tree/main/mods/readable-layout)** by Garvit Nangru — the You and Claude message boxes.
 - **[Claude Image View](https://github.com/jarrodwatts/claude-image-view)** by Jarrod Watts — pasted-image preview design and cache discovery.
+- **[Claude Themes](https://claude-themes.skynettheone.me/)** by Skynettheone (MIT) — the Gruvbox, One Dark Modern Pro, Horizon, Sweet Dracula Monokai and Noctis Claude Code themes in `themes/`, and the layout Oldest House follows. Palettes belong to their authors: [Gruvbox](https://github.com/jdinhify/vscode-theme-gruvbox), [Tinted Theming](https://github.com/tinted-theming/schemes), [One Dark Modern Pro](https://github.com/aleksa-codes/one-dark-modern-pro), [Horizon](https://github.com/jolaleye/horizon-theme-vscode), Sweet Dracula Monokai, [Noctis](https://github.com/liviuschera/noctis), all MIT.
 
 AJ maintains the integration and its fixes. This is not an official release from
 those authors. Versions, commit IDs, original notices and dependency licenses

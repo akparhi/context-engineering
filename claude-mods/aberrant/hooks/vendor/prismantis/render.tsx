@@ -574,8 +574,8 @@ const pressInline = (el: ElementTable, style: Style, nodes: Inline[], columns: n
 export const PRISM_COLORS: Record<string, keyof Theme> = {
   comment: 'codeComment', prolog: 'codeComment', doctype: 'codeComment', cdata: 'codeComment',
   string: 'codeString', char: 'codeString', 'template-string': 'codeString', 'attr-value': 'codeString', url: 'codeString',
-  number: 'number', boolean: 'number', constant: 'number', symbol: 'number', inserted: 'number',
-  keyword: 'codeFlag', important: 'codeFlag', atrule: 'codeFlag', rule: 'codeFlag', deleted: 'codeFlag',
+  number: 'number', boolean: 'number', constant: 'number', symbol: 'number', inserted: 'diffAdded',
+  keyword: 'codeFlag', important: 'codeFlag', atrule: 'codeFlag', rule: 'codeFlag', deleted: 'diffRemoved',
   function: 'codeCommand', 'class-name': 'codeCommand', builtin: 'codeCommand', key: 'codeCommand', selector: 'codeCommand',
   property: 'link', tag: 'link', 'attr-name': 'emphasis', variable: 'emphasis', regex: 'path',
 }
@@ -659,15 +659,35 @@ const heldCode = (el: ElementTable, style: Style, lines: string[], shown: number
 
 const codeRows = (el: ElementTable, style: Style, lines: string[], shown: number, lang: string, numbered: boolean, room: number, key: string): RenderElement[] => {
   if (style.nativeCode) return [<el.Code key="code" source={lines.slice(0, shown).join('\n') || ' '} {...(lang ? { language: lang } : {})} {...(numbered ? { startLine: 1 } : {})} />]
-  const rows = (isShellLang(lang) ? null : highlightBlock(el, style, lines, lang, key, room))?.slice(0, shown) ?? lines.slice(0, shown).map((line, i) => codeLine(el, style, line, lang, `${key}.${i}`, room))
+  const highlighted = (isShellLang(lang) ? null : highlightBlock(el, style, lines, lang, key, room))?.slice(0, shown) ?? lines.slice(0, shown).map((line, i) => codeLine(el, style, line, lang, `${key}.${i}`, room))
+  const marks = markColors(style.theme)
+  // On a tinted row the text keeps the code colour, so only the mark carries the hue.
+  const rows = highlighted.map((row, i) => {
+    const mark = changeMark(lines[i]!, lang)
+    return mark ? <el.Text key={`${key}.${i}`} color={style.theme.codeText}><el.Text color={marks[mark]}>{mark}</el.Text>{lines[i]!.slice(1)}</el.Text> : row
+  })
   return style.shape === 'engine' ? rows.map((row, i) => <el.Text key={`${key}.ltr${i}`} {...heldLtr(style)}>{row}</el.Text>) : rows
 }
 
-const codeBody = (el: ElementTable, style: Style, rows: RenderElement[], gutter: number, held: boolean, more: RenderNode | null): RenderElement => {
+// A fenced diff's added and removed rows; file headers are neither.
+const changeMark = (line: string, lang: string): '+' | '-' | undefined =>
+  /^(diff|patch)$/i.test(lang) && /^[+-]/.test(line) && !/^(\+\+\+|---)( |$)/.test(line) ? (line[0] as '+' | '-') : undefined
+
+// Those rows take the same tints as an edit's diff.
+const diffRowTints = (style: Style, lines: string[], lang: string): (string | undefined)[] => {
+  const marks = markColors(style.theme)
+  return lines.map(line => { const mark = changeMark(line, lang); return mark && diffTint(style.theme.codeText, marks[mark]) })
+}
+
+const codeBody = (el: ElementTable, style: Style, rows: RenderElement[], gutter: number, held: boolean, more: RenderNode | null, tints: (string | undefined)[] = []): RenderElement => {
   const { Box, Text } = el
+  const line = (row: RenderElement, i: number) => {
+    const number = gutter && row.type === 'Text' ? <Text color={style.theme.codeComment} dimColor>{`${String(i + 1).padStart(gutter)}  `}</Text> : null
+    return number || tints[i] ? <Box key={`n${i}`} flexDirection="row" {...(tints[i] ? { backgroundColor: tints[i] } : {})}>{number}{row}</Box> : row
+  }
   return (
     <Box flexDirection="column" paddingLeft={held ? 0 : 2}>
-      {held || !gutter || style.nativeCode ? rows : rows.map((row, i) => row.type === 'Text' ? <Box key={`n${i}`} flexDirection="row"><Text color={style.theme.codeComment} dimColor>{`${String(i + 1).padStart(gutter)}  `}</Text>{row}</Box> : row)}
+      {held || style.nativeCode ? rows : rows.map(line)}
       {held && more ? <Box paddingLeft={2}>{more}</Box> : more}
     </Box>
   )
@@ -954,6 +974,8 @@ const drawHeading = (el: ElementTable, style: Style, block: Extract<Block, { kin
 }
 
 const ALERT_COLOR = { note: 'blue', tip: 'green', important: 'magenta', warning: 'yellow', caution: 'red' } as const
+// The theme's own blue, green, magenta, yellow and red; the named colours are the host's, not the theme's.
+const ALERT_ROLE = { note: 'link', tip: 'diffAdded', important: 'emphasis', warning: 'tableHeader', caution: 'diffRemoved' } as const satisfies Record<keyof typeof ALERT_COLOR, keyof Theme>
 
 const prose = (style: Style) => (style.inside === 'quote' ? { italic: true, color: style.theme.quote } : {})
 
@@ -1002,7 +1024,7 @@ const renderQuote = (el: ElementTable, style: Style, block: Extract<Block, { kin
 
 const renderAlert = (el: ElementTable, style: Style, block: Extract<Block, { kind: 'alert' }>, columns: number, key: string, copy?: CopyButton, fold?: Fold, tip?: Tip) => {
   const { Box, Text } = el
-  const color = ALERT_COLOR[block.level]
+  const color = style.theme[ALERT_ROLE[block.level]] ?? ALERT_COLOR[block.level]
   const inner = columns - 4
   const hebrew = flowOf(style, leadInline(block.blocks), inner)?.base === 'R'
   const label = block.level[0]!.toUpperCase() + block.level.slice(1)
@@ -1280,7 +1302,7 @@ export const renderBlocks = (el: ElementTable, style: Style, blocks: Block[], co
               {head ? head.marker : button}
               {head?.element}
             </Box>
-            {codeBody(el, style, rows, gutter, held, toggle?.element ?? null)}
+            {codeBody(el, style, rows, gutter, held, toggle?.element ?? null, diffRowTints(style, lines, block.lang))}
           </Box>
         )
       }

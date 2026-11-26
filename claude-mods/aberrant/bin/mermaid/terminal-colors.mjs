@@ -4,7 +4,7 @@
 // are filled with the background color.
 //
 // `terminalColors({ terminal, prefersDark })`, with `ghostty` or `kitty`,
-// answers `{ ok: true, background, foreground, source }` or `{ ok: false,
+// answers `{ ok: true, background, foreground, palette, source }` or `{ ok: false,
 // reason }`. It reads the terminal's config files and theme files, and on
 // macOS the system's dark mode setting when the Ghostty theme depends on it.
 import { execFileSync } from 'node:child_process'
@@ -33,8 +33,16 @@ function unquote(value) {
   return value.replace(/^"(.*)"$/, '$1').trim()
 }
 
-// Ghostty's `key = value` lines: the last background, foreground and theme
-// win; `config-file` includes are followed, relative to the including file.
+// The 16 ANSI colors as an array; later entries win per index.
+function mergePalette(into, from) {
+  if (!from) return into
+  const palette = [...(into ?? [])]
+  from.forEach((color, i) => { if (color) palette[i] = color })
+  return palette
+}
+
+// Ghostty's `key = value` lines: the last background, foreground, theme and
+// `palette = N=#hex` win; `config-file` includes are followed, relative to the including file.
 export function parseGhosttyColors(text, dir = '', readFile = readIfExists, depth = 0) {
   const out = {}
   for (const raw of text.split('\n')) {
@@ -49,10 +57,16 @@ export function parseGhosttyColors(text, dir = '', readFile = readIfExists, dept
       if (color) out[key] = color
     }
     if (key === 'theme') out.theme = value === '' ? undefined : value
+    const entry = key === 'palette' && /^(\d+)\s*=\s*(.+)$/.exec(value)
+    if (entry && Number(entry[1]) < 16 && normalizeColor(entry[2])) {
+      out.palette ??= []
+      out.palette[Number(entry[1])] = normalizeColor(entry[2])
+    }
     if (key === 'config-file' && depth < 4 && value !== '') {
       const file = value.replace(/^\?/, '')
       const resolved = path.isAbsolute(file) ? file : path.join(dir, file)
-      Object.assign(out, parseGhosttyColors(readFile(resolved), path.dirname(resolved), readFile, depth + 1))
+      const included = parseGhosttyColors(readFile(resolved), path.dirname(resolved), readFile, depth + 1)
+      Object.assign(out, included, { palette: mergePalette(out.palette, included.palette) })
     }
   }
   return out
@@ -102,10 +116,13 @@ export function ghosttyColors({ home, xdgConfigHome, platform, resourcesDir, pre
     if (cmux) files.push(path.join(home, 'Library/Application Support/com.cmuxterm.app/config.ghostty'))
   }
   const config = {}
-  for (const file of files) Object.assign(config, parseGhosttyColors(readFile(file), path.dirname(file), readFile))
+  for (const file of files) {
+    const parsed = parseGhosttyColors(readFile(file), path.dirname(file), readFile)
+    Object.assign(config, parsed, { palette: mergePalette(config.palette, parsed.palette) })
+  }
 
   let colors = { ...GHOSTTY_DEFAULT }
-  let source = 'Ghostty default', themeTitle
+  let source = 'Ghostty default', themeTitle, themePalette
   if (config.theme) {
     const dark = platform === 'darwin' && config.theme.includes(':') ? macPrefersDark() : prefersDark
     const name = themeName(config.theme, dark)
@@ -116,12 +133,14 @@ export function ghosttyColors({ home, xdgConfigHome, platform, resourcesDir, pre
     colors = { background: theme.background ?? colors.background, foreground: theme.foreground ?? colors.foreground }
     source = `Ghostty theme ${name}`
     themeTitle = name
+    themePalette = theme.palette
   }
   if (config.background) source = 'Ghostty config'
   return {
     ok: true,
     background: config.background ?? colors.background,
     foreground: config.foreground ?? colors.foreground,
+    palette: mergePalette(themePalette, config.palette),
     theme: themeTitle,
     source,
   }

@@ -77,3 +77,12 @@ test('inside cmux, its theme override wins over the Ghostty config',()=>{
   assert.equal(colors(true).background,'#2e3440');
   assert.equal(colors(false).theme,'Gruvbox Material Dark');
 });
+test('the 16-colour palette comes from the theme, with config entries winning',()=>{
+  const theme=Array.from({length:16},(_,i)=>`palette = ${i}=#0000${i.toString(16).padStart(2,'0')}`).join('\n');
+  const files={'/h/.config/ghostty/config':'theme = Hurtado\npalette = 1=#ff0000\n','/t/Hurtado':`background = #000000\n${theme}\n`};
+  const colors=ghosttyColors({home:'/h',platform:'linux',resourcesDir:'/x',prefersDark:true,readFile:file=>files[file.replace('/x/themes','/t')]??''});
+  assert.equal(colors.palette.length,16);
+  assert.equal(colors.palette[0],'#000000');
+  assert.equal(colors.palette[1],'#ff0000');
+  assert.equal(colors.palette[15],'#00000f');
+});

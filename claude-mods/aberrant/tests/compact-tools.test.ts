@@ -27,7 +27,7 @@ describe("compact-tools", () => {
     const before = JSON.stringify({ input, output });
     const target = toolRow("mcp__claude_ai_Claude_Docs__edit_doc", output);
     const ui = await $.ui.mount({ ...target, props: { ...target.props, input } });
-    expect((await ui.find({ type: "Text", text: /MCP/ }))?.text).toBe("● claude ai Claude Docs · edit doc (MCP)");
+    expect((await ui.find({ type: "Text", text: /MCP/ }))?.text).toBe("✓ claude ai Claude Docs · edit doc (MCP)");
     expect((await ui.find({ type: "Text", text: /⎿/ }))?.text).toBe("  ⎿ Document updated … +2 lines");
     expect(await ui.find({ type: "Text", text: /PRIVATE_DOCUMENT_BODY|private-ref|Block two/ })).toBeUndefined();
     expect(JSON.stringify({ input, output })).toBe(before);
@@ -144,7 +144,7 @@ describe("compact-tools", () => {
       plugin: "aberrant", surface: "terminal", component: "ToolResult",
       props: { tool_use_id: "WebFetch", tool: "WebFetch", output, isErrored: false },
     });
-    expect((await ui.find({ type: "Text", text: /Fetch/ }))?.text).toBe("● Fetch(https://docs.example.com/authentication)");
+    expect((await ui.find({ type: "Text", text: /Fetch/ }))?.text).toBe("✓ Fetch(https://docs.example.com/authentication)");
     expect((await ui.find({ type: "Text", text: /⎿/ }))?.text).toBe("  ⎿ Authentication … +2 lines");
     expect(await ui.find({ type: "Text", text: /PRIVATE/ })).toBeUndefined();
     expect(await result.find({ type: "Text" })).toBeUndefined();
