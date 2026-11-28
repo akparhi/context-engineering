@@ -6,3 +6,4 @@ docs/superpowers/plans/archive/
 .env
 research
 shared/skills/synced
+*.profraw

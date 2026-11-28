@@ -40,6 +40,12 @@ Paste discovery and preview design; rewritten session-scoped polling and image c
 
 Original MIT notices are retained in `licenses/`. Prismantis dependency and palette notices are in `licenses/prismantis-third-party.md`. Its vendored Prism and beautiful-mermaid code retains its own license headers.
 
-No Typst packages or fonts are distributed with this version.
+## Inter
+
+[rsms/inter](https://github.com/rsms/inter), version 4.1. SIL Open Font License 1.1, in `licenses/Inter-OFL.txt`.
+
+`fonts/inter/` holds its static Regular, Medium, SemiBold and Bold faces, unmodified. Diagram labels are drawn in it because beautiful-mermaid sizes its boxes for Inter.
+
+No Typst packages are distributed with this version.
 
 Dependencies are pinned in bun.lock. Their notices accompany the installed packages: beautiful-mermaid (MIT), @resvg/resvg-js (MPL-2.0), and pngjs (MIT); platform-specific resvg binaries retain their upstream licenses.

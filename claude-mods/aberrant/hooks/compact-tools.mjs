@@ -105,7 +105,7 @@ function mark(failed, running) {
 }
 
 function card($, e, children) {
-  return $.ui.resolve(e).Box({ flexDirection: "column", children });
+  return $.ui.resolve(e).Box({ flexDirection: "column", marginTop: 1, children });
 }
 
 function row($, e, label, dimColor, isError = false) {

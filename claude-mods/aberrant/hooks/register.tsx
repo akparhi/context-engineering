@@ -47,33 +47,40 @@ const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n
         CLAUDE_CODE_TMPDIR:await $.env.get('CLAUDE_CODE_TMPDIR'),
         NO_COLOR:await $.env.get('NO_COLOR'),
         CMUX_WORKSPACE_ID:await $.env.get('CMUX_WORKSPACE_ID'),
+        ABERRANT_SOCKET:await $.env.get('ABERRANT_SOCKET'),
       };
       s.env={...capabilities(env),...env};
       s.session=await $.session.id();
       const terminal=env.TERM_PROGRAM==='ghostty'||env.TERM_PROGRAM==='cmux'?'ghostty':env.KITTY_WINDOW_ID?'kitty':env.TERM==='xterm-kitty'?'kitty':null;
       s.terminal=terminal;
+      s.themeOverride=themeOverride(env);
       await probe(s,$);
-      if(env.CMUX_WORKSPACE_ID) s.themeStamp=await themeStamp(s,$);
+      if(s.themeOverride) s.themeStamp=await themeStamp(s,$);
       watchTheme(s,$);
     })();
     await s.loaded;
   }
+  /** The file a Ghostty-based app rewrites when its theme changes: cmux's config, or aberrant's theme.ghostty beside its control socket. */
+  function themeOverride(env:Record<string,string|undefined>) {
+    if(env.CMUX_WORKSPACE_ID) return `${env.HOME}/Library/Application Support/com.cmuxterm.app/config.ghostty`;
+    const socket=env.ABERRANT_SOCKET;
+    return socket?.includes('/')?`${socket.slice(0,socket.lastIndexOf('/'))}/theme.ghostty`:undefined;
+  }
   async function probe(s:any,$:any) {
     s.probe={cell:{},colors:{}};s.probeFailed=false;
     if(s.terminal) try {
-      const r=await $.process.run(['bun',`${$.plugin.root}/bin/worker.mjs`],{stdin:JSON.stringify({kind:'probe',terminal:s.terminal,cmux:!!s.env.CMUX_WORKSPACE_ID}),timeoutMs:10000});
+      const r=await $.process.run(['bun',`${$.plugin.root}/bin/worker.mjs`],{stdin:JSON.stringify({kind:'probe',terminal:s.terminal,themeOverride:s.themeOverride}),timeoutMs:10000});
       s.probe=JSON.parse(r.stdout);
     } catch(error) {s.lastError=`Renderer probe: ${String(error)}`;s.probeFailed=true;}
   }
-  /** cmux rewrites this file when its theme changes. */
   async function themeStamp(s:any,$:any) {
-    try {return String((await $.fs.stat(`${s.env.HOME}/Library/Application Support/com.cmuxterm.app/config.ghostty`)).mtimeMs);} catch {return '';}
+    try {return String((await $.fs.stat(s.themeOverride)).mtimeMs);} catch {return '';}
   }
   // Restarted on render like the draft poll, since a session end cancels it.
-  function watchTheme(s:any,$:any) {if((s.env?.CMUX_WORKSPACE_ID||s.probeFailed)&&!s.themeWatch)s.themeWatch=$.clock.every(2000,()=>followTheme(s,$));}
+  function watchTheme(s:any,$:any) {if((s.themeOverride||s.probeFailed)&&!s.themeWatch)s.themeWatch=$.clock.every(2000,()=>followTheme(s,$));}
   async function followTheme(s:any,$:any) {
-    if(!s.env?.CMUX_WORKSPACE_ID) {
-      // Outside cmux the theme never changes, so the watch only retries a failed probe.
+    if(!s.themeOverride) {
+      // Without an override file the theme never changes, so the watch only retries a failed probe.
       await probe(s,$);
       if(!s.probeFailed) {s.themeWatch?.cancel();s.themeWatch=null;$.ui.invalidate('ui.render');}
       return;
@@ -102,7 +109,7 @@ const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n
     while(s.cache.size>64 || [...s.cache.entries()].reduce((n,[k,v])=>n+k.length+JSON.stringify(v).length,0)>32000000) s.cache.delete(s.cache.keys().next().value);
   }
   function reset(s:any,) {
-    s.generation++;s.queue.clear();s.wanted.clear();s.cache.clear();s.inflight.clear();s.last="";s.paths.clear();s.grouped.clear();s.draft=[];s.imageDir=null;s.expanded.clear();
+    s.generation++;s.queue.clear();s.wanted.clear();s.cache.clear();s.inflight.clear();s.last="";s.paths.clear();s.grouped.clear();s.draft=[];s.imageDir=null;s.expanded.clear();s.answers=[];
     s.scheduled?.cancel();s.scheduled=null;s.poll?.cancel();s.poll=null;s.themeWatch?.cancel();s.themeWatch=null;s.stopped=true;
   }
   function request(s:any,$:any,slot:string,req:any) {
@@ -176,7 +183,21 @@ const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n
   // From Readable Layout before 0.2.2: a rounded box with its title over the top border.
   // `color` is a Claude Code theme key, so each theme picks the box colour; the border is that colour dimmed.
   // `actions` sit over the top border on the right; spaces rather than a gap, so the border line stops around them.
-  function framed(ui:any,title:string,color:string,body:any,actions:any[]=[]) {
+  const ANSWERS_KEPT=50;
+function rememberAnswer(s:any,answer:string) {s.answers.push(answer.trim());if(s.answers.length>ANSWERS_KEPT)s.answers.shift();}
+/** The text Claude ended each finished turn with: what it wrote after its last tool call, before the next prompt. */
+function finalAnswers(messages:{role:string,text:string,toolUses:unknown[],toolResults?:unknown[]}[]) {
+  const answers:string[]=[];let pending:string[]=[];
+  const settle=()=>{if(pending.length)answers.push(pending.join('\n\n'));pending=[];};
+  for(const m of messages) {
+    if(m.role==='user'){if(!m.toolResults?.length)settle();continue;}
+    if(m.toolUses.length){pending=[];continue;}
+    if(m.text.trim())pending.push(m.text);
+  }
+  settle();
+  return answers;
+}
+function framed(ui:any,title:string,color:string,body:any,actions:any[]=[]) {
     const spaced=actions.flatMap((action,i)=>[ui.Text({children:i?'  ':' '}),action]);
     return ui.Box({flexDirection:'column',marginTop:1,children:[
       ui.Box({flexDirection:'column',borderStyle:'round',borderColor:color,borderDimColor:true,paddingX:1,children:[body]}),
@@ -300,14 +321,21 @@ const DEMO='# Aberrant\n\nReadable **Markdown**, source copying, and $E=mc^2$.\n
 export function register(on:any) {
   const s:any={prefs:{...DEFAULTS},loaded:null,env:null,probe:null,generation:0,cache:new Map(),wanted:new Map(),queue:new Map(),inflight:new Map(),
     active:0,scheduled:null,poll:null,polling:false,session:'',draft:[],imageDir:null,last:'',shown:new Set(),grouped:new Map(),paths:new Map(),
-    expanded:new Map(),pageFiles:new Map(),lastError:'',stopped:false,demo:false};
+    expanded:new Map(),pageFiles:new Map(),lastError:'',stopped:false,demo:false,answers:[]};
 
   on('session.start',async($:any,e:any,next:any)=>{
     const original=await next(e);await init(s,$);
     for(const name of ['render','aberrant']) await $.command.register({name,description:'Aberrant: diagrams, image previews and optional Markdown themes',argumentHint:'[on|off|mode|theme|images|mermaid|preview|boxes|tools|copy|doctor|demo]',immediate:true});
     await $.command.register(compactToolsCommand);
     if((await $.session.surfaces()).includes('terminal')) startPoll(s,$);
+    for(const answer of finalAnswers(await $.session.messages())) rememberAnswer(s,answer);
     return original;
+  });
+  // Claude Code marks no message as the turn's last, so final answers come from turn.complete, and from the transcript on resume.
+  on('turn.complete',async($:any,e:any,next:any)=>{
+    const result=await next(e);
+    if(e.agentId===undefined&&e.answer?.trim()){rememberAnswer(s,e.answer);$.ui.invalidate('ui.render');}
+    return result;
   });
   on('session.end',($:any,e:any,next:any)=>{reset(s,);return next(e);});
   on('prompt.submit',($:any,e:any,next:any)=>{s.draft=[];$.ui.invalidate('ui.render');return next(e);});
@@ -335,10 +363,9 @@ export function register(on:any) {
     if(s.stopped) startPoll(s,$);
     watchTheme(s,$);
     s.last=e.props.text;
-    const text=e.props.text.trim();
-    // One-line notes between steps stay unboxed so the answer stands out.
-    const boxed=s.prefs.boxes&&(text.includes('\n')||text.length>160);
-    const box=(node:any,actions:any[]=[])=>!s.prefs.boxes?node:!boxed?indented(s,$.ui.resolve(e),node):framed($.ui.resolve(e),'Claude','briefLabelClaude',node,actions);
+    const boxed=s.prefs.boxes;
+    const text=e.props.text.trim(),final=s.answers.some((answer:string)=>answer.includes(text));
+    const box=(node:any,actions:any[]=[])=>!boxed?node:final?framed($.ui.resolve(e),'Claude','briefLabelClaude',node,actions):framed($.ui.resolve(e),'Claude','inactive',node);
     if(s.prefs.mode==='native')return box(await nativeAdditions(s,$,e,original));
     const reply=await drawReply(s,$,e,e.props.text,e.requestId);if(!reply)return box(original);
     const ui=$.ui.resolve(e),body=boxed?reply.body:ui.Box({flexDirection:'column',gap:1,children:[reply.body,toolbar(ui,reply.actions)]});

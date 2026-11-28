@@ -93,6 +93,11 @@ function callAt(text, start) {
   return null
 }
 
+/** `a` mixed `percent`% into `b`, both #hex, as #hex. */
+export function mixHex(a, percent, b) {
+  return formatColor(mixColors(parseColor(a), percent / 100, parseColor(b), 1 - percent / 100))
+}
+
 // Replaces every var() and color-mix() in `svg` with the color it evaluates
 // to; `base` holds the custom properties to start from, such as { '--bg':
 // '#282c34' }, and wins over the document's own declarations of them.

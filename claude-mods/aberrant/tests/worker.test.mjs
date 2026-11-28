@@ -65,17 +65,21 @@ test('JPEG and WebP previews work without an external compiler',async()=>{
     assert.ok(pngHeader(fs.readFileSync(r.pages[0].file)));
   }
 });
-test('inside cmux, its theme override wins over the Ghostty config',()=>{
+test('an app theme override (cmux, aberrant) wins over the Ghostty config',()=>{
   const files={
     '/h/.config/ghostty/config':'theme = Gruvbox Material Dark\n',
     '/h/Library/Application Support/com.cmuxterm.app/config.ghostty':'theme = light:Nord,dark:Nord\n',
+    '/h/.local/state/aberrant/theme.ghostty':'theme = Oldest House\n',
     '/t/Nord':'background = #2e3440\nforeground = #d8dee9\n',
+    '/t/Oldest House':'background = #1e1a17\nforeground = #d6c1a6\n',
     '/t/Gruvbox Material Dark':'background = #282828\nforeground = #d4be98\n'};
   const read=file=>files[file]??'';
-  const colors=cmux=>ghosttyColors({home:'/h',platform:'darwin',resourcesDir:'/x',prefersDark:true,cmux,readFile:file=>read(file.replace('/x/themes','/t'))});
-  assert.equal(colors(true).theme,'Nord');
-  assert.equal(colors(true).background,'#2e3440');
-  assert.equal(colors(false).theme,'Gruvbox Material Dark');
+  const colors=themeOverride=>ghosttyColors({home:'/h',platform:'darwin',resourcesDir:'/x',prefersDark:true,themeOverride,readFile:file=>read(file.replace('/x/themes','/t'))});
+  assert.equal(colors('/h/Library/Application Support/com.cmuxterm.app/config.ghostty').theme,'Nord');
+  assert.equal(colors('/h/Library/Application Support/com.cmuxterm.app/config.ghostty').background,'#2e3440');
+  assert.equal(colors('/h/.local/state/aberrant/theme.ghostty').theme,'Oldest House');
+  assert.equal(colors('/h/.local/state/aberrant/theme.ghostty').background,'#1e1a17');
+  assert.equal(colors(undefined).theme,'Gruvbox Material Dark');
 });
 test('the 16-colour palette comes from the theme, with config entries winning',()=>{
   const theme=Array.from({length:16},(_,i)=>`palette = ${i}=#0000${i.toString(16).padStart(2,'0')}`).join('\n');

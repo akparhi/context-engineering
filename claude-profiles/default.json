@@ -6,6 +6,7 @@
     "ANTHROPIC_BASE_URL": "http://127.0.0.1:8317",
     "ANTHROPIC_AUTH_TOKEN": "123456",
     "CLAUDE_CODE_PROMPT_CACHE_TTL": "1h",
+    "CLAUDE_CODE_ENABLE_TODO_TOOLS": "1",
     "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-2[1m]",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5[1m]",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5-5[1m]",
@@ -48,7 +49,8 @@
       "WebFetch",
       "WebSearch",
       "Write",
-      "mcp__plugin_bureau_codegraph__*"
+      "mcp__plugin_bureau_codegraph__*",
+      "mcp__pencil"
     ],
     "deny": [
       "Read(./dist/**)",

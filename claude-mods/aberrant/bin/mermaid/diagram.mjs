@@ -17,7 +17,7 @@ import path from 'node:path'
 
 import { THEMES, parseMermaid, renderMermaidASCII, renderMermaidSVG } from 'beautiful-mermaid'
 
-import { resolveCss } from './css.mjs'
+import { mixHex, resolveCss } from './css.mjs'
 import { pickFonts } from './fonts.mjs'
 
 const require = createRequire(import.meta.url)
@@ -70,6 +70,9 @@ const DARK = { bg: '#282c34', fg: '#e8e8e8' }
 const LIGHT = { bg: '#ffffff', fg: '#24292f' }
 // The `auto` theme's accent (arrow heads, chart series): Claude's orange.
 const CLAUDE_ORANGE = '#d77757'
+// How much text color the `auto` theme mixes into the background, in percent:
+// about 15 points above beautiful-mermaid's own, which read too faint on a terminal.
+const AUTO_MIX = { border: 35, line: 65, muted: 75 }
 
 function isLight(hex) {
   const n = parseInt(hex.slice(1), 16)
@@ -92,7 +95,7 @@ export function diagramColors({ theme = 'auto', overrides = {}, terminal = {}, p
     const fallback = prefersDark ? DARK : LIGHT
     const bg = terminal.background ?? fallback.bg
     const fg = terminal.foreground ?? (terminal.background ? (isLight(bg) ? LIGHT.fg : DARK.fg) : fallback.fg)
-    colors = { bg, fg, accent: CLAUDE_ORANGE }
+    colors = { bg, fg, accent: CLAUDE_ORANGE, ...Object.fromEntries(Object.entries(AUTO_MIX).map(([key, percent]) => [key, mixHex(fg, percent, bg)])) }
   }
   for (const key of COLOR_KEYS) if (typeof overrides[key] === 'string') colors[key] = overrides[key]
   return { colors, card: preset !== undefined, theme: preset ? theme : 'auto' }
@@ -196,7 +199,7 @@ function drawSvg(item, request) {
   if (!(width > 0 && height > 0)) throw new Error('nothing to draw')
 
   const fonts = pickFonts({ font: request.font })
-  if (!WIDE_SCRIPT.test(source)) fonts.files = [fonts.sans?.file, fonts.mono?.file].filter(Boolean)
+  if (!WIDE_SCRIPT.test(source)) fonts.files = [fonts.sans, fonts.mono].filter(Boolean).flatMap(entry => entry.files)
   const svg = prepareSvg(raw, colors, fonts)
   return { raw, svg, width, height, colors, card, fonts }
 }

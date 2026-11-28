@@ -8,6 +8,12 @@ import path from 'node:path'
 
 import { facesOf, findFontFile, fontDirs } from './font-metrics.mjs'
 
+// Bundled with the plugin: beautiful-mermaid sizes its boxes for Inter, so
+// labels in any other face crowd or overflow them. Static faces, one per
+// weight the labels use, because resvg draws a variable font's default weight only.
+const INTER_DIR = path.join(import.meta.dirname, '../../fonts/inter')
+const INTER = { family: 'Inter', files: ['Regular', 'Medium', 'SemiBold', 'Bold'].map(w => path.join(INTER_DIR, `Inter-${w}.ttf`)) }
+
 // Candidates in order of preference: [file, family]. A family left out is
 // read from the file. Helvetica Neue comes before San Francisco on macOS
 // because resvg draws a variable font's default weight only, and the labels
@@ -44,7 +50,7 @@ const FALLBACKS = [
 function firstExisting(candidates) {
   for (const [file, family] of candidates) {
     if (!fs.existsSync(file)) continue
-    return { file, family: family ?? facesOf(file)[0]?.family ?? path.basename(file) }
+    return { files: [file], family: family ?? facesOf(file)[0]?.family ?? path.basename(file) }
   }
   return undefined
 }
@@ -55,16 +61,16 @@ export function pickFonts({ font = 'auto', home = os.homedir(), platform = proce
   let sans
   if (font !== 'auto' && font.trim() !== '') {
     const file = findFontFile(font.trim(), fontDirs(home, platform))
-    if (file !== undefined) sans = { file, family: font.trim() }
+    if (file !== undefined) sans = { files: [file], family: font.trim() }
   }
-  sans ??= firstExisting(SANS)
+  sans ??= fs.existsSync(INTER.files[0]) ? INTER : firstExisting(SANS)
   const mono = firstExisting(MONO)
-  const fallbacks = FALLBACKS.filter(([file]) => fs.existsSync(file)).map(([file, family]) => ({ file, family }))
+  const fallbacks = FALLBACKS.filter(([file]) => fs.existsSync(file)).map(([file, family]) => ({ files: [file], family }))
   const all = [sans, mono, ...fallbacks].filter(Boolean)
   return {
     sans,
     mono,
-    files: [...new Set(all.map(entry => entry.file))],
+    files: [...new Set(all.flatMap(entry => entry.files))],
     sansStack: [sans, ...fallbacks].filter(Boolean).map(entry => `'${entry.family}'`).concat('sans-serif').join(', '),
     monoStack: [mono, ...fallbacks].filter(Boolean).map(entry => `'${entry.family}'`).concat('monospace').join(', '),
   }

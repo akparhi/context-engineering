@@ -13,13 +13,15 @@ function host(on:any,prefs:any={}, custom:any={}) {
   if(!custom.render)on('ui.render',()=>({type:'engine',ref:0}));
   on('ui.open',()=>({value:{isPlaced:true}}));
   on('command.register',()=>({value:undefined}));
+  on('turn.complete',()=>({text:''}));
   on('ui.copy',(_:any,e:any)=>{copies.push(e.text);return {value:{isCopied:true}};});
   if(!custom.process)on('process.run',(_:any,e:any)=>{requests.push(e);return {value:{exitCode:0,stdout:'{}',stderr:'',isStdoutTruncated:false,isStderrTruncated:false}};});
   return {clock,copies,requests};
 }
+const finish=($:any,answer:string)=>$.turn.complete({answer,durationMs:1,isAborted:false,turnId:'turn-1',reason:'answer'});
 describe('Aberrant',()=>{
   test('text mode styles Markdown and copies the exact original source',async($,on)=>{
-    const h=host(on);const ui=await $.ui.mount(MSG);
+    const h=host(on);await finish($,MSG.props.text);const ui=await $.ui.mount(MSG);
     expect(await ui.find({type:'Text',text:'Heading'})).toBeDefined();
     await ui.press({key:'copy:reply-1:all'});
     expect(h.copies[0]).toBe(MSG.props.text);
@@ -239,21 +241,21 @@ test('sidebar toggle persists enabled state and stays in sync with commands',asy
   await desktop.unmount();
 });
 describe('message boxes',()=>{
-  test('frame your message and Claude\'s answer, leaving one-line notes bare',async($,on)=>{
+  test('frame your message, and Claude\'s step notes muted until the turn ends on them',async($,on)=>{
     host(on);
     const you=await $.ui.mount({...MSG,component:'UserMessage',props:{text:'hello there',origin:{kind:'composer'}}} as any);
     expect(await you.find({type:'Text',text:' You '})).toBeDefined();
     await you.unmount();
-    const answer=await $.ui.mount(MSG);
-    expect(await answer.find({type:'Text',text:' Claude '})).toBeDefined();
-    await answer.unmount();
     const note=await $.ui.mount({...MSG,props:{...MSG.props,text:'Checking the config first.'}});
-    expect(await note.find({type:'Text',text:' Claude '})).toBeUndefined();
+    expect(await note.find({type:'Text',text:' Claude ',color:'inactive'} as any)).toBeDefined();
+    await finish($,'Checking the config first.');await note.redraw();
+    expect(await note.find({type:'Text',text:' Claude ',color:'briefLabelClaude'} as any)).toBeDefined();
     await note.unmount();
   });
-  test('a boxed reply keeps its copy and source actions on the top border',async($,on)=>{
+  test('a boxed answer keeps its copy and source actions on the top border',async($,on)=>{
     host(on);
     await $.command.run({command:'render',args:'mode text'});
+    await finish($,'First line.\nSecond line.');
     const answer=await $.ui.mount({...MSG,props:{...MSG.props,text:'First line.\nSecond line.'}});
     const border=(await answer.find({type:'Box'} as any))?.children?.find((c:any)=>c.props?.position==='absolute'&&c.props?.right===2);
     expect(JSON.stringify(border)).toContain('"Copy"');
@@ -283,17 +285,22 @@ describe('message boxes',()=>{
     await answer.unmount();
   });
 });
-describe('cmux theme',()=>{
-  test('a theme change inside cmux is picked up without a reload',async($,on)=>{
-    const h=host(on,{}, {graphical:true,process:true,env:{CMUX_WORKSPACE_ID:'workspace:1'}});
-    let mtime=1,probes=0;
+describe('app theme override',()=>{
+  const apps=[
+    {app:'cmux',env:{CMUX_WORKSPACE_ID:'workspace:1'},file:'Library/Application Support/com.cmuxterm.app/config.ghostty'},
+    {app:'aberrant',env:{ABERRANT_SOCKET:'/state/aberrant/control.sock'},file:'/state/aberrant/theme.ghostty'}];
+  for(const {app,env,file} of apps) test(`a theme change inside ${app} is picked up without a reload`,async($,on)=>{
+    const h=host(on,{}, {graphical:true,process:true,env});
+    let mtime=1,probes=0,override='';
     on('fs.stat',()=>({value:{size:1,mtimeMs:mtime,isFile:true,isDirectory:false}}));
     on('process.run',(_:any,e:any)=>{
-      if(JSON.parse(e.init?.stdin||'{}').kind==='probe')probes++;
+      const req=JSON.parse(e.init?.stdin||'{}');
+      if(req.kind==='probe'){probes++;override=req.themeOverride;}
       return {value:{exitCode:0,stdout:'{}',stderr:'',isStdoutTruncated:false,isStderrTruncated:false}};
     });
     await $.ui.render(MSG);
     expect(probes).toBe(1);
+    expect(override.endsWith(file)).toBe(true);
     await h.clock.advance(2000);
     expect(probes).toBe(1);
     mtime=2;await h.clock.advance(2000);

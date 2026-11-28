@@ -88,7 +88,7 @@ function ghosttyThemeDirs(home, xdg, platform, resourcesDir) {
   const dirs = [path.join(xdg, 'ghostty/themes')]
   if (resourcesDir) dirs.push(path.join(resourcesDir, 'themes'))
   if (platform === 'darwin') {
-    for (const app of ['Ghostty.app', 'cmux.app']) {
+    for (const app of ['Ghostty.app', 'cmux.app', 'Aberrant.app']) {
       dirs.push(`/Applications/${app}/Contents/Resources/ghostty/themes`, path.join(home, 'Applications', app, 'Contents/Resources/ghostty/themes'))
     }
   } else {
@@ -106,15 +106,15 @@ function macPrefersDark() {
   }
 }
 
-export function ghosttyColors({ home, xdgConfigHome, platform, resourcesDir, prefersDark, cmux = false, readFile = readIfExists }) {
+/** `themeOverride` is the file a Ghostty-based app (cmux, aberrant) writes its theme to; it loads after the Ghostty config. */
+export function ghosttyColors({ home, xdgConfigHome, platform, resourcesDir, prefersDark, themeOverride, readFile = readIfExists }) {
   const xdg = xdgConfigHome || path.join(home, '.config')
   const files = [path.join(xdg, 'ghostty/config'), path.join(xdg, 'ghostty/config.ghostty')]
   if (platform === 'darwin') {
     const support = path.join(home, 'Library/Application Support/com.mitchellh.ghostty')
     files.push(path.join(support, 'config'), path.join(support, 'config.ghostty'))
-    // cmux writes its theme override here, after the Ghostty config it loads.
-    if (cmux) files.push(path.join(home, 'Library/Application Support/com.cmuxterm.app/config.ghostty'))
   }
+  if (themeOverride) files.push(themeOverride)
   const config = {}
   for (const file of files) {
     const parsed = parseGhosttyColors(readFile(file), path.dirname(file), readFile)
@@ -198,9 +198,9 @@ export function terminalColors({
   xdgConfigHome = process.env.XDG_CONFIG_HOME,
   platform = process.platform,
   resourcesDir = process.env.GHOSTTY_RESOURCES_DIR,
-  cmux = false,
+  themeOverride,
 }) {
-  if (terminal === 'ghostty') return ghosttyColors({ home, xdgConfigHome, platform, resourcesDir, prefersDark, cmux })
+  if (terminal === 'ghostty') return ghosttyColors({ home, xdgConfigHome, platform, resourcesDir, prefersDark, themeOverride })
   if (terminal === 'kitty') return kittyColors({ home, xdgConfigHome })
   return { ok: false, reason: `no color rules for terminal "${terminal}"` }
 }
